@@ -1,5 +1,38 @@
 export type NodeType = 'period' | 'decision' | 'outcome';
 
+// Reference-based node types (use node IDs instead of nested objects)
+export interface BaseNodeRef {
+  id: string;
+  type: NodeType;
+  label: string;
+}
+
+export interface PeriodNodeRef extends BaseNodeRef {
+  type: 'period';
+  next?: string; // ID reference to next node
+}
+
+export interface DecisionNodeRef extends BaseNodeRef {
+  type: 'decision';
+  question: string;
+  yesPath?: string; // ID reference to yes path node
+  noPath?: string; // ID reference to no path node
+}
+
+export interface OutcomeNodeRef extends BaseNodeRef {
+  type: 'outcome';
+  next?: string; // ID reference to next node
+}
+
+export type FlowNodeRef = PeriodNodeRef | DecisionNodeRef | OutcomeNodeRef;
+
+// Map of all nodes by ID
+export interface FlowChartData {
+  nodes: Record<string, FlowNodeRef>;
+  rootId: string; // ID of the starting node
+}
+
+// Legacy nested node types (for backward compatibility)
 export interface BaseNode {
   id: string;
   type: NodeType;

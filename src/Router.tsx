@@ -1,15 +1,35 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
 import { HomePage } from './pages/Home.page';
 import { FlowChartDemo } from './FlowChartDemo';
+import { FlowChartV2Demo } from './FlowChartV2Demo';
+import { Navigation } from './components/Navigation';
+
+function Layout() {
+  return (
+    <>
+      <Navigation />
+      <Outlet />
+    </>
+  );
+}
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <HomePage />,
-  },
-  {
-    path: '/flowchart-demo',
-    element: <FlowChartDemo />,
+    element: <Layout />,
+    children: [
+      {
+        path: '/',
+        element: <HomePage />,
+      },
+      {
+        path: '/flowchart-demo',
+        element: <FlowChartDemo />,
+      },
+      {
+        path: '/flowchart-v2-demo',
+        element: <FlowChartV2Demo />,
+      },
+    ],
   },
 ]);
 

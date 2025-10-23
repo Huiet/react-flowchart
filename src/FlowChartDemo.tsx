@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FlowChart } from './components/FlowChart';
-import type { FlowNode } from './components/FlowChart';
+import type { FlowNode, FlowChartData } from './components/FlowChart';
 
 // Luma Conditional Coupon example
 const lumaData: FlowNode = {
@@ -163,14 +163,112 @@ const approvalData: FlowNode = {
   },
 };
 
+// NEW: Reference-based model example demonstrating yes/no branching to same period
+const referenceBasedData: FlowChartData = {
+  rootId: 'period-1',
+  nodes: {
+    'period-1': {
+      id: 'period-1',
+      type: 'period',
+      label: 'Period 1',
+      next: 'decision-1',
+    },
+    'decision-1': {
+      id: 'decision-1',
+      type: 'decision',
+      label: '',
+      question: 'Are all underlyings at or\nabove the 100%\nautocall barrier?',
+      yesPath: 'outcome-yes-1',
+      noPath: 'decision-2',
+    },
+    'outcome-yes-1': {
+      id: 'outcome-yes-1',
+      type: 'outcome',
+      label: 'Early Redemption +\n8.68% coupon',
+    },
+    'decision-2': {
+      id: 'decision-2',
+      type: 'decision',
+      label: '',
+      question: 'Are all underlyings at or\nabove the 80% coupon\nbarrier?',
+      yesPath: 'outcome-yes-2',
+      noPath: 'period-2-3', // Goes directly to period
+    },
+    'outcome-yes-2': {
+      id: 'outcome-yes-2',
+      type: 'outcome',
+      label: 'Payment of 8.68%\ncoupon (3 monthly)',
+      next: 'period-2-3', // Also goes to same period!
+    },
+    'period-2-3': {
+      id: 'period-2-3',
+      type: 'period',
+      label: 'Periods\n2-3',
+      next: 'decision-3',
+    },
+    'decision-3': {
+      id: 'decision-3',
+      type: 'decision',
+      label: '',
+      question: 'Are all underlyings at or\nabove the 100%\nautocall barrier?',
+      yesPath: 'outcome-yes-3',
+      noPath: 'decision-4',
+    },
+    'outcome-yes-3': {
+      id: 'outcome-yes-3',
+      type: 'outcome',
+      label: 'Early Redemption +\n8.68% coupon',
+    },
+    'decision-4': {
+      id: 'decision-4',
+      type: 'decision',
+      label: '',
+      question: 'Are all underlyings at or\nabove the 80% coupon\nbarrier?',
+      yesPath: 'outcome-yes-4',
+      noPath: 'period-4',
+    },
+    'outcome-yes-4': {
+      id: 'outcome-yes-4',
+      type: 'outcome',
+      label: 'Payment of 8.68%\ncoupon (3 monthly)',
+      next: 'period-4',
+    },
+    'period-4': {
+      id: 'period-4',
+      type: 'period',
+      label: 'Period 4\n(Maturity\nDate)',
+      next: 'decision-5',
+    },
+    'decision-5': {
+      id: 'decision-5',
+      type: 'decision',
+      label: '',
+      question: 'Are all underlyings\nabove the 80 %\nautocall/protection\nbarrier?',
+      yesPath: 'outcome-final-yes',
+      noPath: 'outcome-final-no',
+    },
+    'outcome-final-yes': {
+      id: 'outcome-final-yes',
+      type: 'outcome',
+      label: '100% of Capital + 8.68%\ncoupon',
+    },
+    'outcome-final-no': {
+      id: 'outcome-final-no',
+      type: 'outcome',
+      label: 'Investor receives the\nperformance of the worst\nperforming underlying',
+    },
+  },
+};
+
 const examples = {
   luma: { data: lumaData, title: 'Hypothetical Scenario Analysis', subtitle: 'Trade Idea\nConditional Coupon / Conditional Protection' },
   simple: { data: simpleData, title: 'Simple Decision Flow', subtitle: '' },
   approval: { data: approvalData, title: 'Approval Workflow', subtitle: 'Purchase Request Process' },
+  refBased: { chartData: referenceBasedData, title: 'Reference-Based Model (NEW)', subtitle: 'Demonstrates yes/no paths to same period' },
 };
 
 export function FlowChartDemo() {
-  const [selectedExample, setSelectedExample] = useState<keyof typeof examples>('luma');
+  const [selectedExample, setSelectedExample] = useState<keyof typeof examples>('refBased');
   const example = examples[selectedExample];
 
   return (
@@ -218,7 +316,8 @@ export function FlowChartDemo() {
           padding: '20px',
         }}>
           <FlowChart
-            data={example.data}
+            data={'data' in example ? example.data : undefined}
+            chartData={'chartData' in example ? example.chartData : undefined}
             title={example.title}
             subtitle={example.subtitle}
           />

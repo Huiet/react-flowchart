@@ -1,11 +1,13 @@
 import React from 'react';
-import type { FlowNode, ColumnPositions } from './types';
-import { calculateLayout } from './layoutEngine';
+import type { FlowNode, FlowChartData, ColumnPositions } from './types';
+import { calculateLayout, calculateLayoutFromRefs } from './layoutEngine';
 import { Node } from './Node';
 import { Arrow } from './Arrow';
 
 interface FlowChartProps {
-  data: FlowNode;
+  // Support both models: nested or reference-based
+  data?: FlowNode; // Legacy nested model
+  chartData?: FlowChartData; // New reference-based model
   title?: string;
   subtitle?: string;
   className?: string;
@@ -14,12 +16,16 @@ interface FlowChartProps {
 
 export const FlowChart: React.FC<FlowChartProps> = ({
   data,
+  chartData,
   title,
   subtitle,
   className = '',
   columnPositions,
 }) => {
-  const layout = calculateLayout(data, {}, columnPositions);
+  // Use reference-based layout if chartData is provided, otherwise use nested
+  const layout = chartData
+    ? calculateLayoutFromRefs(chartData, {}, columnPositions)
+    : calculateLayout(data!, {}, columnPositions);
 
   return (
     <div className={className} style={{ width: '100%', overflow: 'auto' }}>
