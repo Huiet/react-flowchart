@@ -170,7 +170,13 @@ export function calculateLayout(
       if (node.nextYes && yesNode) {
         if (yesNode.type === 'outcome') {
           // Yes → Outcome (right column, same level)
-          layoutNode(node.nextYes, columns.right, yesY, positioned, 'Yes', 'right', 'left');
+          // Calculate Y offset to align midpoints for horizontal arrow
+          const yesDims = getNodeDimensions(yesNode);
+          const decisionMidpoint = positioned.height / 2;
+          const outcomeMidpoint = yesDims.height / 2;
+          const alignedYesY = y + decisionMidpoint - outcomeMidpoint;
+
+          layoutNode(node.nextYes, columns.right, alignedYesY, positioned, 'Yes', 'right', 'left');
         } else if (yesNode.type === 'decision') {
           // Yes → Decision (middle column, same level)
           layoutNode(node.nextYes, columns.middle, yesY, positioned, 'Yes', 'bottom', 'top');
@@ -195,7 +201,13 @@ export function calculateLayout(
 
         if (noNode.type === 'outcome') {
           // No → Outcome: exit RIGHT, enter LEFT (right column, below yes if needed)
-          layoutNode(node.nextNo, columns.right, y + outcomeOffset, positioned, 'No', 'right', 'left');
+          // Calculate Y offset to align midpoints for horizontal arrow
+          const noDims = getNodeDimensions(noNode);
+          const decisionMidpoint = positioned.height / 2;
+          const outcomeMidpoint = noDims.height / 2;
+          const alignedNoY = y + outcomeOffset + decisionMidpoint - outcomeMidpoint;
+
+          layoutNode(node.nextNo, columns.right, alignedNoY, positioned, 'No', 'right', 'left');
         } else if (noNode.type === 'decision') {
           // No → Decision: exit BOTTOM, enter TOP (middle column, below)
           const nextY = y + positioned.height + cfg.nodeSpacing;
