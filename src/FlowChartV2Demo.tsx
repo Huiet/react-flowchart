@@ -135,7 +135,7 @@ export function FlowChartV2Demo() {
           FlowChart V2 - Unified Reference Model
         </h1>
         <p style={{ textAlign: 'center', color: '#666', marginBottom: '30px' }}>
-          All nodes defined upfront with explicit next/nextYes/nextNo references
+          All nodes defined upfront with explicit next/nextYes/nextNo references. Automatically scaled to 650px max width.
         </p>
 
         {/* FlowChart */}
@@ -148,10 +148,11 @@ export function FlowChartV2Demo() {
           }}
         >
           <FlowChartV2
-              scale={0.9}
             data={lumaDataV2}
             title="Hypothetical Scenario Analysis"
             subtitle="Trade Idea Conditional Coupon / Conditional Protection"
+            maxWidth={3500}
+            scale={1.1}
           />
         </div>
 
@@ -225,6 +226,36 @@ export function FlowChartV2Demo() {
             <li>Visualize the entire graph structure</li>
             <li>Avoid redundant ID storage (no duplicate keys)</li>
           </ul>
+
+          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>5. Automatic Scaling with maxWidth</h3>
+          <p>The component supports automatic scaling to fit within a maximum width:</p>
+          <pre
+            style={{
+              backgroundColor: '#f5f5f5',
+              padding: '15px',
+              borderRadius: '5px',
+              overflow: 'auto',
+            }}
+          >
+            {`<FlowChartV2
+  data={lumaDataV2}
+  maxWidth={650}  // Automatically scales to fit within 650px
+/>`}
+          </pre>
+          <p>You can also use manual scaling:</p>
+          <pre
+            style={{
+              backgroundColor: '#f5f5f5',
+              padding: '15px',
+              borderRadius: '5px',
+              overflow: 'auto',
+            }}
+          >
+            {`<FlowChartV2
+  data={lumaDataV2}
+  scale={1.5}  // 50% larger
+/>`}
+          </pre>
         </div>
       </div>
     </div>

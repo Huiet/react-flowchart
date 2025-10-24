@@ -10,6 +10,7 @@ interface FlowChartV2Props {
   className?: string;
   columnPositions?: Partial<ColumnPositions>;
   scale?: number;
+  maxWidth?: number;
 }
 
 export const FlowChartV2: React.FC<FlowChartV2Props> = ({
@@ -18,9 +19,22 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
   subtitle,
   className = '',
   columnPositions,
-  scale = 1,
+  scale: providedScale,
+  maxWidth,
 }) => {
-  const layout = calculateLayout(data, { scale }, columnPositions);
+  // Calculate initial layout to determine natural width
+  const initialLayout = calculateLayout(data, { scale: 1 }, columnPositions);
+
+  // Calculate scale based on maxWidth if provided
+  let finalScale = providedScale ?? 1;
+  if (maxWidth && initialLayout.width > maxWidth) {
+    finalScale = maxWidth / initialLayout.width;
+  }
+
+  // Recalculate layout with final scale
+  const layout = finalScale !== 1
+    ? calculateLayout(data, { scale: finalScale }, columnPositions)
+    : initialLayout;
 
   return (
     <div className={className} style={{ width: '100%', overflow: 'auto' }}>
@@ -34,14 +48,14 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
         <defs>
           <marker
             id="arrowhead"
-            markerWidth={10 * scale}
-            markerHeight={10 * scale}
-            refX={9 * scale}
-            refY={3 * scale}
+            markerWidth={6 * finalScale}
+            markerHeight={6 * finalScale}
+            refX={5.5 * finalScale}
+            refY={2.5 * finalScale}
             orient="auto"
           >
             <polygon
-              points={`0 0, ${10 * scale} ${3 * scale}, 0 ${6 * scale}`}
+              points={`0 0.5, ${6 * finalScale} ${2.5 * finalScale}, 0 ${4.5 * finalScale}`}
               fill="#333333"
             />
           </marker>
@@ -53,9 +67,9 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             {title && (
               <text
                 x={layout.width / 2}
-                y={25 * scale}
+                y={25 * finalScale}
                 textAnchor="middle"
-                fontSize={18 * scale}
+                fontSize={18 * finalScale}
                 fontWeight="bold"
                 fill="#1e3a5f"
                 fontFamily="Arial, sans-serif"
@@ -65,10 +79,10 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             )}
             {subtitle && (
               <text
-                x={layout.width - 20 * scale}
-                y={25 * scale}
+                x={layout.width - 20 * finalScale}
+                y={25 * finalScale}
                 textAnchor="end"
-                fontSize={12 * scale}
+                fontSize={12 * finalScale}
                 fill="#666666"
                 fontFamily="Arial, sans-serif"
               >
@@ -77,12 +91,12 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             )}
             {/* Header underline */}
             <line
-              x1={20 * scale}
-              y1={40 * scale}
-              x2={layout.width - 20 * scale}
-              y2={40 * scale}
+              x1={20 * finalScale}
+              y1={40 * finalScale}
+              x2={layout.width - 20 * finalScale}
+              y2={40 * finalScale}
               stroke="#4a90e2"
-              strokeWidth={3 * scale}
+              strokeWidth={3 * finalScale}
             />
           </g>
         )}
@@ -115,7 +129,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
           // Create arrow path (same logic as Arrow component)
           let pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
           if (fromSide === 'bottom' && toSide === 'top') {
-            if (Math.abs(start.x - end.x) >= 10) {
+            if (Math.abs(start.x - end.x) >= 50) {
               const goingLeft = end.x < start.x;
               if (goingLeft) {
                 const downY = midY;
@@ -125,7 +139,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
               }
             }
           } else if (fromSide === 'right' && toSide === 'left') {
-            if (Math.abs(start.y - end.y) >= 10) {
+            if (Math.abs(start.y - end.y) >= 50) {
               pathD = `M ${start.x} ${start.y} L ${midX} ${start.y} L ${midX} ${end.y} L ${end.x} ${end.y}`;
             }
           } else if (fromSide === 'right' && toSide === 'top') {
@@ -148,7 +162,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
               key={`arrow-line-${index}`}
               d={pathD}
               stroke="#333333"
-              strokeWidth={2 * scale}
+              strokeWidth={2 * finalScale}
               fill="none"
               markerEnd="url(#arrowhead)"
             />
@@ -164,7 +178,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             y={positioned.y}
             width={positioned.width}
             height={positioned.height}
-            scale={scale}
+            scale={finalScale}
           />
         ))}
 
@@ -195,37 +209,46 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
           const midY = start.y + (end.y - start.y) / 2;
           const midX = start.x + (end.x - start.x) / 2;
 
-          // Calculate label position (same logic as Arrow component)
+          // Calculate label position to be centered on the actual path
           let labelPos = { x: midX, y: midY };
           if (fromSide === 'bottom' && toSide === 'top') {
-            if (Math.abs(start.x - end.x) < 10) {
+            if (Math.abs(start.x - end.x) < 50) {
+              // Same column - vertical line, center on vertical segment
               labelPos = { x: start.x, y: midY };
             } else {
               const goingLeft = end.x < start.x;
               if (goingLeft) {
                 const downY = midY;
-                labelPos = { x: (start.x + end.x) / 2, y: downY };
+                // Center on horizontal segment
+                labelPos = { x: midX, y: downY };
               } else {
-                labelPos = { x: (start.x + end.x) / 2, y: midY };
+                // Center on horizontal segment
+                labelPos = { x: midX, y: midY };
               }
             }
           } else if (fromSide === 'right' && toSide === 'left') {
-            if (Math.abs(start.y - end.y) < 10) {
+            if (Math.abs(start.y - end.y) < 50) {
+              // Straight horizontal line
               labelPos = { x: midX, y: start.y };
             } else {
-              labelPos = { x: midX, y: (start.y + end.y) / 2 };
+              // Center on the middle vertical segment
+              labelPos = { x: midX, y: midY };
             }
           } else if (fromSide === 'right' && toSide === 'top') {
             const offsetX = start.x + 40;
-            labelPos = { x: (offsetX + end.x) / 2, y: (start.y + end.y) / 2 };
+            // Center of the diagonal-like connection
+            labelPos = { x: (start.x + offsetX) / 2, y: start.y };
           } else if (fromSide === 'bottom' && toSide === 'left') {
             const offsetY = start.y + 30;
-            labelPos = { x: (start.x + end.x) / 2, y: offsetY };
+            // Center on horizontal segment
+            labelPos = { x: midX, y: offsetY };
           } else if (fromSide === 'left' && toSide === 'top') {
-            labelPos = { x: (start.x + end.x) / 2, y: start.y };
+            // Center on horizontal segment
+            labelPos = { x: midX, y: start.y };
           } else if (fromSide === 'bottom' && toSide === 'right') {
             const offsetY = start.y + 30;
-            labelPos = { x: (start.x + end.x) / 2, y: offsetY };
+            // Center on horizontal segment
+            labelPos = { x: midX, y: offsetY };
           }
 
           return (
@@ -233,7 +256,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
               <circle
                 cx={labelPos.x}
                 cy={labelPos.y}
-                r={15 * scale}
+                r={15 * finalScale}
                 fill={label === 'Yes' ? '#4CAF50' : '#FF9800'}
                 stroke="none"
               />
@@ -243,7 +266,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="#ffffff"
-                fontSize={11 * scale}
+                fontSize={11 * finalScale}
                 fontWeight="bold"
                 fontFamily="Arial, sans-serif"
               >

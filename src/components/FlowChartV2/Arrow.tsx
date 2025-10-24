@@ -35,8 +35,8 @@ export const Arrow: React.FC<ArrowProps> = ({ connection }) => {
 
     if (fromSide === 'bottom' && toSide === 'top') {
       // Straight vertical or with horizontal offset
-      if (Math.abs(start.x - end.x) < 10) {
-        // Straight down
+      if (Math.abs(start.x - end.x) < 50) {
+        // Straight down - same column
         return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
       } else {
         // Check if this is going left (outcome → period) or right
@@ -52,7 +52,7 @@ export const Arrow: React.FC<ArrowProps> = ({ connection }) => {
       }
     } else if (fromSide === 'right' && toSide === 'left') {
       // Direct horizontal connection (same Y level)
-      if (Math.abs(start.y - end.y) < 10) {
+      if (Math.abs(start.y - end.y) < 50) {
         return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
       } else {
         // Right, down/up, right
@@ -81,50 +81,51 @@ export const Arrow: React.FC<ArrowProps> = ({ connection }) => {
     return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
   };
 
-  // Calculate label position at the midpoint of the path
+  // Calculate label position to be centered on the actual path
   const getLabelPosition = () => {
     const midY = start.y + (end.y - start.y) / 2;
     const midX = start.x + (end.x - start.x) / 2;
 
     if (fromSide === 'bottom' && toSide === 'top') {
       // Vertical paths
-      if (Math.abs(start.x - end.x) < 10) {
-        // Straight vertical line
+      if (Math.abs(start.x - end.x) < 50) {
+        // Same column - vertical line, center on vertical segment
         return { x: start.x, y: midY };
       } else {
         const goingLeft = end.x < start.x;
         if (goingLeft) {
-          // For outcome → period, place label on the horizontal segment at midpoint
           const downY = midY;
-          return { x: (start.x + end.x) / 2, y: downY };
+          // Center on horizontal segment
+          return { x: midX, y: downY };
         } else {
-          // Path with horizontal segment
-          return { x: (start.x + end.x) / 2, y: midY };
+          // Center on horizontal segment
+          return { x: midX, y: midY };
         }
       }
     } else if (fromSide === 'right' && toSide === 'left') {
       // Horizontal or stepped horizontal
-      if (Math.abs(start.y - end.y) < 10) {
+      if (Math.abs(start.y - end.y) < 50) {
         // Straight horizontal
         return { x: midX, y: start.y };
       } else {
-        // Stepped path - position at the turn
-        return { x: midX, y: (start.y + end.y) / 2 };
+        // Center on the middle vertical segment
+        return { x: midX, y: midY };
       }
     } else if (fromSide === 'right' && toSide === 'top') {
       const offsetX = start.x + 40;
-      // Position along the angled segment
-      return { x: (offsetX + end.x) / 2, y: (start.y + end.y) / 2 };
+      // Center of the horizontal segment at the start
+      return { x: (start.x + offsetX) / 2, y: start.y };
     } else if (fromSide === 'bottom' && toSide === 'left') {
       const offsetY = start.y + 30;
-      // Position on the horizontal segment
-      return { x: (start.x + end.x) / 2, y: offsetY };
+      // Center on horizontal segment
+      return { x: midX, y: offsetY };
     } else if (fromSide === 'left' && toSide === 'top') {
-      // Position on the corner where horizontal meets vertical
-      return { x: (start.x + end.x) / 2, y: start.y };
+      // Center on horizontal segment
+      return { x: midX, y: start.y };
     } else if (fromSide === 'bottom' && toSide === 'right') {
       const offsetY = start.y + 30;
-      return { x: (start.x + end.x) / 2, y: offsetY };
+      // Center on horizontal segment
+      return { x: midX, y: offsetY };
     }
 
     // Default
