@@ -9,6 +9,7 @@ interface FlowChartV2Props {
   subtitle?: string;
   className?: string;
   columnPositions?: Partial<ColumnPositions>;
+  scale?: number;
 }
 
 export const FlowChartV2: React.FC<FlowChartV2Props> = ({
@@ -17,8 +18,9 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
   subtitle,
   className = '',
   columnPositions,
+  scale = 1,
 }) => {
-  const layout = calculateLayout(data, {}, columnPositions);
+  const layout = calculateLayout(data, { scale }, columnPositions);
 
   return (
     <div className={className} style={{ width: '100%', overflow: 'auto' }}>
@@ -32,14 +34,14 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
         <defs>
           <marker
             id="arrowhead"
-            markerWidth="10"
-            markerHeight="10"
-            refX="9"
-            refY="3"
+            markerWidth={10 * scale}
+            markerHeight={10 * scale}
+            refX={9 * scale}
+            refY={3 * scale}
             orient="auto"
           >
             <polygon
-              points="0 0, 10 3, 0 6"
+              points={`0 0, ${10 * scale} ${3 * scale}, 0 ${6 * scale}`}
               fill="#333333"
             />
           </marker>
@@ -51,9 +53,9 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             {title && (
               <text
                 x={layout.width / 2}
-                y={25}
+                y={25 * scale}
                 textAnchor="middle"
-                fontSize="18"
+                fontSize={18 * scale}
                 fontWeight="bold"
                 fill="#1e3a5f"
                 fontFamily="Arial, sans-serif"
@@ -63,10 +65,10 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             )}
             {subtitle && (
               <text
-                x={layout.width - 20}
-                y={25}
+                x={layout.width - 20 * scale}
+                y={25 * scale}
                 textAnchor="end"
-                fontSize="12"
+                fontSize={12 * scale}
                 fill="#666666"
                 fontFamily="Arial, sans-serif"
               >
@@ -75,12 +77,12 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             )}
             {/* Header underline */}
             <line
-              x1={20}
-              y1={40}
-              x2={layout.width - 20}
-              y2={40}
+              x1={20 * scale}
+              y1={40 * scale}
+              x2={layout.width - 20 * scale}
+              y2={40 * scale}
               stroke="#4a90e2"
-              strokeWidth="3"
+              strokeWidth={3 * scale}
             />
           </g>
         )}
@@ -146,7 +148,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
               key={`arrow-line-${index}`}
               d={pathD}
               stroke="#333333"
-              strokeWidth="2"
+              strokeWidth={2 * scale}
               fill="none"
               markerEnd="url(#arrowhead)"
             />
@@ -162,6 +164,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             y={positioned.y}
             width={positioned.width}
             height={positioned.height}
+            scale={scale}
           />
         ))}
 
@@ -230,7 +233,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
               <circle
                 cx={labelPos.x}
                 cy={labelPos.y}
-                r="15"
+                r={15 * scale}
                 fill={label === 'Yes' ? '#4CAF50' : '#FF9800'}
                 stroke="none"
               />
@@ -240,7 +243,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="#ffffff"
-                fontSize="11"
+                fontSize={11 * scale}
                 fontWeight="bold"
                 fontFamily="Arial, sans-serif"
               >

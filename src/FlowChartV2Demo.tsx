@@ -148,6 +148,7 @@ export function FlowChartV2Demo() {
           }}
         >
           <FlowChartV2
+              scale={0.9}
             data={lumaDataV2}
             title="Hypothetical Scenario Analysis"
             subtitle="Trade Idea Conditional Coupon / Conditional Protection"

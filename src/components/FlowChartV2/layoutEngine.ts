@@ -16,6 +16,7 @@ const defaultConfig: LayoutConfig = {
   decisionHeight: 70,
   outcomeWidth: 200,
   outcomeHeight: 60,
+  scale: 1,
 };
 
 const COLUMN_X_POSITIONS: ColumnPositions = {
@@ -43,22 +44,22 @@ export function calculateLayout(
   function getNodeDimensions(node: FlowNode) {
     switch (node.type) {
       case 'period':
-        return { width: cfg.periodWidth, height: cfg.periodHeight };
+        return { width: cfg.periodWidth * cfg.scale, height: cfg.periodHeight * cfg.scale };
       case 'decision':
-        return { width: cfg.decisionWidth, height: cfg.decisionHeight };
+        return { width: cfg.decisionWidth * cfg.scale, height: cfg.decisionHeight * cfg.scale };
       case 'outcome':
-        return { width: cfg.outcomeWidth, height: cfg.outcomeHeight };
+        return { width: cfg.outcomeWidth * cfg.scale, height: cfg.outcomeHeight * cfg.scale };
     }
   }
 
   function getNodeColumn(node: FlowNode): number {
     switch (node.type) {
       case 'period':
-        return columns.left;
+        return columns.left * cfg.scale;
       case 'decision':
-        return columns.middle;
+        return columns.middle * cfg.scale;
       case 'outcome':
-        return columns.right;
+        return columns.right * cfg.scale;
     }
   }
 
@@ -182,7 +183,7 @@ export function calculateLayout(
           layoutNode(node.nextYes, columns.middle, yesY, positioned, 'Yes', 'bottom', 'top');
         } else if (yesNode.type === 'period') {
           // Yes → Period (left column, below)
-          const nextY = y + positioned.height + cfg.nodeSpacing;
+          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
           layoutNode(node.nextYes, columns.left, nextY, positioned, 'Yes', 'bottom', 'top');
         }
       }
@@ -210,12 +211,12 @@ export function calculateLayout(
           layoutNode(node.nextNo, columns.right, alignedNoY, positioned, 'No', 'right', 'left');
         } else if (noNode.type === 'decision') {
           // No → Decision: exit BOTTOM, enter TOP (middle column, below)
-          const nextY = y + positioned.height + cfg.nodeSpacing;
+          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
           layoutNode(node.nextNo, columns.middle, nextY, positioned, 'No', 'bottom', 'top');
         } else if (noNode.type === 'period') {
           // No → Period: exit LEFT, enter TOP (left column, below) - LOOP BACK
           console.log(`Connecting decision ${node.id} No path to period ${node.nextNo}`);
-          const nextY = y + positioned.height + cfg.nodeSpacing;
+          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
           layoutNode(node.nextNo, columns.left, nextY, positioned, 'No', 'left', 'top');
         }
       }
@@ -224,7 +225,7 @@ export function calculateLayout(
       if (!hasYes && !hasNo && node.next) {
         const nextNode = chartData.nodes.find(n => n.id === node.next);
         if (nextNode) {
-          const nextY = y + positioned.height + cfg.nodeSpacing;
+          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
           layoutNode(node.next, getNodeColumn(nextNode), nextY, positioned, undefined, 'bottom', 'top');
         }
       }
@@ -234,7 +235,7 @@ export function calculateLayout(
         const nextNode = chartData.nodes.find(n => n.id === node.next);
         if (!nextNode) return;
 
-        const nextY = y + positioned.height + cfg.nodeSpacing;
+        const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
         const targetColumn = getNodeColumn(nextNode);
 
         layoutNode(node.next, targetColumn, nextY, positioned, undefined, 'bottom', 'top');
@@ -243,16 +244,16 @@ export function calculateLayout(
   }
 
   // Start layout from root
-  layoutNode(chartData.rootId, columns.left, 50);
+  layoutNode(chartData.rootId, columns.left * cfg.scale, 50 * cfg.scale);
 
   // Calculate final dimensions
-  const minWidth = columns.right + cfg.outcomeWidth + 100;
-  const calculatedWidth = Math.max(maxX + 100, minWidth);
+  const minWidth = columns.right * cfg.scale + cfg.outcomeWidth * cfg.scale + 100 * cfg.scale;
+  const calculatedWidth = Math.max(maxX + 100 * cfg.scale, minWidth);
 
   return {
     nodes,
     connections,
     width: calculatedWidth,
-    height: maxY + 100,
+    height: maxY + 100 * cfg.scale,
   };
 }

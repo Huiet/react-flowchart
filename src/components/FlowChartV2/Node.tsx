@@ -7,9 +7,10 @@ interface NodeProps {
   y: number;
   width: number;
   height: number;
+  scale?: number;
 }
 
-export const Node: React.FC<NodeProps> = ({ node, x, y, width, height }) => {
+export const Node: React.FC<NodeProps> = ({ node, x, y, width, height, scale = 1 }) => {
   const getNodeStyle = () => {
     switch (node.type) {
       case 'period':
@@ -38,7 +39,7 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height }) => {
   const renderText = () => {
     if (node.type === 'decision' && node.question) {
       const lines = node.question.split('\n');
-      const lineHeight = 14;
+      const lineHeight = 14 * scale;
       const totalHeight = lines.length * lineHeight;
       const startY = y + height / 2 - totalHeight / 2 + lineHeight / 2;
 
@@ -48,7 +49,7 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height }) => {
           textAnchor="middle"
           dominantBaseline="middle"
           fill={style.textColor}
-          fontSize="12"
+          fontSize={12 * scale}
           fontFamily="Arial, sans-serif"
         >
           {lines.map((line, i) => (
@@ -65,7 +66,7 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height }) => {
     }
 
     const lines = node.label.split('\n');
-    const lineHeight = 16;
+    const lineHeight = 16 * scale;
     const totalHeight = lines.length * lineHeight;
     const startY = y + height / 2 - totalHeight / 2 + lineHeight / 2;
 
@@ -75,7 +76,7 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height }) => {
         textAnchor="middle"
         dominantBaseline="middle"
         fill={style.textColor}
-        fontSize="13"
+        fontSize={13 * scale}
         fontWeight={node.type === 'period' ? 'bold' : 'normal'}
         fontFamily="Arial, sans-serif"
       >
@@ -101,8 +102,8 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height }) => {
         height={height}
         fill={style.fill}
         stroke={style.stroke}
-        strokeWidth="2"
-        rx="4"
+        strokeWidth={2 * scale}
+        rx={4 * scale}
       />
       {renderText()}
     </g>

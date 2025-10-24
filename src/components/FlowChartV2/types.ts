@@ -46,6 +46,7 @@ export interface LayoutConfig {
   decisionHeight: number;
   outcomeWidth: number;
   outcomeHeight: number;
+  scale: number;
 }
 
 // Column positions
