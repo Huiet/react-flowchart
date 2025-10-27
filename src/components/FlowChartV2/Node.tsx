@@ -14,22 +14,22 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height, scale = 1
   const getNodeStyle = () => {
     const isActive = node.isActive;
 
-    switch (node.type) {
-      case 'start':
+    switch (node.variant) {
+      case 'primary':
         return {
           fill: '#1e3a5f',
           stroke: '#1e3a5f',
           textColor: '#ffffff',
           strokeWidth: isActive ? 4 : 2,
         };
-      case 'decision':
+      case 'neutral':
         return {
           fill: '#ffffff',
           stroke: '#333333',
           textColor: '#000000',
           strokeWidth: isActive ? 4 : 2,
         };
-      case 'outcome':
+      case 'secondary':
         return {
           fill: '#e6f2ff',
           stroke: '#4a90e2',
@@ -44,9 +44,9 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height, scale = 1
   const renderText = () => {
     const lines = node.label.split('\n');
 
-    // Use smaller font and line height for decision nodes
-    const fontSize = node.type === 'decision' ? 12 : 13;
-    const lineHeight = node.type === 'decision' ? 14 : 16;
+    // Use smaller font and line height for neutral nodes
+    const fontSize = node.variant === 'neutral' ? 12 : 13;
+    const lineHeight = node.variant === 'neutral' ? 14 : 16;
 
     const scaledFontSize = fontSize * scale;
     const scaledLineHeight = lineHeight * scale;
@@ -60,7 +60,7 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height, scale = 1
         dominantBaseline="middle"
         fill={style.textColor}
         fontSize={scaledFontSize}
-        fontWeight={node.type === 'start' ? 'bold' : 'normal'}
+        fontWeight={node.variant === 'primary' ? 'bold' : 'normal'}
         fontFamily="Arial, sans-serif"
       >
         {lines.map((line, i) => (

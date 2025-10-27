@@ -1,16 +1,17 @@
-export type NodeType = 'start' | 'decision' | 'outcome';
+export type NodeVariant = 'primary' | 'neutral' | 'secondary';
 
 // Unified node structure - all nodes have the same properties
 export interface FlowNode {
   id: string;
-  type: NodeType;
+  variant: NodeVariant;  // Dictates the colors: primary, neutral, or secondary
   label: string;
-  isActive?: boolean; // Whether this node is on the active/taken path
+  column?: number;       // Optional column position (1, 2, 3, etc.). Defaults based on variant: primary=1, neutral=2, secondary=3
+  isActive?: boolean;    // Whether this node is on the active/taken path
 
   // Unified navigation properties - any node can link to any other node
-  next?: string;      // Primary next node (used by start, outcome, or single-path decisions)
-  nextYes?: string;   // Yes path (used by decisions)
-  nextNo?: string;    // No path (used by decisions)
+  next?: string;         // Primary next node (used by primary, secondary, or single-path neutral nodes)
+  nextYes?: string;      // Yes path (typically used by neutral nodes)
+  nextNo?: string;       // No path (typically used by neutral nodes)
 }
 
 // Chart data structure
@@ -41,20 +42,18 @@ export interface Connection {
 // Layout configuration
 export interface LayoutConfig {
   nodeSpacing: number;
-  startWidth: number;
-  startHeight: number;
-  decisionWidth: number;
-  decisionHeight: number;
-  outcomeWidth: number;
-  outcomeHeight: number;
+  primaryWidth: number;
+  primaryHeight: number;
+  neutralWidth: number;
+  neutralHeight: number;
+  secondaryWidth: number;
+  secondaryHeight: number;
   scale: number;
 }
 
 // Column positions
 export interface ColumnPositions {
-  left: number;    // Start nodes
-  middle: number;  // Decision nodes
-  right: number;   // Outcome nodes
+  [column: number]: number;  // Map column number to x-position
 }
 
 // Layout result
