@@ -6,7 +6,7 @@ interface ArrowProps {
 }
 
 export const Arrow: React.FC<ArrowProps> = ({ connection }) => {
-  const { from, to, label, fromSide = 'bottom', toSide = 'top' } = connection;
+  const { from, to, label, fromSide = 'bottom', toSide = 'top', isActive } = connection;
 
   // Calculate connection points based on sides
   const getConnectionPoint = (
@@ -134,15 +134,36 @@ export const Arrow: React.FC<ArrowProps> = ({ connection }) => {
 
   const labelPos = getLabelPosition();
 
+  // Determine arrow color and marker based on label and active state
+  let arrowColor = '#333333';
+  let arrowMarker = 'arrowhead-default';
+
+  if (isActive) {
+    if (label === 'Yes') {
+      arrowColor = '#4CAF50';
+      arrowMarker = 'arrowhead-yes';
+    } else if (label === 'No') {
+      arrowColor = '#FF9800';
+      arrowMarker = 'arrowhead-no';
+    } else {
+      arrowColor = '#2196F3';
+      arrowMarker = 'arrowhead-active';
+    }
+  } else if (isActive === false) {
+    // Explicitly inactive
+    arrowColor = '#cccccc';
+    arrowMarker = 'arrowhead-inactive';
+  }
+
   return (
     <g>
       {/* Arrow line */}
       <path
         d={createPath()}
-        stroke="#333333"
+        stroke={arrowColor}
         strokeWidth="2"
         fill="none"
-        markerEnd="url(#arrowhead)"
+        markerEnd={`url(#${arrowMarker})`}
       />
 
       {/* Yes/No indicator */}
@@ -152,7 +173,7 @@ export const Arrow: React.FC<ArrowProps> = ({ connection }) => {
             cx={labelPos.x}
             cy={labelPos.y}
             r="15"
-            fill={label === 'Yes' ? '#4CAF50' : '#FF9800'}
+            fill={isActive === false ? '#9e9e9e' : (label === 'Yes' ? '#4CAF50' : '#FF9800')}
             stroke="none"
           />
           <text

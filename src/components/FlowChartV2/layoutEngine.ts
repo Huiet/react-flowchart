@@ -10,8 +10,8 @@ import type {
 
 const defaultConfig: LayoutConfig = {
   nodeSpacing: 50,
-  periodWidth: 110,
-  periodHeight: 50,
+  startWidth: 110,
+  startHeight: 50,
   decisionWidth: 180,
   decisionHeight: 70,
   outcomeWidth: 200,
@@ -20,7 +20,7 @@ const defaultConfig: LayoutConfig = {
 };
 
 const COLUMN_X_POSITIONS: ColumnPositions = {
-  left: 50,      // Period nodes
+  left: 50,      // Start nodes
   middle: 200,   // Decision nodes
   right: 450,    // Outcome nodes
 };
@@ -43,8 +43,8 @@ export function calculateLayout(
 
   function getNodeDimensions(node: FlowNode) {
     switch (node.type) {
-      case 'period':
-        return { width: cfg.periodWidth * cfg.scale, height: cfg.periodHeight * cfg.scale };
+      case 'start':
+        return { width: cfg.startWidth * cfg.scale, height: cfg.startHeight * cfg.scale };
       case 'decision':
         return { width: cfg.decisionWidth * cfg.scale, height: cfg.decisionHeight * cfg.scale };
       case 'outcome':
@@ -54,7 +54,7 @@ export function calculateLayout(
 
   function getNodeColumn(node: FlowNode): number {
     switch (node.type) {
-      case 'period':
+      case 'start':
         return columns.left * cfg.scale;
       case 'decision':
         return columns.middle * cfg.scale;
@@ -102,12 +102,16 @@ export function calculateLayout(
       // Node already positioned - just create connection if parent exists
       if (parentNode && nodeMap.has(nodeId)) {
         const existingNode = nodeMap.get(nodeId)!;
+        // Mark connection as active if both nodes are active
+        const isActive = parentNode.node.isActive && existingNode.node.isActive;
+
         connections.push({
           from: parentNode,
           to: existingNode,
           label: connectionLabel,
           fromSide: explicitFromSide || 'right',
           toSide: explicitToSide || 'left',
+          isActive,
         });
       }
       return;
@@ -126,26 +130,30 @@ export function calculateLayout(
 
     // Create connection from parent if exists
     if (parentNode) {
+      // Mark connection as active if both nodes are active
+      const isActive = parentNode.node.isActive && positioned.node.isActive;
+
       connections.push({
         from: parentNode,
         to: positioned,
         label: connectionLabel,
         fromSide: explicitFromSide || 'right',
         toSide: explicitToSide || 'left',
+        isActive,
       });
     }
 
     // Handle navigation based on node type and available paths
-    if (node.type === 'period') {
-      // Period → next node (usually decision)
+    if (node.type === 'start') {
+      // Start → next node (usually decision)
       if (node.next) {
         const nextNode = chartData.nodes.find(n => n.id === node.next);
         if (nextNode) {
           // Calculate Y offset to align midpoints for horizontal arrow
           const nextDims = getNodeDimensions(nextNode);
-          const periodMidpoint = positioned.height / 2;
+          const startMidpoint = positioned.height / 2;
           const nextMidpoint = nextDims.height / 2;
-          const alignedY = y + periodMidpoint - nextMidpoint;
+          const alignedY = y + startMidpoint - nextMidpoint;
 
           layoutNode(node.next, columns.middle, alignedY, positioned, undefined, 'right', 'left');
         }
@@ -181,8 +189,8 @@ export function calculateLayout(
         } else if (yesNode.type === 'decision') {
           // Yes → Decision (middle column, same level)
           layoutNode(node.nextYes, columns.middle, yesY, positioned, 'Yes', 'bottom', 'top');
-        } else if (yesNode.type === 'period') {
-          // Yes → Period (left column, below)
+        } else if (yesNode.type === 'start') {
+          // Yes → Start (left column, below)
           const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
           layoutNode(node.nextYes, columns.left, nextY, positioned, 'Yes', 'bottom', 'top');
         }
@@ -213,9 +221,9 @@ export function calculateLayout(
           // No → Decision: exit BOTTOM, enter TOP (middle column, below)
           const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
           layoutNode(node.nextNo, columns.middle, nextY, positioned, 'No', 'bottom', 'top');
-        } else if (noNode.type === 'period') {
-          // No → Period: exit LEFT, enter TOP (left column, below) - LOOP BACK
-          console.log(`Connecting decision ${node.id} No path to period ${node.nextNo}`);
+        } else if (noNode.type === 'start') {
+          // No → Start: exit LEFT, enter TOP (left column, below) - LOOP BACK
+          console.log(`Connecting decision ${node.id} No path to start ${node.nextNo}`);
           const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
           layoutNode(node.nextNo, columns.left, nextY, positioned, 'No', 'left', 'top');
         }

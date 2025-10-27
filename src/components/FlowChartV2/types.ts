@@ -1,14 +1,14 @@
-export type NodeType = 'period' | 'decision' | 'outcome';
+export type NodeType = 'start' | 'decision' | 'outcome';
 
 // Unified node structure - all nodes have the same properties
 export interface FlowNode {
   id: string;
   type: NodeType;
   label: string;
-  question?: string; // Only used for decision nodes
+  isActive?: boolean; // Whether this node is on the active/taken path
 
   // Unified navigation properties - any node can link to any other node
-  next?: string;      // Primary next node (used by period, outcome, or single-path decisions)
+  next?: string;      // Primary next node (used by start, outcome, or single-path decisions)
   nextYes?: string;   // Yes path (used by decisions)
   nextNo?: string;    // No path (used by decisions)
 }
@@ -35,13 +35,14 @@ export interface Connection {
   label?: 'Yes' | 'No';
   fromSide: 'top' | 'right' | 'bottom' | 'left';
   toSide: 'top' | 'right' | 'bottom' | 'left';
+  isActive?: boolean; // Whether this connection is on the active/taken path
 }
 
 // Layout configuration
 export interface LayoutConfig {
   nodeSpacing: number;
-  periodWidth: number;
-  periodHeight: number;
+  startWidth: number;
+  startHeight: number;
   decisionWidth: number;
   decisionHeight: number;
   outcomeWidth: number;
@@ -51,7 +52,7 @@ export interface LayoutConfig {
 
 // Column positions
 export interface ColumnPositions {
-  left: number;    // Period nodes
+  left: number;    // Start nodes
   middle: number;  // Decision nodes
   right: number;   // Outcome nodes
 }

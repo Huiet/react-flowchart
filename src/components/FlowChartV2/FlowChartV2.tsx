@@ -44,10 +44,11 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
         xmlns="http://www.w3.org/2000/svg"
         style={{ minWidth: '100%' }}
       >
-        {/* Define arrowhead marker */}
+        {/* Define arrowhead markers for different colors */}
         <defs>
+          {/* Default gray arrowhead */}
           <marker
-            id="arrowhead"
+            id="arrowhead-default"
             markerWidth={6 * finalScale}
             markerHeight={6 * finalScale}
             refX={5.5 * finalScale}
@@ -57,6 +58,62 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             <polygon
               points={`0 0.5, ${6 * finalScale} ${2.5 * finalScale}, 0 ${4.5 * finalScale}`}
               fill="#333333"
+            />
+          </marker>
+          {/* Light gray arrowhead for inactive paths */}
+          <marker
+            id="arrowhead-inactive"
+            markerWidth={6 * finalScale}
+            markerHeight={6 * finalScale}
+            refX={5.5 * finalScale}
+            refY={2.5 * finalScale}
+            orient="auto"
+          >
+            <polygon
+              points={`0 0.5, ${6 * finalScale} ${2.5 * finalScale}, 0 ${4.5 * finalScale}`}
+              fill="#cccccc"
+            />
+          </marker>
+          {/* Green arrowhead for Yes paths */}
+          <marker
+            id="arrowhead-yes"
+            markerWidth={6 * finalScale}
+            markerHeight={6 * finalScale}
+            refX={5.5 * finalScale}
+            refY={2.5 * finalScale}
+            orient="auto"
+          >
+            <polygon
+              points={`0 0.5, ${6 * finalScale} ${2.5 * finalScale}, 0 ${4.5 * finalScale}`}
+              fill="#4CAF50"
+            />
+          </marker>
+          {/* Orange arrowhead for No paths */}
+          <marker
+            id="arrowhead-no"
+            markerWidth={6 * finalScale}
+            markerHeight={6 * finalScale}
+            refX={5.5 * finalScale}
+            refY={2.5 * finalScale}
+            orient="auto"
+          >
+            <polygon
+              points={`0 0.5, ${6 * finalScale} ${2.5 * finalScale}, 0 ${4.5 * finalScale}`}
+              fill="#FF9800"
+            />
+          </marker>
+          {/* Blue arrowhead for active non-labeled paths */}
+          <marker
+            id="arrowhead-active"
+            markerWidth={6 * finalScale}
+            markerHeight={6 * finalScale}
+            refX={5.5 * finalScale}
+            refY={2.5 * finalScale}
+            orient="auto"
+          >
+            <polygon
+              points={`0 0.5, ${6 * finalScale} ${2.5 * finalScale}, 0 ${4.5 * finalScale}`}
+              fill="#2196F3"
             />
           </marker>
         </defs>
@@ -103,7 +160,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
         {/* Render arrow lines first (behind everything) */}
         {layout.connections.map((connection, index) => {
-          const { from, to, fromSide, toSide } = connection;
+          const { from, to, fromSide, toSide, isActive, label } = connection;
 
           const getConnectionPoint = (
             node: typeof from | typeof to,
@@ -157,14 +214,35 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             pathD = `M ${start.x} ${start.y} L ${start.x} ${offsetY} L ${end.x} ${offsetY} L ${end.x} ${end.y}`;
           }
 
+          // Determine arrow color and marker based on label and active state
+          let arrowColor = '#333333';
+          let arrowMarker = 'arrowhead-default';
+
+          if (isActive) {
+            if (label === 'Yes') {
+              arrowColor = '#4CAF50';
+              arrowMarker = 'arrowhead-yes';
+            } else if (label === 'No') {
+              arrowColor = '#FF9800';
+              arrowMarker = 'arrowhead-no';
+            } else {
+              arrowColor = '#2196F3';
+              arrowMarker = 'arrowhead-active';
+            }
+          } else if (isActive === false) {
+            // Explicitly inactive
+            arrowColor = '#cccccc';
+            arrowMarker = 'arrowhead-inactive';
+          }
+
           return (
             <path
               key={`arrow-line-${index}`}
               d={pathD}
-              stroke="#333333"
+              stroke={arrowColor}
               strokeWidth={2 * finalScale}
               fill="none"
-              markerEnd="url(#arrowhead)"
+              markerEnd={`url(#${arrowMarker})`}
             />
           );
         })}
@@ -186,7 +264,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
         {layout.connections.map((connection, index) => {
           if (!connection.label) return null;
 
-          const { from, to, label, fromSide, toSide } = connection;
+          const { from, to, label, fromSide, toSide, isActive } = connection;
 
           const getConnectionPoint = (
             node: typeof from | typeof to,
@@ -251,13 +329,20 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             labelPos = { x: midX, y: offsetY };
           }
 
+          // Determine circle color based on active state
+          let circleColor = label === 'Yes' ? '#4CAF50' : '#FF9800';
+          if (isActive === false) {
+            // Use gray for inactive circles
+            circleColor = '#9e9e9e';
+          }
+
           return (
             <g key={`label-${index}`}>
               <circle
                 cx={labelPos.x}
                 cy={labelPos.y}
                 r={15 * finalScale}
-                fill={label === 'Yes' ? '#4CAF50' : '#FF9800'}
+                fill={circleColor}
                 stroke="none"
               />
               <text
