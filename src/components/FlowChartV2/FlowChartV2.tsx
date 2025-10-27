@@ -104,7 +104,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     x2: number,
     node: PositionedNode
   ): boolean => {
-    const buffer = 10 * finalScale;
+    const buffer = 25 * finalScale; // Much larger buffer for safety
     const minX = Math.min(x1, x2);
     const maxX = Math.max(x1, x2);
 
@@ -128,7 +128,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     y2: number,
     node: PositionedNode
   ): boolean => {
-    const buffer = 10 * finalScale;
+    const buffer = 25 * finalScale; // Much larger buffer for safety
     const minY = Math.min(y1, y2);
     const maxY = Math.max(y1, y2);
 
@@ -143,6 +143,60 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     }
 
     return true;
+  };
+
+  // Find a safe horizontal corridor between nodes - simpler version
+  const findSafeHorizontalY = (
+    x1: number,
+    x2: number,
+    preferredY: number,
+    otherNodes: PositionedNode[]
+  ): number => {
+    const minX = Math.min(x1, x2);
+    const maxX = Math.max(x1, x2);
+
+    // Try the preferred Y first
+    if (!otherNodes.some(node => horizontalSegmentIntersectsNode(preferredY, minX, maxX, node))) {
+      return preferredY;
+    }
+
+    // Try above and below each node systematically
+    const testOffsets = [-50, 50, -100, 100, -150, 150];
+    for (const offset of testOffsets) {
+      const testY = preferredY + offset * finalScale;
+      if (!otherNodes.some(node => horizontalSegmentIntersectsNode(testY, minX, maxX, node))) {
+        return testY;
+      }
+    }
+
+    return preferredY; // Fallback
+  };
+
+  // Find a safe vertical corridor between nodes - simpler version
+  const findSafeVerticalX = (
+    y1: number,
+    y2: number,
+    preferredX: number,
+    otherNodes: PositionedNode[]
+  ): number => {
+    const minY = Math.min(y1, y2);
+    const maxY = Math.max(y1, y2);
+
+    // Try the preferred X first
+    if (!otherNodes.some(node => verticalSegmentIntersectsNode(preferredX, minY, maxY, node))) {
+      return preferredX;
+    }
+
+    // Try left and right of each node systematically
+    const testOffsets = [-50, 50, -100, 100, -150, 150];
+    for (const offset of testOffsets) {
+      const testX = preferredX + offset * finalScale;
+      if (!otherNodes.some(node => verticalSegmentIntersectsNode(testX, minY, maxY, node))) {
+        return testX;
+      }
+    }
+
+    return preferredX; // Fallback
   };
 
   return (
@@ -276,170 +330,120 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
           const midY = start.y + (end.y - start.y) / 2;
           const midX = start.x + (end.x - start.x) / 2;
 
+          // Calculate a deterministic offset for this connection to prevent overlapping parallel lines
+          // Use a simple hash of the connection to get a consistent offset
+          const connectionHash = (from.node.id + to.node.id + index).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const offsetAmount = 4 * finalScale; // 4px offset increments
+          const corridorOffset = ((connectionHash % 5) - 2) * offsetAmount; // Range: -8px to +8px
+
           // Create arrow path with minimum travel distance in exit direction
-          const minTravelDistance = 25 * finalScale; // Minimum distance to travel in exit direction
+          // Base minimum is 8px, but we add the absolute value of offset to create gaps between arrows
+          const baseMinDistance = 8 * finalScale;
+          const exitDistance = baseMinDistance + Math.abs(corridorOffset);
+          const entryDistance = baseMinDistance + Math.abs(corridorOffset);
+
           let pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
 
-          // Calculate initial offset point based on exit side
+          // Calculate initial offset point based on exit side - MUST travel this distance perpendicular
           let firstPoint: { x: number; y: number };
           switch (fromSide) {
             case 'right':
-              firstPoint = { x: start.x + minTravelDistance, y: start.y };
+              firstPoint = { x: start.x + exitDistance, y: start.y };
               break;
             case 'left':
-              firstPoint = { x: start.x - minTravelDistance, y: start.y };
+              firstPoint = { x: start.x - exitDistance, y: start.y };
               break;
             case 'bottom':
-              firstPoint = { x: start.x, y: start.y + minTravelDistance };
+              firstPoint = { x: start.x, y: start.y + exitDistance };
               break;
             case 'top':
-              firstPoint = { x: start.x, y: start.y - minTravelDistance };
+              firstPoint = { x: start.x, y: start.y - exitDistance };
               break;
           }
 
-          // Calculate approach point based on entry side
+          // Calculate approach point based on entry side - MUST approach from this direction
           let lastPoint: { x: number; y: number };
           switch (toSide) {
             case 'right':
-              lastPoint = { x: end.x + minTravelDistance, y: end.y };
+              lastPoint = { x: end.x + entryDistance, y: end.y };
               break;
             case 'left':
-              lastPoint = { x: end.x - minTravelDistance, y: end.y };
+              lastPoint = { x: end.x - entryDistance, y: end.y };
               break;
             case 'bottom':
-              lastPoint = { x: end.x, y: end.y + minTravelDistance };
+              lastPoint = { x: end.x, y: end.y + entryDistance };
               break;
             case 'top':
-              lastPoint = { x: end.x, y: end.y - minTravelDistance };
+              lastPoint = { x: end.x, y: end.y - entryDistance };
               break;
           }
 
-          // Build path with Manhattan routing, avoiding 180-degree turns
-          // Check if this is a 180-degree reversal case
-          const is180Reversal =
-            (fromSide === 'bottom' && toSide === 'top') ||
-            (fromSide === 'top' && toSide === 'bottom') ||
-            (fromSide === 'right' && toSide === 'left') ||
-            (fromSide === 'left' && toSide === 'right');
+          // Build path with Manhattan routing
+          // EVERY path must: start → firstPoint (perpendicular exit) → routing → lastPoint (perpendicular entry) → end
 
-          if (is180Reversal) {
-            // For 180-degree cases, must go perpendicular before reversing
-            if (fromSide === 'bottom' && toSide === 'top') {
-              // Exit bottom, must go down, then horizontal, then up
-              // Check if direct horizontal route would collide with nodes
-              const otherNodes = layout.nodes.filter(
-                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
-              );
+          // Get list of nodes to avoid (all except source and destination)
+          const otherNodes = layout.nodes.filter(
+            (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
+          );
 
-              let horizontalY = firstPoint.y;
-              let needsGutterRoute = otherNodes.some((node) =>
-                horizontalSegmentIntersectsNode(horizontalY, start.x, end.x, node)
-              );
+          // Determine routing based on exit and entry directions
+          const exitVertical = fromSide === 'top' || fromSide === 'bottom';
+          const entryVertical = toSide === 'top' || toSide === 'bottom';
 
-              if (needsGutterRoute) {
-                // Route around nodes using gutter (go to side, then up/down in gutter, then horizontal)
-                const gutterX = start.x < end.x ? from.x + from.width + 30 * finalScale : from.x - 30 * finalScale;
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${gutterX} ${firstPoint.y} L ${gutterX} ${lastPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
-              } else {
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${end.x} ${firstPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
-              }
-            } else if (fromSide === 'top' && toSide === 'bottom') {
-              // Exit top, must go up, then horizontal, then down
-              const otherNodes = layout.nodes.filter(
-                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
-              );
-
-              let horizontalY = firstPoint.y;
-              let needsGutterRoute = otherNodes.some((node) =>
-                horizontalSegmentIntersectsNode(horizontalY, start.x, end.x, node)
-              );
-
-              if (needsGutterRoute) {
-                const gutterX = start.x < end.x ? from.x + from.width + 30 * finalScale : from.x - 30 * finalScale;
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${gutterX} ${firstPoint.y} L ${gutterX} ${lastPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
-              } else {
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${end.x} ${firstPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
-              }
-            } else if (fromSide === 'right' && toSide === 'left') {
-              // Exit right, must go right, then vertical, then left
-              const otherNodes = layout.nodes.filter(
-                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
-              );
-
-              let verticalX = firstPoint.x;
-              let needsGutterRoute = otherNodes.some((node) =>
-                verticalSegmentIntersectsNode(verticalX, start.y, end.y, node)
-              );
-
-              if (needsGutterRoute) {
-                const gutterY = start.y < end.y ? from.y + from.height + 30 * finalScale : from.y - 30 * finalScale;
-                pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${gutterY} L ${lastPoint.x} ${gutterY} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
-              } else {
-                pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
-              }
-            } else if (fromSide === 'left' && toSide === 'right') {
-              // Exit left, must go left, then vertical, then right
-              const otherNodes = layout.nodes.filter(
-                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
-              );
-
-              let verticalX = firstPoint.x;
-              let needsGutterRoute = otherNodes.some((node) =>
-                verticalSegmentIntersectsNode(verticalX, start.y, end.y, node)
-              );
-
-              if (needsGutterRoute) {
-                const gutterY = start.y < end.y ? from.y + from.height + 30 * finalScale : from.y - 30 * finalScale;
-                pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${gutterY} L ${lastPoint.x} ${gutterY} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
-              } else {
-                pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
-              }
-            }
+          if (exitVertical && entryVertical) {
+            // CASE 1: Vertical exit → Vertical entry (e.g., bottom → top, top → bottom)
+            // Path: start → vertical to firstPoint → horizontal across → vertical to lastPoint → end
+            // Apply offset at the corner points where direction changes
+            const safeY = findSafeHorizontalY(start.x, end.x, firstPoint.y, otherNodes);
+            const corner1Y = firstPoint.y + corridorOffset; // First corner after exit
+            const corner2Y = safeY + corridorOffset; // Corridor segment
+            pathD = `M ${start.x} ${start.y} L ${start.x} ${corner1Y} L ${start.x} ${corner2Y} L ${end.x} ${corner2Y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+          } else if (!exitVertical && !entryVertical) {
+            // CASE 2: Horizontal exit → Horizontal entry (e.g., right → left, left → right)
+            // Path: start → horizontal to firstPoint → vertical down/up → horizontal to lastPoint → end
+            // Apply offset at the corner points where direction changes
+            const safeX = findSafeVerticalX(start.y, end.y, firstPoint.x, otherNodes);
+            const corner1X = firstPoint.x + corridorOffset; // First corner after exit
+            const corner2X = safeX + corridorOffset; // Corridor segment
+            pathD = `M ${start.x} ${start.y} L ${corner1X} ${start.y} L ${corner2X} ${start.y} L ${corner2X} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+          } else if (exitVertical && !entryVertical) {
+            // CASE 3: Vertical exit → Horizontal entry (e.g., bottom → left, top → right)
+            // Path: start → vertical to firstPoint → horizontal across → horizontal to lastPoint → end
+            // Apply offset at the corner points
+            const safeY = findSafeHorizontalY(start.x, end.x, firstPoint.y, otherNodes);
+            const corner1Y = firstPoint.y + corridorOffset;
+            const corner2Y = safeY + corridorOffset;
+            pathD = `M ${start.x} ${start.y} L ${start.x} ${corner1Y} L ${start.x} ${corner2Y} L ${end.x} ${corner2Y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
           } else {
-            // Non-180 cases - can go more directly, but still check for collisions
-            if ((fromSide === 'bottom' || fromSide === 'top') && (toSide === 'left' || toSide === 'right')) {
-              // Vertical exit to horizontal entry
-              const otherNodes = layout.nodes.filter(
-                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
-              );
+            // CASE 4: Horizontal exit → Vertical entry (e.g., right → bottom, left → top)
+            // Path: start → horizontal to firstPoint → vertical to safe corridor → horizontal to target X → vertical to lastPoint → end
+            // Check if we need special routing to avoid passing through source node
+            const exitingLeft = fromSide === 'left';
+            const exitingRight = fromSide === 'right';
+            const targetIsBelow = end.y > start.y;
 
-              let needsGutterRoute = otherNodes.some(
-                (node) =>
-                  verticalSegmentIntersectsNode(start.x, start.y, end.y, node) ||
-                  horizontalSegmentIntersectsNode(end.y, start.x, end.x, node)
-              );
+            // If exiting left but target is to the right (or vice versa), route perpendicular first
+            const needsSpecialRouting =
+              (exitingLeft && end.x > start.x) ||
+              (exitingRight && end.x < start.x);
 
-              if (needsGutterRoute) {
-                // Use midpoint routing
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
-              } else {
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
-              }
-            } else if ((fromSide === 'left' || fromSide === 'right') && (toSide === 'top' || toSide === 'bottom')) {
-              // Horizontal exit to vertical entry
-              const otherNodes = layout.nodes.filter(
-                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
-              );
-
-              let needsGutterRoute = otherNodes.some(
-                (node) =>
-                  horizontalSegmentIntersectsNode(start.y, start.x, end.x, node) ||
-                  verticalSegmentIntersectsNode(end.x, start.y, end.y, node)
-              );
-
-              if (needsGutterRoute) {
-                // Use midpoint routing
-                pathD = `M ${start.x} ${start.y} L ${midX} ${start.y} L ${midX} ${end.y} L ${end.x} ${end.y}`;
-              } else {
-                pathD = `M ${start.x} ${start.y} L ${end.x} ${start.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
-              }
+            if (needsSpecialRouting) {
+              // Go horizontal to firstPoint, then vertical to clear the node, then horizontal to target X, then vertical to lastPoint, then end
+              const intermediateY = targetIsBelow
+                ? from.y + from.height + 20 * finalScale
+                : from.y - 20 * finalScale;
+              const safeY = findSafeHorizontalY(firstPoint.x, end.x, intermediateY, otherNodes);
+              const cornerY = safeY + corridorOffset;
+              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${cornerY} L ${end.x} ${cornerY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
             } else {
-              // Same direction (e.g., bottom to bottom, right to right) - use midpoint
-              if (fromSide === 'bottom' || fromSide === 'top') {
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
-              } else {
-                pathD = `M ${start.x} ${start.y} L ${midX} ${start.y} L ${midX} ${end.y} L ${end.x} ${end.y}`;
-              }
+              // Normal routing: start → horizontal to firstPoint → vertical → horizontal to target X → vertical to lastPoint → end
+              // Need to find safe horizontal corridor to traverse to get to target X, then enter vertically
+              const intermediateY = targetIsBelow
+                ? Math.max(firstPoint.y, lastPoint.y) + 20 * finalScale
+                : Math.min(firstPoint.y, lastPoint.y) - 20 * finalScale;
+              const safeY = findSafeHorizontalY(firstPoint.x, end.x, intermediateY, otherNodes);
+              const cornerY = safeY + corridorOffset;
+              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${cornerY} L ${end.x} ${cornerY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
             }
           }
 
@@ -569,61 +573,30 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
           const start = getStaggeredConnectionPoint(from, fromSide, true, index);
           const end = getStaggeredConnectionPoint(to, toSide, false, index);
 
-          // Calculate control points (same as arrow path logic)
-          const minTravelDistance = 25 * finalScale;
-          let firstPoint: { x: number; y: number };
-          switch (fromSide) {
-            case 'right':
-              firstPoint = { x: start.x + minTravelDistance, y: start.y };
-              break;
-            case 'left':
-              firstPoint = { x: start.x - minTravelDistance, y: start.y };
-              break;
-            case 'bottom':
-              firstPoint = { x: start.x, y: start.y + minTravelDistance };
-              break;
-            case 'top':
-              firstPoint = { x: start.x, y: start.y - minTravelDistance };
-              break;
-          }
+          // Calculate label position on the first segment after exit distance
+          // Match the same logic as arrow paths for consistency
+          const connectionHash = (from.node.id + to.node.id + index).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const offsetAmount = 4 * finalScale;
+          const corridorOffset = ((connectionHash % 5) - 2) * offsetAmount;
+          const baseMinDistance = 8 * finalScale;
+          const exitDistance = baseMinDistance + Math.abs(corridorOffset);
 
-          // Calculate label position based on path type
           let labelPos: { x: number; y: number };
 
-          // Check if this is a 180-degree reversal
-          const is180Reversal =
-            (fromSide === 'bottom' && toSide === 'top') ||
-            (fromSide === 'top' && toSide === 'bottom') ||
-            (fromSide === 'right' && toSide === 'left') ||
-            (fromSide === 'left' && toSide === 'right');
-
-          if (is180Reversal) {
-            // For 180-degree cases, place label on the horizontal/vertical crossover segment
-            if (fromSide === 'bottom' && toSide === 'top') {
-              // Label on horizontal segment at firstPoint.y
-              labelPos = { x: (start.x + end.x) / 2, y: firstPoint.y };
-            } else if (fromSide === 'top' && toSide === 'bottom') {
-              labelPos = { x: (start.x + end.x) / 2, y: firstPoint.y };
-            } else if (fromSide === 'right' && toSide === 'left') {
-              // Label on vertical segment at firstPoint.x
-              labelPos = { x: firstPoint.x, y: (start.y + end.y) / 2 };
-            } else if (fromSide === 'left' && toSide === 'right') {
-              labelPos = { x: firstPoint.x, y: (start.y + end.y) / 2 };
-            } else {
-              labelPos = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-            }
-          } else {
-            // Non-180 cases - place on first major segment
-            if ((fromSide === 'bottom' || fromSide === 'top') && (toSide === 'left' || toSide === 'right')) {
-              // Vertical to horizontal: label on vertical segment
-              labelPos = { x: start.x, y: (start.y + end.y) / 2 };
-            } else if ((fromSide === 'left' || fromSide === 'right') && (toSide === 'top' || toSide === 'bottom')) {
-              // Horizontal to vertical: label on horizontal segment
-              labelPos = { x: (start.x + end.x) / 2, y: start.y };
-            } else {
-              // Same direction or straight line
-              labelPos = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-            }
+          // Place label on first segment (halfway through the exit distance)
+          switch (fromSide) {
+            case 'right':
+              labelPos = { x: start.x + exitDistance / 2, y: start.y };
+              break;
+            case 'left':
+              labelPos = { x: start.x - exitDistance / 2, y: start.y };
+              break;
+            case 'bottom':
+              labelPos = { x: start.x, y: start.y + exitDistance / 2 };
+              break;
+            case 'top':
+              labelPos = { x: start.x, y: start.y - exitDistance / 2 };
+              break;
           }
 
           // Determine circle color based on connection color and active state
