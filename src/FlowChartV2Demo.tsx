@@ -14,7 +14,7 @@ const example1_Financial: FlowChartData = {
       id: 'period-1',
       variant: 'primary',
       label: 'Period 1',
-      next: 'decision-1',
+      connections: [{ targetId: 'decision-1' }],
     },
 
     // Decision 1: 100% autocall barrier
@@ -22,8 +22,10 @@ const example1_Financial: FlowChartData = {
       id: 'decision-1',
       variant: 'neutral',
       label: 'Are all underlyings at or\nabove the 100%\nautocall barrier?',
-      nextYes: 'outcome-early-1',
-      nextNo: 'decision-2',
+      connections: [
+        { targetId: 'outcome-early-1', label: 'Yes', color: 'green' },
+        { targetId: 'decision-2', label: 'No', color: 'red' },
+      ],
     },
 
     // Outcome: Early redemption from decision 1
@@ -31,7 +33,7 @@ const example1_Financial: FlowChartData = {
       id: 'outcome-early-1',
       variant: 'secondary',
       label: 'Early Redemption +\n8.68% coupon',
-      // Terminal - no next
+      connections: [], // Terminal - no next
     },
 
     // Decision 2: 80% coupon barrier
@@ -39,8 +41,10 @@ const example1_Financial: FlowChartData = {
       id: 'decision-2',
       variant: 'neutral',
       label: 'Are all underlyings at or\nabove the 80% coupon\nbarrier?',
-      nextYes: 'outcome-payment-1',
-      nextNo: 'period-2-3', // ← Goes DIRECTLY to Period 2-3!
+      connections: [
+        { targetId: 'outcome-payment-1', label: 'Yes', color: 'green' },
+        { targetId: 'period-2-3', label: 'No', color: 'red' }, // Goes DIRECTLY to Period 2-3!
+      ],
     },
 
     // Outcome: Payment from decision 2 yes path
@@ -48,7 +52,7 @@ const example1_Financial: FlowChartData = {
       id: 'outcome-payment-1',
       variant: 'secondary',
       label: 'Payment of 8.68%\ncoupon (3 monthly)',
-      next: 'period-2-3', // ← Also goes to Period 2-3!
+      connections: [{ targetId: 'period-2-3' }], // Also goes to Period 2-3!
     },
 
     // Period 2-3 (both paths above converge here)
@@ -56,7 +60,7 @@ const example1_Financial: FlowChartData = {
       id: 'period-2-3',
       variant: 'primary',
       label: 'Periods\n2-3',
-      next: 'decision-3',
+      connections: [{ targetId: 'decision-3' }],
     },
 
     // Decision 3: 100% autocall barrier
@@ -64,8 +68,10 @@ const example1_Financial: FlowChartData = {
       id: 'decision-3',
       variant: 'neutral',
       label: 'Are all underlyings at or\nabove the 100%\nautocall barrier?',
-      nextYes: 'outcome-early-2',
-      nextNo: 'decision-4',
+      connections: [
+        { targetId: 'outcome-early-2', label: 'Yes', color: 'green' },
+        { targetId: 'decision-4', label: 'No', color: 'red' },
+      ],
     },
 
     // Outcome: Early redemption from decision 3
@@ -73,7 +79,7 @@ const example1_Financial: FlowChartData = {
       id: 'outcome-early-2',
       variant: 'secondary',
       label: 'Early Redemption +\n8.68% coupon',
-      // Terminal - no next
+      connections: [], // Terminal - no next
     },
 
     // Decision 4: 80% coupon barrier
@@ -81,8 +87,10 @@ const example1_Financial: FlowChartData = {
       id: 'decision-4',
       variant: 'neutral',
       label: 'Are all underlyings at or\nabove the 80% coupon\nbarrier?',
-      nextYes: 'outcome-payment-2',
-      nextNo: 'period-4',
+      connections: [
+        { targetId: 'outcome-payment-2', label: 'Yes', color: 'green' },
+        { targetId: 'period-4', label: 'No', color: 'red' },
+      ],
     },
 
     // Outcome: Payment from decision 4
@@ -90,7 +98,7 @@ const example1_Financial: FlowChartData = {
       id: 'outcome-payment-2',
       variant: 'secondary',
       label: 'Payment of 8.68%\ncoupon (3 monthly)',
-      next: 'period-4',
+      connections: [{ targetId: 'period-4' }],
     },
 
     // Period 4
@@ -98,7 +106,7 @@ const example1_Financial: FlowChartData = {
       id: 'period-4',
       variant: 'primary',
       label: 'Period 4\n(Maturity\nDate)',
-      next: 'decision-5',
+      connections: [{ targetId: 'decision-5' }],
     },
 
     // Decision 5: Final decision
@@ -106,8 +114,10 @@ const example1_Financial: FlowChartData = {
       id: 'decision-5',
       variant: 'neutral',
       label: 'Are all underlyings\nabove the 80 %\nautocall/protection\nbarrier?',
-      nextYes: 'outcome-final-yes',
-      nextNo: 'outcome-final-no',
+      connections: [
+        { targetId: 'outcome-final-yes', label: 'Yes', color: 'green' },
+        { targetId: 'outcome-final-no', label: 'No', color: 'red' },
+      ],
     },
 
     // Final outcomes
@@ -115,313 +125,189 @@ const example1_Financial: FlowChartData = {
       id: 'outcome-final-yes',
       variant: 'secondary',
       label: '100% of Capital + 8.68%\ncoupon',
+      connections: [],
     },
 
     {
       id: 'outcome-final-no',
       variant: 'secondary',
       label: 'Investor receives the\nperformance of the worst\nperforming underlying',
+      connections: [],
     },
   ],
 };
 
 // ============================================================================
-// EXAMPLE 2: Flexible Column Positioning
+// EXAMPLE 2: Loop-Back Pattern
 // ============================================================================
-// This shows how variant and column are decoupled
-const example2_FlexibleColumns: FlowChartData = {
-  rootId: 'start',
-  nodes: [
-    {
-      id: 'start',
-      variant: 'primary',
-      column: 1,
-      label: 'Start Process',
-      next: 'check',
-    },
-    {
-      id: 'check',
-      variant: 'neutral',
-      column: 2,
-      label: 'Valid\nInput?',
-      nextYes: 'process-a',
-      nextNo: 'error',
-    },
-    {
-      id: 'process-a',
-      variant: 'secondary',
-      column: 3,
-      label: 'Process\nSuccessfully',
-      next: 'review',
-    },
-    {
-      id: 'error',
-      variant: 'secondary',
-      column: 3,
-      label: 'Error:\nInvalid Data',
-      // Terminal
-    },
-    // This neutral node is in column 1 (usually primary column) - showcasing flexibility
-    {
-      id: 'review',
-      variant: 'neutral',
-      column: 1,
-      label: 'Review\nRequired?',
-      nextYes: 'manual-review',
-      nextNo: 'complete',
-    },
-    // This primary node is in column 2 (usually neutral column) - showcasing flexibility
-    {
-      id: 'manual-review',
-      variant: 'primary',
-      column: 2,
-      label: 'Manual\nReview',
-      next: 'complete',
-    },
-    {
-      id: 'complete',
-      variant: 'secondary',
-      column: 3,
-      label: 'Complete',
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 3: Simple Linear Process
-// ============================================================================
-const example3_Linear: FlowChartData = {
-  rootId: 'init',
-  nodes: [
-    {
-      id: 'init',
-      variant: 'primary',
-      label: 'Initialize\nSystem',
-      next: 'load',
-    },
-    {
-      id: 'load',
-      variant: 'neutral',
-      label: 'Load\nConfiguration',
-      next: 'validate',
-    },
-    {
-      id: 'validate',
-      variant: 'neutral',
-      label: 'Validate\nSettings',
-      next: 'start',
-    },
-    {
-      id: 'start',
-      variant: 'secondary',
-      label: 'System\nReady',
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 4: Complex Decision Tree
-// ============================================================================
-const example4_ComplexTree: FlowChartData = {
-  rootId: 'intake',
-  nodes: [
-    {
-      id: 'intake',
-      variant: 'primary',
-      label: 'Customer\nIntake',
-      next: 'type-check',
-    },
-    {
-      id: 'type-check',
-      variant: 'neutral',
-      label: 'Account\nType?',
-      nextYes: 'premium-check',
-      nextNo: 'standard-process',
-    },
-    {
-      id: 'premium-check',
-      variant: 'neutral',
-      label: 'Premium\nCustomer?',
-      nextYes: 'vip-service',
-      nextNo: 'regular-service',
-    },
-    {
-      id: 'vip-service',
-      variant: 'secondary',
-      label: 'VIP\nService',
-      next: 'complete',
-    },
-    {
-      id: 'regular-service',
-      variant: 'secondary',
-      label: 'Regular\nService',
-      next: 'complete',
-    },
-    {
-      id: 'standard-process',
-      variant: 'secondary',
-      label: 'Standard\nProcess',
-      next: 'quality-check',
-    },
-    {
-      id: 'quality-check',
-      variant: 'neutral',
-      column: 1,
-      label: 'Quality\nCheck?',
-      nextYes: 'complete',
-      nextNo: 'escalate',
-    },
-    {
-      id: 'escalate',
-      variant: 'secondary',
-      column: 2,
-      label: 'Escalate\nto Manager',
-      next: 'complete',
-    },
-    {
-      id: 'complete',
-      variant: 'primary',
-      column: 3,
-      label: 'Complete',
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 5: Workflow with Loop
-// ============================================================================
-const example5_Loop: FlowChartData = {
+// Demonstrates arrows pointing back to earlier steps
+const example2_LoopBack: FlowChartData = {
   rootId: 'start',
   nodes: [
     {
       id: 'start',
       variant: 'primary',
       label: 'Start\nProcess',
-      next: 'process-data',
+      connections: [{ targetId: 'process-data' }],
     },
     {
       id: 'process-data',
       variant: 'neutral',
       label: 'Process\nData Batch',
-      next: 'validation',
+      connections: [{ targetId: 'validation' }],
     },
     {
       id: 'validation',
       variant: 'neutral',
       label: 'Data\nValid?',
-      nextYes: 'check-more',
-      nextNo: 'fix-data',
+      connections: [
+        { targetId: 'check-more', label: 'Yes', color: 'green' },
+        { targetId: 'fix-data', label: 'No', color: 'red' },
+      ],
     },
     {
       id: 'fix-data',
       variant: 'secondary',
       label: 'Fix\nIssues',
-      next: 'process-data', // Loop back
+      connections: [
+        { targetId: 'process-data', label: 'Retry', color: 'blue' }, // Loop back
+      ],
     },
     {
       id: 'check-more',
       variant: 'neutral',
       label: 'More Data\nto Process?',
-      nextYes: 'process-data', // Loop back
-      nextNo: 'finalize',
+      connections: [
+        { targetId: 'process-data', label: 'Yes', color: 'green' }, // Loop back
+        { targetId: 'finalize', label: 'No', color: 'red' },
+      ],
     },
     {
       id: 'finalize',
       variant: 'secondary',
       label: 'Finalize\nResults',
+      connections: [],
     },
   ],
 };
 
 // ============================================================================
-// EXAMPLE 6: Multi-Path Convergence
+// EXAMPLE 3: Multiple Connections with Different Colors
 // ============================================================================
-const example6_Convergence: FlowChartData = {
-  rootId: 'entry',
+// Demonstrates multiple arrows from the same node with different colors
+const example3_MultipleConnections: FlowChartData = {
+  rootId: 'intake',
   nodes: [
     {
-      id: 'entry',
+      id: 'intake',
       variant: 'primary',
-      label: 'Entry\nPoint',
-      next: 'route',
+      label: 'Customer\nRequest',
+      connections: [{ targetId: 'priority-check' }],
     },
     {
-      id: 'route',
+      id: 'priority-check',
       variant: 'neutral',
-      label: 'Select\nRoute',
-      nextYes: 'path-a',
-      nextNo: 'path-b',
+      label: 'Priority\nLevel?',
+      connections: [
+        { targetId: 'urgent-path', label: 'Urgent', color: 'red' },
+        { targetId: 'normal-path', label: 'Normal', color: 'blue' },
+        { targetId: 'low-path', label: 'Low', color: 'green' },
+      ],
     },
     {
-      id: 'path-a',
+      id: 'urgent-path',
       variant: 'secondary',
-      label: 'Process\nPath A',
-      next: 'checkpoint',
+      label: 'Immediate\nEscalation',
+      connections: [{ targetId: 'resolution' }],
     },
     {
-      id: 'path-b',
+      id: 'normal-path',
       variant: 'secondary',
-      label: 'Process\nPath B',
-      next: 'checkpoint',
+      label: 'Standard\nProcessing',
+      connections: [{ targetId: 'quality-check' }],
     },
     {
-      id: 'checkpoint',
-      variant: 'primary',
-      label: 'Checkpoint\n(Converged)',
-      next: 'final-check',
+      id: 'low-path',
+      variant: 'secondary',
+      label: 'Queue for\nLater',
+      connections: [{ targetId: 'quality-check' }],
     },
     {
-      id: 'final-check',
+      id: 'quality-check',
       variant: 'neutral',
-      label: 'Final\nCheck OK?',
-      nextYes: 'success',
-      nextNo: 'failure',
-    },
-    {
-      id: 'success',
-      variant: 'secondary',
-      label: 'Success',
-    },
-    {
-      id: 'failure',
-      variant: 'secondary',
-      label: 'Failure',
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 7: Multi-Column Layout (4 columns)
-// ============================================================================
-const example7_MultiColumn: FlowChartData = {
-  rootId: 'stage-1',
-  nodes: [
-    {
-      id: 'stage-1',
-      variant: 'primary',
       column: 1,
-      label: 'Stage 1\nInitiation',
-      next: 'stage-2',
+      label: 'Meets\nStandards?',
+      connections: [
+        { targetId: 'resolution', label: 'Yes', color: 'green' },
+        { targetId: 'rework', label: 'No', color: 'red' },
+      ],
     },
     {
-      id: 'stage-2',
-      variant: 'neutral',
-      column: 2,
-      label: 'Stage 2\nValidation',
-      next: 'stage-3',
-    },
-    {
-      id: 'stage-3',
+      id: 'rework',
       variant: 'secondary',
-      column: 3,
-      label: 'Stage 3\nProcessing',
-      next: 'stage-4',
+      column: 2,
+      label: 'Requires\nRework',
+      connections: [
+        { targetId: 'normal-path', label: 'Reprocess', color: 'orange' }, // Loop back
+      ],
     },
     {
-      id: 'stage-4',
+      id: 'resolution',
       variant: 'primary',
-      column: 4,
-      label: 'Stage 4\nCompletion',
+      column: 3,
+      label: 'Resolved',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 4: Conditional Path with Multiple Decision Points
+// ============================================================================
+const example4_ConditionalFlow: FlowChartData = {
+  rootId: 'init',
+  nodes: [
+    {
+      id: 'init',
+      variant: 'primary',
+      label: 'Initialize',
+      connections: [{ targetId: 'auth-check' }],
+    },
+    {
+      id: 'auth-check',
+      variant: 'neutral',
+      label: 'User\nAuthenticated?',
+      connections: [
+        { targetId: 'role-check', label: 'Yes', color: 'green' },
+        { targetId: 'login', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'login',
+      variant: 'secondary',
+      label: 'Login\nRequired',
+      connections: [{ targetId: 'auth-check', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'role-check',
+      variant: 'neutral',
+      label: 'Has Admin\nRole?',
+      connections: [
+        { targetId: 'admin-panel', label: 'Yes', color: 'green' },
+        { targetId: 'user-panel', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'admin-panel',
+      variant: 'secondary',
+      label: 'Admin\nDashboard',
+      connections: [],
+    },
+    {
+      id: 'user-panel',
+      variant: 'secondary',
+      label: 'User\nDashboard',
+      connections: [],
     },
   ],
 };
@@ -443,58 +329,37 @@ const examples: ExampleDef[] = [
   {
     id: 'financial',
     name: 'Financial Product Workflow',
-    description: 'Complex financial product scenario with multiple decision points and convergence paths',
+    description:
+      'Complex financial product scenario with multiple decision points and convergence paths',
     data: example1_Financial,
     hasActivePath: true,
     maxWidth: 3500,
     scale: 1.1,
   },
   {
-    id: 'flexible',
-    name: 'Flexible Column Positioning',
-    description: 'Demonstrates decoupling of variant (colors) from column (positioning)',
-    data: example2_FlexibleColumns,
+    id: 'loop-back',
+    name: 'Loop-Back Pattern',
+    description: 'Demonstrates arrows pointing back to earlier steps in the workflow',
+    data: example2_LoopBack,
+    hasActivePath: true,
     maxWidth: 650,
     scale: 1,
   },
   {
-    id: 'linear',
-    name: 'Simple Linear Process',
-    description: 'Basic sequential workflow from start to finish',
-    data: example3_Linear,
-    maxWidth: 650,
-    scale: 1,
-  },
-  {
-    id: 'complex-tree',
-    name: 'Complex Decision Tree',
-    description: 'Multiple branching paths with various decision points',
-    data: example4_ComplexTree,
+    id: 'multiple-connections',
+    name: 'Multiple Connections with Colors',
+    description: 'Shows multiple arrows from the same node with different colors and labels',
+    data: example3_MultipleConnections,
+    hasActivePath: true,
     maxWidth: 800,
     scale: 1,
   },
   {
-    id: 'loop',
-    name: 'Workflow with Loop',
-    description: 'Process that loops back for iteration and validation',
-    data: example5_Loop,
+    id: 'conditional-flow',
+    name: 'Conditional Flow',
+    description: 'Authentication and authorization flow with retry logic',
+    data: example4_ConditionalFlow,
     maxWidth: 650,
-    scale: 1,
-  },
-  {
-    id: 'convergence',
-    name: 'Multi-Path Convergence',
-    description: 'Multiple paths that converge at a common checkpoint',
-    data: example6_Convergence,
-    maxWidth: 650,
-    scale: 1,
-  },
-  {
-    id: 'multi-column',
-    name: 'Multi-Column Layout',
-    description: 'Linear flow across 4 columns using explicit column positioning',
-    data: example7_MultiColumn,
-    maxWidth: 900,
     scale: 1,
   },
 ];
@@ -503,14 +368,17 @@ export function FlowChartV2Demo() {
   const [selectedExample, setSelectedExample] = React.useState<string>('financial');
   const [showActivePath, setShowActivePath] = React.useState(false);
 
-  const currentExample = examples.find(ex => ex.id === selectedExample) || examples[0];
+  const currentExample = examples.find((ex) => ex.id === selectedExample) || examples[0];
 
-  // Create data with active path for financial example
+  // Create data with active path for examples that support it
   const getDisplayData = (): FlowChartData => {
-    if (selectedExample === 'financial' && showActivePath) {
+    if (!showActivePath || !currentExample.hasActivePath) {
+      return currentExample.data;
+    }
+
+    if (selectedExample === 'financial') {
       // Path: period-1 → decision-1 (No) → decision-2 (No, skip payment) → period-2-3 →
       //       decision-3 (No) → decision-4 (Yes, get payment) → outcome-payment-2
-      // Stops here to show partial path highlighting
       return {
         ...currentExample.data,
         nodes: currentExample.data.nodes.map((node) => {
@@ -530,6 +398,35 @@ export function FlowChartV2Demo() {
         }),
       };
     }
+
+    if (selectedExample === 'loop-back') {
+      // Path: Shows a loop through fix-data back to process-data
+      return {
+        ...currentExample.data,
+        nodes: currentExample.data.nodes.map((node) => {
+          const activeNodeIds = ['start', 'process-data', 'validation', 'fix-data'];
+          return {
+            ...node,
+            isActive: activeNodeIds.includes(node.id),
+          };
+        }),
+      };
+    }
+
+    if (selectedExample === 'multiple-connections') {
+      // Path: Shows the urgent path through to resolution
+      return {
+        ...currentExample.data,
+        nodes: currentExample.data.nodes.map((node) => {
+          const activeNodeIds = ['intake', 'priority-check', 'urgent-path', 'resolution'];
+          return {
+            ...node,
+            isActive: activeNodeIds.includes(node.id),
+          };
+        }),
+      };
+    }
+
     return currentExample.data;
   };
 
@@ -542,12 +439,15 @@ export function FlowChartV2Demo() {
           FlowChart V2 - Examples Gallery
         </h1>
         <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>
-          Explore different flowchart scenarios. Use <code>variant</code> for colors and optional <code>column</code> for positioning.
+          Explore different flowchart scenarios. Each node has a <code>connections</code> array with
+          targetId, label, and color.
         </p>
 
         {/* Example Selector */}
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#1e3a5f' }}>
+          <label
+            style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#1e3a5f' }}
+          >
             Select Example:
           </label>
           <select
@@ -578,7 +478,7 @@ export function FlowChartV2Demo() {
           </p>
         </div>
 
-        {/* Toggle Active Path Button (only for financial example) */}
+        {/* Toggle Active Path Button (only for examples that support it) */}
         {currentExample.hasActivePath && (
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <button
@@ -618,28 +518,39 @@ export function FlowChartV2Demo() {
             padding: '20px',
           }}
         >
-          {selectedExample === 'flexible' && (
-            <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#fff3e0', borderRadius: '5px', border: '1px solid #ffb74d' }}>
-              <p style={{ margin: 0, color: '#e65100', fontSize: '14px' }}>
-                <strong>💡 Flexible Column Example:</strong> Notice how the "Review Required?" neutral node appears in column 1 (typically for primary nodes),
-                and the "Manual Review" primary node appears in column 2 (typically for neutral nodes).
-                This demonstrates the decoupling of <code>variant</code> (colors) from <code>column</code> (positioning).
-              </p>
-            </div>
-          )}
-          {selectedExample === 'loop' && (
-            <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#e3f2fd', borderRadius: '5px', border: '1px solid #2196F3' }}>
+          {selectedExample === 'loop-back' && (
+            <div
+              style={{
+                marginBottom: '15px',
+                padding: '10px',
+                backgroundColor: '#e3f2fd',
+                borderRadius: '5px',
+                border: '1px solid #2196F3',
+              }}
+            >
               <p style={{ margin: 0, color: '#0d47a1', fontSize: '14px' }}>
-                <strong>🔄 Loop Example:</strong> This flowchart demonstrates looping back to previous nodes.
-                Notice how "Fix Issues" and "More Data to Process?" both loop back to "Process Data Batch".
+                <strong>🔄 Loop-Back Example:</strong> This flowchart demonstrates looping back to
+                previous nodes. Notice how "Fix Issues" and "More Data to Process?" both loop back
+                to "Process Data Batch". These arrows point from later steps to earlier steps in the
+                flow.
               </p>
             </div>
           )}
-          {selectedExample === 'convergence' && (
-            <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#f3e5f5', borderRadius: '5px', border: '1px solid #9C27B0' }}>
+          {selectedExample === 'multiple-connections' && (
+            <div
+              style={{
+                marginBottom: '15px',
+                padding: '10px',
+                backgroundColor: '#f3e5f5',
+                borderRadius: '5px',
+                border: '1px solid #9C27B0',
+              }}
+            >
               <p style={{ margin: 0, color: '#4a148c', fontSize: '14px' }}>
-                <strong>⚡ Convergence Example:</strong> Two different paths (Path A and Path B) converge at the same "Checkpoint" node.
-                This showcases the power of the flat node structure with ID references.
+                <strong>🎨 Multiple Connections:</strong> The "Priority Level?" node has three
+                outgoing connections with different colors (red for Urgent, blue for Normal, green
+                for Low). This demonstrates how the connections array can handle multiple paths with
+                distinct visual indicators.
               </p>
             </div>
           )}
@@ -664,22 +575,10 @@ export function FlowChartV2Demo() {
         >
           <h2 style={{ color: '#1e3a5f', marginTop: 0 }}>Key Features Demonstrated</h2>
 
-          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>1. Multiple Parents Converge</h3>
-          <p>Several examples demonstrate multiple paths converging to the same node:</p>
-          <ul>
-            <li>
-              <strong>Financial example:</strong> Decision 2 has two paths to Period 2-3 (with and without payment)
-            </li>
-            <li>
-              <strong>Convergence example:</strong> Path A and Path B both converge at the Checkpoint node
-            </li>
-            <li>
-              <strong>Loop example:</strong> Multiple decision points loop back to the same processing node
-            </li>
-          </ul>
-
-          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>2. Variant-Based Styling</h3>
-          <p>Nodes use <code>variant</code> to determine their visual styling:</p>
+          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>1. Connections Array Structure</h3>
+          <p>
+            Nodes now use a flexible <code>connections</code> array instead of fixed properties:
+          </p>
           <pre
             style={{
               backgroundColor: '#f5f5f5',
@@ -689,25 +588,63 @@ export function FlowChartV2Demo() {
             }}
           >
             {`{
-  id: 'decision-2',
-  variant: 'neutral',  // Dictates colors (primary, neutral, or secondary)
-  label: 'Are all underlyings at or above the 80% coupon barrier?',
-  nextYes: 'outcome-payment-1',  // → outcome → period-2-3
-  nextNo: 'period-2-3',          // → period-2-3 directly!
-},
-{
-  id: 'outcome-payment-1',
+  id: 'decision-1',
+  variant: 'neutral',
+  label: 'Are all underlyings at or above...?',
+  connections: [
+    { targetId: 'outcome-early-1', label: 'Yes', color: 'green' },
+    { targetId: 'decision-2', label: 'No', color: 'red' },
+  ],
+}`}
+          </pre>
+          <p style={{ marginTop: '10px', color: '#666', fontSize: '14px' }}>
+            Each connection specifies: <code>targetId</code> (destination node), optional{' '}
+            <code>label</code> (text on arrow), and optional <code>color</code> (arrow and label
+            circle color: 'green', 'red', 'blue', 'orange', or 'default').
+          </p>
+
+          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>2. Loop-Back Patterns</h3>
+          <p>
+            Arrows can point back to earlier steps in the workflow, enabling retry logic and
+            iterative processes:
+          </p>
+          <pre
+            style={{
+              backgroundColor: '#f5f5f5',
+              padding: '15px',
+              borderRadius: '5px',
+              overflow: 'auto',
+            }}
+          >
+            {`{
+  id: 'fix-data',
   variant: 'secondary',
-  label: 'Payment of 8.68% coupon (3 monthly)',
-  next: 'period-2-3',  // Both converge here
+  label: 'Fix Issues',
+  connections: [
+    { targetId: 'process-data', label: 'Retry', color: 'blue' },
+  ],
+},
+{
+  id: 'check-more',
+  variant: 'neutral',
+  label: 'More Data to Process?',
+  connections: [
+    { targetId: 'process-data', label: 'Yes', color: 'green' }, // Loop back
+    { targetId: 'finalize', label: 'No', color: 'red' },
+  ],
 }`}
           </pre>
           <p style={{ marginTop: '10px', color: '#666', fontSize: '14px' }}>
-            Variants: <code>'primary'</code> (dark blue), <code>'neutral'</code> (white), <code>'secondary'</code> (light blue)
+            See the <strong>Loop-Back Pattern</strong> example to visualize these connections in
+            action.
           </p>
 
-          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>3. Flexible Column Positioning</h3>
-          <p>The <code>column</code> property allows you to explicitly position nodes, decoupling visual style from layout:</p>
+          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>
+            3. Multiple Connections with Colors
+          </h3>
+          <p>
+            A single node can have multiple outgoing connections, each with its own label and color:
+          </p>
           <pre
             style={{
               backgroundColor: '#f5f5f5',
@@ -717,61 +654,44 @@ export function FlowChartV2Demo() {
             }}
           >
             {`{
-  id: 'status',
-  variant: 'neutral',  // White styling
-  column: 1,           // But positioned in column 1 (typically for primary)
-  label: 'Status Check',
-},
-{
-  id: 'process',
-  variant: 'primary',  // Dark blue styling
-  column: 2,           // But positioned in column 2 (typically for neutral)
-  label: 'Process Data',
+  id: 'priority-check',
+  variant: 'neutral',
+  label: 'Priority Level?',
+  connections: [
+    { targetId: 'urgent-path', label: 'Urgent', color: 'red' },
+    { targetId: 'normal-path', label: 'Normal', color: 'blue' },
+    { targetId: 'low-path', label: 'Low', color: 'green' },
+  ],
 }`}
           </pre>
           <p style={{ marginTop: '10px', color: '#666', fontSize: '14px' }}>
-            Default columns: <code>primary=1</code>, <code>neutral=2</code>, <code>secondary=3</code>.
-            Omit <code>column</code> to use defaults.
+            Available colors: <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>green</span>,{' '}
+            <span style={{ color: '#e74c3c', fontWeight: 'bold' }}>red</span>,{' '}
+            <span style={{ color: '#2196F3', fontWeight: 'bold' }}>blue</span>,{' '}
+            <span style={{ color: '#FF9800', fontWeight: 'bold' }}>orange</span>, or default (blue).
           </p>
 
-          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>4. Simple Properties</h3>
-          <p>Every node uses the same navigation properties:</p>
+          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>4. Variant-Based Styling</h3>
+          <p>
+            Nodes use <code>variant</code> to determine their visual styling:
+          </p>
           <ul>
             <li>
-              <code>variant</code> - Visual style: 'primary', 'neutral', or 'secondary'
+              <code>'primary'</code> - Dark blue background, white text
             </li>
             <li>
-              <code>label</code> - Text to display in the node
+              <code>'neutral'</code> - White background, dark text, blue border
             </li>
             <li>
-              <code>column</code> - Optional column position (defaults based on variant)
-            </li>
-            <li>
-              <code>next</code> - Primary next node
-            </li>
-            <li>
-              <code>nextYes</code> - Yes path (typically for neutral nodes)
-            </li>
-            <li>
-              <code>nextNo</code> - No path (typically for neutral nodes)
-            </li>
-            <li>
-              <code>isActive</code> - Optional, marks node as active for path highlighting
+              <code>'secondary'</code> - Light blue background, dark text
             </li>
           </ul>
 
-          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>5. Explicit References (Array Structure)</h3>
-          <p>All nodes defined in a flat array - no nesting, just ID references. Each node has its own <code>id</code> property. This makes it easy to:</p>
-          <ul>
-            <li>Link any node to any other node</li>
-            <li>Have multiple parents for the same child</li>
-            <li>Create loops or cycles if needed</li>
-            <li>Visualize the entire graph structure</li>
-            <li>Avoid redundant ID storage (no duplicate keys)</li>
-          </ul>
-
-          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>6. Automatic Scaling with maxWidth</h3>
-          <p>The component supports automatic scaling to fit within a maximum width:</p>
+          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>5. Flexible Column Positioning</h3>
+          <p>
+            The <code>column</code> property allows explicit positioning, decoupling style from
+            layout:
+          </p>
           <pre
             style={{
               backgroundColor: '#f5f5f5',
@@ -780,27 +700,19 @@ export function FlowChartV2Demo() {
               overflow: 'auto',
             }}
           >
-            {`<FlowChartV2
-  data={lumaDataV2}
-  maxWidth={650}  // Automatically scales to fit within 650px
-/>`}
+            {`{
+  id: 'quality-check',
+  variant: 'neutral',  // White styling
+  column: 1,           // But positioned in column 1
+  label: 'Meets Standards?',
+}`}
           </pre>
-          <p>You can also use manual scaling:</p>
-          <pre
-            style={{
-              backgroundColor: '#f5f5f5',
-              padding: '15px',
-              borderRadius: '5px',
-              overflow: 'auto',
-            }}
-          >
-            {`<FlowChartV2
-  data={lumaDataV2}
-  scale={1.5}  // 50% larger
-/>`}
-          </pre>
+          <p style={{ marginTop: '10px', color: '#666', fontSize: '14px' }}>
+            Default columns: <code>primary=1</code>, <code>neutral=2</code>,{' '}
+            <code>secondary=3</code>. Omit <code>column</code> to use defaults.
+          </p>
 
-          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>7. Active Path Highlighting</h3>
+          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>6. Active Path Highlighting</h3>
           <p>Mark nodes as active to visualize the path taken:</p>
           <pre
             style={{
@@ -814,45 +726,56 @@ export function FlowChartV2Demo() {
   id: 'period-1',
   variant: 'primary',
   label: 'Period 1',
-  next: 'decision-1',
-  isActive: true,  // Mark as active to show this node is on the taken path
-},
-{
-  id: 'decision-1',
-  variant: 'neutral',
-  label: 'Are all underlyings at or above...?',
-  nextYes: 'outcome-early-1',
-  nextNo: 'decision-2',
-  isActive: true,  // This decision was reached
-},
-{
-  id: 'outcome-early-1',
-  variant: 'secondary',
-  label: 'Early Redemption + 8.68% coupon',
-  isActive: true,  // The Yes path was taken
+  connections: [{ targetId: 'decision-1' }],
+  isActive: true,  // Mark as active
 }`}
           </pre>
-          <p>
-            Active nodes will be highlighted with:
-          </p>
+          <p>Active nodes and connections are highlighted with:</p>
           <ul>
-            <li>Thicker borders (4px vs 2px)</li>
-            <li><strong>Color-coded arrows based on path:</strong>
+            <li>Thicker borders on active nodes (4px vs 2px)</li>
+            <li>
+              <strong>Color-coded arrows:</strong>
               <ul>
-                <li><span style={{ color: '#4CAF50', fontWeight: 'bold' }}>Green</span> for Yes paths</li>
-                <li><span style={{ color: '#FF9800', fontWeight: 'bold' }}>Orange</span> for No paths</li>
-                <li><span style={{ color: '#2196F3', fontWeight: 'bold' }}>Blue</span> for other active connections</li>
+                <li>
+                  <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>Green</span> for
+                  Yes/success paths
+                </li>
+                <li>
+                  <span style={{ color: '#e74c3c', fontWeight: 'bold' }}>Red</span> for No/failure
+                  paths
+                </li>
+                <li>
+                  <span style={{ color: '#2196F3', fontWeight: 'bold' }}>Blue</span> for neutral
+                  paths
+                </li>
+                <li>
+                  <span style={{ color: '#FF9800', fontWeight: 'bold' }}>Orange</span> for
+                  alternative paths
+                </li>
               </ul>
             </li>
-            <li>Arrowheads match the line color</li>
-            <li><strong>Inactive nodes shown at 40% opacity</strong></li>
-            <li><strong>Inactive arrows shown in light gray</strong> (#cccccc)</li>
-            <li><strong>Inactive Yes/No circles shown in gray</strong> (#9e9e9e) with white text</li>
-            <li>No borders on Yes/No circles</li>
+            <li>Matching arrowhead colors</li>
+            <li>
+              <strong>Inactive nodes at 40% opacity</strong>
+            </li>
+            <li>
+              <strong>Inactive arrows in light gray</strong>
+            </li>
           </ul>
           <p style={{ marginTop: '15px', color: '#666' }}>
-            Try the <strong>"Show Active Path"</strong> toggle above to see the active path highlighting in action!
+            Try the <strong>"Show Active Path"</strong> toggle to see active path highlighting!
           </p>
+
+          <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>
+            7. Manhattan Routing with Collision Avoidance
+          </h3>
+          <p>Arrows use Manhattan (perpendicular) routing and automatically avoid node overlaps:</p>
+          <ul>
+            <li>Arrows travel minimum distance in exit direction before turning</li>
+            <li>No 180-degree immediate reversals (down → horizontal → up)</li>
+            <li>Staggered arrows when multiple connections exit the same side</li>
+            <li>Perpendicular start indicators show arrow origin</li>
+          </ul>
         </div>
       </div>
     </div>

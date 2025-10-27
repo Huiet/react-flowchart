@@ -1,4 +1,12 @@
 export type NodeVariant = 'primary' | 'neutral' | 'secondary';
+export type ConnectionColor = 'green' | 'red' | 'blue' | 'orange' | 'default';
+
+// Connection from a node to another node
+export interface NodeConnection {
+  targetId: string;
+  label?: string;
+  color?: ConnectionColor; // Also used as the active color for the arrow
+}
 
 // Unified node structure - all nodes have the same properties
 export interface FlowNode {
@@ -7,11 +15,7 @@ export interface FlowNode {
   label: string;
   column?: number;       // Optional column position (1, 2, 3, etc.). Defaults based on variant: primary=1, neutral=2, secondary=3
   isActive?: boolean;    // Whether this node is on the active/taken path
-
-  // Unified navigation properties - any node can link to any other node
-  next?: string;         // Primary next node (used by primary, secondary, or single-path neutral nodes)
-  nextYes?: string;      // Yes path (typically used by neutral nodes)
-  nextNo?: string;       // No path (typically used by neutral nodes)
+  connections: NodeConnection[]; // Array of outgoing connections
 }
 
 // Chart data structure
@@ -33,7 +37,8 @@ export interface PositionedNode {
 export interface Connection {
   from: PositionedNode;
   to: PositionedNode;
-  label?: 'Yes' | 'No';
+  label?: string;
+  color?: ConnectionColor;
   fromSide: 'top' | 'right' | 'bottom' | 'left';
   toSide: 'top' | 'right' | 'bottom' | 'left';
   isActive?: boolean; // Whether this connection is on the active/taken path

@@ -221,58 +221,117 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
         {/* Render arrow lines first (behind everything) */}
         {layout.connections.map((connection, index) => {
-          const { from, to, fromSide, toSide, isActive, label } = connection;
+          const { from, to, fromSide, toSide, isActive, label, color } = connection;
 
           const start = getStaggeredConnectionPoint(from, fromSide, true, index);
           const end = getStaggeredConnectionPoint(to, toSide, false, index);
           const midY = start.y + (end.y - start.y) / 2;
           const midX = start.x + (end.x - start.x) / 2;
 
-          // Create arrow path (same logic as Arrow component)
+          // Create arrow path with minimum travel distance in exit direction
+          const minTravelDistance = 25 * finalScale; // Minimum distance to travel in exit direction
           let pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
-          if (fromSide === 'bottom' && toSide === 'top') {
-            if (Math.abs(start.x - end.x) >= 50) {
-              const goingLeft = end.x < start.x;
-              if (goingLeft) {
-                const downY = midY;
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${downY} L ${end.x} ${downY} L ${end.x} ${end.y}`;
-              } else {
-                pathD = `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
-              }
-            }
-          } else if (fromSide === 'right' && toSide === 'left') {
-            if (Math.abs(start.y - end.y) >= 50) {
-              pathD = `M ${start.x} ${start.y} L ${midX} ${start.y} L ${midX} ${end.y} L ${end.x} ${end.y}`;
-            }
-          } else if (fromSide === 'right' && toSide === 'top') {
-            const offsetX = start.x + 40;
-            const offsetY = end.y - 20;
-            pathD = `M ${start.x} ${start.y} L ${offsetX} ${start.y} L ${end.x} ${offsetY} L ${end.x} ${end.y}`;
-          } else if (fromSide === 'bottom' && toSide === 'left') {
-            const offsetY = start.y + 30;
-            pathD = `M ${start.x} ${start.y} L ${start.x} ${offsetY} L ${end.x} ${offsetY} L ${end.x} ${end.y}`;
-          } else if (fromSide === 'left' && toSide === 'top') {
-            // Go horizontally first, then vertically
-            pathD = `M ${start.x} ${start.y} L ${end.x} ${start.y} L ${end.x} ${end.y}`;
-          } else if (fromSide === 'bottom' && toSide === 'right') {
-            const offsetY = start.y + 30;
-            pathD = `M ${start.x} ${start.y} L ${start.x} ${offsetY} L ${end.x} ${offsetY} L ${end.x} ${end.y}`;
+
+          // Calculate initial offset point based on exit side
+          let firstPoint: { x: number; y: number };
+          switch (fromSide) {
+            case 'right':
+              firstPoint = { x: start.x + minTravelDistance, y: start.y };
+              break;
+            case 'left':
+              firstPoint = { x: start.x - minTravelDistance, y: start.y };
+              break;
+            case 'bottom':
+              firstPoint = { x: start.x, y: start.y + minTravelDistance };
+              break;
+            case 'top':
+              firstPoint = { x: start.x, y: start.y - minTravelDistance };
+              break;
           }
 
-          // Determine arrow color and marker based on label and active state
+          // Calculate approach point based on entry side
+          let lastPoint: { x: number; y: number };
+          switch (toSide) {
+            case 'right':
+              lastPoint = { x: end.x + minTravelDistance, y: end.y };
+              break;
+            case 'left':
+              lastPoint = { x: end.x - minTravelDistance, y: end.y };
+              break;
+            case 'bottom':
+              lastPoint = { x: end.x, y: end.y + minTravelDistance };
+              break;
+            case 'top':
+              lastPoint = { x: end.x, y: end.y - minTravelDistance };
+              break;
+          }
+
+          // Build path with Manhattan routing, avoiding 180-degree turns
+          // Check if this is a 180-degree reversal case
+          const is180Reversal =
+            (fromSide === 'bottom' && toSide === 'top') ||
+            (fromSide === 'top' && toSide === 'bottom') ||
+            (fromSide === 'right' && toSide === 'left') ||
+            (fromSide === 'left' && toSide === 'right');
+
+          if (is180Reversal) {
+            // For 180-degree cases, must go perpendicular before reversing
+            if (fromSide === 'bottom' && toSide === 'top') {
+              // Exit bottom, must go down, then horizontal, then up
+              // Go down min distance, horizontally to target X, then up to target
+              pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${end.x} ${firstPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+            } else if (fromSide === 'top' && toSide === 'bottom') {
+              // Exit top, must go up, then horizontal, then down
+              pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${end.x} ${firstPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+            } else if (fromSide === 'right' && toSide === 'left') {
+              // Exit right, must go right, then vertical, then left
+              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+            } else if (fromSide === 'left' && toSide === 'right') {
+              // Exit left, must go left, then vertical, then right
+              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+            }
+          } else {
+            // Non-180 cases - can go more directly
+            if ((fromSide === 'bottom' || fromSide === 'top') && (toSide === 'left' || toSide === 'right')) {
+              // Vertical exit to horizontal entry
+              // Go vertical to target Y, then horizontal to target
+              pathD = `M ${start.x} ${start.y} L ${start.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+            } else if ((fromSide === 'left' || fromSide === 'right') && (toSide === 'top' || toSide === 'bottom')) {
+              // Horizontal exit to vertical entry
+              // Go horizontal to target X, then vertical to target
+              pathD = `M ${start.x} ${start.y} L ${end.x} ${start.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+            } else {
+              // Same direction (e.g., bottom to bottom, right to right) - straight line
+              pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+            }
+          }
+
+          // Determine arrow color and marker based on connection color and active state
           let arrowColor = '#333333';
           let arrowMarker = 'arrowhead-default';
 
           if (isActive) {
-            if (label === 'Yes') {
-              arrowColor = '#4CAF50';
-              arrowMarker = 'arrowhead-yes';
-            } else if (label === 'No') {
-              arrowColor = '#FF9800';
-              arrowMarker = 'arrowhead-no';
-            } else {
-              arrowColor = '#2196F3';
-              arrowMarker = 'arrowhead-active';
+            // Use connection color if specified
+            switch (color) {
+              case 'green':
+                arrowColor = '#4CAF50';
+                arrowMarker = 'arrowhead-yes';
+                break;
+              case 'red':
+                arrowColor = '#e74c3c';
+                arrowMarker = 'arrowhead-no';
+                break;
+              case 'blue':
+                arrowColor = '#2196F3';
+                arrowMarker = 'arrowhead-active';
+                break;
+              case 'orange':
+                arrowColor = '#FF9800';
+                arrowMarker = 'arrowhead-no';
+                break;
+              default:
+                arrowColor = '#2196F3';
+                arrowMarker = 'arrowhead-active';
             }
           } else if (isActive === false) {
             // Explicitly inactive
@@ -280,15 +339,74 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             arrowMarker = 'arrowhead-inactive';
           }
 
+          // Calculate perpendicular line at start point (offset from node edge)
+          const perpLength = 10 * finalScale;
+          const offset = 3 * finalScale; // Offset from node edge so it's not covered
+          let perpLine: { x1: number; y1: number; x2: number; y2: number } | null = null;
+
+          switch (fromSide) {
+            case 'right':
+              // Vertical perpendicular line for right-exiting arrows
+              perpLine = {
+                x1: start.x + offset,
+                y1: start.y - perpLength,
+                x2: start.x + offset,
+                y2: start.y + perpLength,
+              };
+              break;
+            case 'left':
+              // Vertical perpendicular line for left-exiting arrows
+              perpLine = {
+                x1: start.x - offset,
+                y1: start.y - perpLength,
+                x2: start.x - offset,
+                y2: start.y + perpLength,
+              };
+              break;
+            case 'bottom':
+              // Horizontal perpendicular line for bottom-exiting arrows
+              perpLine = {
+                x1: start.x - perpLength,
+                y1: start.y + offset,
+                x2: start.x + perpLength,
+                y2: start.y + offset,
+              };
+              break;
+            case 'top':
+              // Horizontal perpendicular line for top-exiting arrows
+              perpLine = {
+                x1: start.x - perpLength,
+                y1: start.y - offset,
+                x2: start.x + perpLength,
+                y2: start.y - offset,
+              };
+              break;
+          }
+
           return (
-            <path
-              key={`arrow-line-${index}`}
-              d={pathD}
-              stroke={arrowColor}
-              strokeWidth={2 * finalScale}
-              fill="none"
-              markerEnd={`url(#${arrowMarker})`}
-            />
+            <g key={`arrow-${index}`}>
+              {/* Perpendicular start indicator */}
+              {perpLine && (
+                <line
+                  x1={perpLine.x1}
+                  y1={perpLine.y1}
+                  x2={perpLine.x2}
+                  y2={perpLine.y2}
+                  stroke={arrowColor}
+                  strokeWidth={2 * finalScale}
+                  strokeLinecap="round"
+                  opacity={0.8}
+                />
+              )}
+              {/* Arrow path */}
+              <path
+                d={pathD}
+                stroke={arrowColor}
+                strokeWidth={2 * finalScale}
+                fill="none"
+                markerEnd={`url(#${arrowMarker})`}
+              />
+            </g>
           );
         })}
 
@@ -305,64 +423,95 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
           />
         ))}
 
-        {/* Render Yes/No labels on top of everything */}
+        {/* Render connection labels on top of everything */}
         {layout.connections.map((connection, index) => {
           if (!connection.label) return null;
 
-          const { from, to, label, fromSide, toSide, isActive } = connection;
+          const { from, to, label, fromSide, toSide, isActive, color } = connection;
 
           const start = getStaggeredConnectionPoint(from, fromSide, true, index);
           const end = getStaggeredConnectionPoint(to, toSide, false, index);
-          const midY = start.y + (end.y - start.y) / 2;
-          const midX = start.x + (end.x - start.x) / 2;
 
-          // Calculate label position to be centered on the actual path
-          let labelPos = { x: midX, y: midY };
-          if (fromSide === 'bottom' && toSide === 'top') {
-            if (Math.abs(start.x - end.x) < 50) {
-              // Same column - vertical line, center on vertical segment
-              labelPos = { x: start.x, y: midY };
-            } else {
-              const goingLeft = end.x < start.x;
-              if (goingLeft) {
-                const downY = midY;
-                // Center on horizontal segment
-                labelPos = { x: midX, y: downY };
-              } else {
-                // Center on horizontal segment
-                labelPos = { x: midX, y: midY };
-              }
-            }
-          } else if (fromSide === 'right' && toSide === 'left') {
-            if (Math.abs(start.y - end.y) < 50) {
-              // Straight horizontal line
-              labelPos = { x: midX, y: start.y };
-            } else {
-              // Center on the middle vertical segment
-              labelPos = { x: midX, y: midY };
-            }
-          } else if (fromSide === 'right' && toSide === 'top') {
-            const offsetX = start.x + 40;
-            // Center of the diagonal-like connection
-            labelPos = { x: (start.x + offsetX) / 2, y: start.y };
-          } else if (fromSide === 'bottom' && toSide === 'left') {
-            const offsetY = start.y + 30;
-            // Center on horizontal segment
-            labelPos = { x: midX, y: offsetY };
-          } else if (fromSide === 'left' && toSide === 'top') {
-            // Center on horizontal segment
-            labelPos = { x: midX, y: start.y };
-          } else if (fromSide === 'bottom' && toSide === 'right') {
-            const offsetY = start.y + 30;
-            // Center on horizontal segment
-            labelPos = { x: midX, y: offsetY };
+          // Calculate control points (same as arrow path logic)
+          const minTravelDistance = 25 * finalScale;
+          let firstPoint: { x: number; y: number };
+          switch (fromSide) {
+            case 'right':
+              firstPoint = { x: start.x + minTravelDistance, y: start.y };
+              break;
+            case 'left':
+              firstPoint = { x: start.x - minTravelDistance, y: start.y };
+              break;
+            case 'bottom':
+              firstPoint = { x: start.x, y: start.y + minTravelDistance };
+              break;
+            case 'top':
+              firstPoint = { x: start.x, y: start.y - minTravelDistance };
+              break;
           }
 
-          // Determine circle color based on active state
-          let circleColor = label === 'Yes' ? '#4CAF50' : '#FF9800';
+          // Calculate label position based on path type
+          let labelPos: { x: number; y: number };
+
+          // Check if this is a 180-degree reversal
+          const is180Reversal =
+            (fromSide === 'bottom' && toSide === 'top') ||
+            (fromSide === 'top' && toSide === 'bottom') ||
+            (fromSide === 'right' && toSide === 'left') ||
+            (fromSide === 'left' && toSide === 'right');
+
+          if (is180Reversal) {
+            // For 180-degree cases, place label on the horizontal/vertical crossover segment
+            if (fromSide === 'bottom' && toSide === 'top') {
+              // Label on horizontal segment at firstPoint.y
+              labelPos = { x: (start.x + end.x) / 2, y: firstPoint.y };
+            } else if (fromSide === 'top' && toSide === 'bottom') {
+              labelPos = { x: (start.x + end.x) / 2, y: firstPoint.y };
+            } else if (fromSide === 'right' && toSide === 'left') {
+              // Label on vertical segment at firstPoint.x
+              labelPos = { x: firstPoint.x, y: (start.y + end.y) / 2 };
+            } else if (fromSide === 'left' && toSide === 'right') {
+              labelPos = { x: firstPoint.x, y: (start.y + end.y) / 2 };
+            } else {
+              labelPos = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+            }
+          } else {
+            // Non-180 cases - place on first major segment
+            if ((fromSide === 'bottom' || fromSide === 'top') && (toSide === 'left' || toSide === 'right')) {
+              // Vertical to horizontal: label on vertical segment
+              labelPos = { x: start.x, y: (start.y + end.y) / 2 };
+            } else if ((fromSide === 'left' || fromSide === 'right') && (toSide === 'top' || toSide === 'bottom')) {
+              // Horizontal to vertical: label on horizontal segment
+              labelPos = { x: (start.x + end.x) / 2, y: start.y };
+            } else {
+              // Same direction or straight line
+              labelPos = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+            }
+          }
+
+          // Determine circle color based on connection color and active state
+          let circleColor = '#2196F3'; // default blue
           if (isActive === false) {
             // Use gray for inactive circles
             circleColor = '#9e9e9e';
+          } else if (color) {
+            // Map connection color to circle color
+            switch (color) {
+              case 'green':
+                circleColor = '#4CAF50';
+                break;
+              case 'red':
+                circleColor = '#e74c3c';
+                break;
+              case 'blue':
+                circleColor = '#2196F3';
+                break;
+              case 'orange':
+                circleColor = '#FF9800';
+                break;
+              default:
+                circleColor = '#2196F3';
+            }
           }
 
           return (

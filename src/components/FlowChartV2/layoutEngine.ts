@@ -6,23 +6,24 @@ import type {
   LayoutConfig,
   ColumnPositions,
   LayoutResult,
+  NodeConnection,
 } from './types';
 
 const defaultConfig: LayoutConfig = {
-  nodeSpacing: 50,
-  primaryWidth: 110,
-  primaryHeight: 50,
+  nodeSpacing: 50,      // Vertical spacing between nodes in the same flow
+  primaryWidth: 180,    // Standardized width for all nodes
+  primaryHeight: 70,    // Standardized height for all nodes
   neutralWidth: 180,
   neutralHeight: 70,
-  secondaryWidth: 200,
-  secondaryHeight: 60,
+  secondaryWidth: 180,
+  secondaryHeight: 70,
   scale: 1,
 };
 
 const COLUMN_X_POSITIONS: ColumnPositions = {
   1: 50,      // Column 1 (default for primary)
-  2: 200,     // Column 2 (default for neutral)
-  3: 450,     // Column 3 (default for secondary)
+  2: 300,     // Column 2 (default for neutral) - 50 + 180 + 70 gap
+  3: 550,     // Column 3 (default for secondary) - 300 + 180 + 70 gap
 };
 
 export function calculateLayout(
@@ -77,6 +78,40 @@ export function calculateLayout(
     return xPosition * cfg.scale;
   }
 
+  // Check if a position would cause node overlap
+  function hasCollision(x: number, y: number, width: number, height: number): boolean {
+    const buffer = 15 * cfg.scale; // Minimum spacing between nodes
+
+    for (const positioned of nodes) {
+      // Check if rectangles overlap with buffer
+      const noOverlapX = x + width + buffer <= positioned.x || positioned.x + positioned.width + buffer <= x;
+      const noOverlapY = y + height + buffer <= positioned.y || positioned.y + positioned.height + buffer <= y;
+
+      if (!noOverlapX && !noOverlapY) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Find available position, adjusting Y if there's a collision
+  function findAvailablePosition(x: number, y: number, width: number, height: number): { x: number; y: number } {
+    let currentY = y;
+    const maxAttempts = 50;
+    const offsetStep = 20 * cfg.scale;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      if (!hasCollision(x, currentY, width, height)) {
+        return { x, y: currentY };
+      }
+      currentY += offsetStep;
+    }
+
+    // If we still have collision after max attempts, just return the last position
+    return { x, y: currentY };
+  }
+
   function positionNode(node: FlowNode, x: number, y: number): PositionedNode {
     // Return existing position if already placed
     if (nodeMap.has(node.id)) {
@@ -84,13 +119,17 @@ export function calculateLayout(
     }
 
     const { width, height } = getNodeDimensions(node);
-    const positioned: PositionedNode = { node, x, y, width, height };
+
+    // Find a position without collisions
+    const { x: finalX, y: finalY } = findAvailablePosition(x, y, width, height);
+
+    const positioned: PositionedNode = { node, x: finalX, y: finalY, width, height };
 
     nodes.push(positioned);
     nodeMap.set(node.id, positioned);
 
-    maxX = Math.max(maxX, x + width);
-    maxY = Math.max(maxY, y + height);
+    maxX = Math.max(maxX, finalX + width);
+    maxY = Math.max(maxY, finalY + height);
 
     return positioned;
   }
@@ -100,7 +139,7 @@ export function calculateLayout(
     x: number,
     y: number,
     parentNode?: PositionedNode,
-    connectionLabel?: 'Yes' | 'No',
+    connection?: NodeConnection,
     explicitFromSide?: 'top' | 'right' | 'bottom' | 'left',
     explicitToSide?: 'top' | 'right' | 'bottom' | 'left'
   ) {
@@ -122,7 +161,8 @@ export function calculateLayout(
         connections.push({
           from: parentNode,
           to: existingNode,
-          label: connectionLabel,
+          label: connection?.label,
+          color: connection?.color,
           fromSide: explicitFromSide || 'right',
           toSide: explicitToSide || 'left',
           isActive,
@@ -143,130 +183,78 @@ export function calculateLayout(
     const positioned = positionNode(node, column, y);
 
     // Create connection from parent if exists
-    if (parentNode) {
+    if (parentNode && connection) {
       // Mark connection as active if both nodes are active
       const isActive = parentNode.node.isActive && positioned.node.isActive;
 
       connections.push({
         from: parentNode,
         to: positioned,
-        label: connectionLabel,
+        label: connection.label,
+        color: connection.color,
         fromSide: explicitFromSide || 'right',
         toSide: explicitToSide || 'left',
         isActive,
       });
     }
 
-    // Handle navigation based on node variant and available paths
-    if (node.variant === 'primary') {
-      // Primary → next node (usually neutral)
-      if (node.next) {
-        const nextNode = chartData.nodes.find(n => n.id === node.next);
-        if (nextNode) {
-          // Calculate Y offset to align midpoints for horizontal arrow
-          const nextDims = getNodeDimensions(nextNode);
-          const primaryMidpoint = positioned.height / 2;
-          const nextMidpoint = nextDims.height / 2;
-          const alignedY = y + primaryMidpoint - nextMidpoint;
-
-          const nextColumn = getNodeColumn(nextNode);
-          layoutNode(node.next, nextColumn, alignedY, positioned, undefined, 'right', 'left');
-        }
-      }
-    } else if (node.variant === 'neutral') {
-      const hasYes = !!node.nextYes;
-      const hasNo = !!node.nextNo;
-
-      // Get target nodes to determine their variants
-      const yesNode = node.nextYes ? chartData.nodes.find(n => n.id === node.nextYes) : undefined;
-      const noNode = node.nextNo ? chartData.nodes.find(n => n.id === node.nextNo) : undefined;
-
-      if (node.nextYes && !yesNode) {
-        console.error(`Neutral ${node.id}: nextYes references "${node.nextYes}" but node not found`);
-      }
-      if (node.nextNo && !noNode) {
-        console.error(`Neutral ${node.id}: nextNo references "${node.nextNo}" but node not found`);
+    // Handle all outgoing connections from this node
+    node.connections.forEach((conn, connIndex) => {
+      const targetNode = chartData.nodes.find(n => n.id === conn.targetId);
+      if (!targetNode) {
+        console.error(`Node ${node.id}: connection references "${conn.targetId}" but node not found`);
+        return;
       }
 
-      const yesY = y; // Yes path at same level
+      const targetColumn = getNodeColumn(targetNode);
+      const targetDims = getNodeDimensions(targetNode);
 
-      // Handle Yes path
-      if (node.nextYes && yesNode) {
-        const yesNodeColumn = getNodeColumn(yesNode);
+      // Determine connection sides and position based on variants
+      let targetY: number;
+      let fromSide: 'top' | 'right' | 'bottom' | 'left';
+      let toSide: 'top' | 'right' | 'bottom' | 'left';
 
-        if (yesNode.variant === 'secondary') {
-          // Yes → Secondary (typically right column, same level)
-          // Calculate Y offset to align midpoints for horizontal arrow
-          const yesDims = getNodeDimensions(yesNode);
-          const neutralMidpoint = positioned.height / 2;
-          const secondaryMidpoint = yesDims.height / 2;
-          const alignedYesY = y + neutralMidpoint - secondaryMidpoint;
-
-          layoutNode(node.nextYes, yesNodeColumn, alignedYesY, positioned, 'Yes', 'right', 'left');
-        } else if (yesNode.variant === 'neutral') {
-          // Yes → Neutral (typically middle column, same level)
-          layoutNode(node.nextYes, yesNodeColumn, yesY, positioned, 'Yes', 'bottom', 'top');
-        } else if (yesNode.variant === 'primary') {
-          // Yes → Primary (typically left column, below)
-          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          layoutNode(node.nextYes, yesNodeColumn, nextY, positioned, 'Yes', 'bottom', 'top');
-        }
+      // Default routing logic based on node positions
+      if (node.variant === 'primary' && targetNode.variant === 'neutral') {
+        // Primary → Neutral: horizontal connection at same level
+        const primaryMidpoint = positioned.height / 2;
+        const targetMidpoint = targetDims.height / 2;
+        targetY = y + primaryMidpoint - targetMidpoint;
+        fromSide = 'right';
+        toSide = 'left';
+      } else if (node.variant === 'neutral' && targetNode.variant === 'secondary') {
+        // Neutral → Secondary: horizontal connection at same level
+        const neutralMidpoint = positioned.height / 2;
+        const secondaryMidpoint = targetDims.height / 2;
+        // Offset slightly if multiple connections exist
+        const offset = connIndex > 0 ? connIndex * 15 * cfg.scale : 0;
+        targetY = y + neutralMidpoint - secondaryMidpoint + offset;
+        fromSide = 'right';
+        toSide = 'left';
+      } else if (node.variant === 'neutral' && targetNode.variant === 'neutral') {
+        // Neutral → Neutral: vertical connection
+        targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+        fromSide = 'bottom';
+        toSide = 'top';
+      } else if (targetNode.variant === 'primary') {
+        // Any → Primary: loop back, exit from left/bottom
+        targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+        fromSide = node.variant === 'neutral' ? 'left' : 'bottom';
+        toSide = 'top';
+      } else if (node.variant === 'secondary') {
+        // Secondary → Any: vertical connection
+        targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+        fromSide = 'bottom';
+        toSide = 'top';
+      } else {
+        // Default: vertical connection
+        targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+        fromSide = 'bottom';
+        toSide = 'top';
       }
 
-      // Handle No path
-      if (node.nextNo && noNode) {
-        const yesBranch = yesNode?.variant === 'secondary';
-        const secondaryOffset = yesBranch ? 70 : 0;
-        const noNodeColumn = getNodeColumn(noNode);
-
-        console.log(`Neutral ${node.id} No path:`, {
-          targetId: node.nextNo,
-          targetVariant: noNode.variant,
-          currentY: y,
-          yesBranch,
-        });
-
-        if (noNode.variant === 'secondary') {
-          // No → Secondary: exit RIGHT, enter LEFT (typically right column, below yes if needed)
-          // Calculate Y offset to align midpoints for horizontal arrow
-          const noDims = getNodeDimensions(noNode);
-          const neutralMidpoint = positioned.height / 2;
-          const secondaryMidpoint = noDims.height / 2;
-          const alignedNoY = y + secondaryOffset + neutralMidpoint - secondaryMidpoint;
-
-          layoutNode(node.nextNo, noNodeColumn, alignedNoY, positioned, 'No', 'right', 'left');
-        } else if (noNode.variant === 'neutral') {
-          // No → Neutral: exit BOTTOM, enter TOP (typically middle column, below)
-          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          layoutNode(node.nextNo, noNodeColumn, nextY, positioned, 'No', 'bottom', 'top');
-        } else if (noNode.variant === 'primary') {
-          // No → Primary: exit LEFT, enter TOP (typically left column, below) - LOOP BACK
-          console.log(`Connecting neutral ${node.id} No path to primary ${node.nextNo}`);
-          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          layoutNode(node.nextNo, noNodeColumn, nextY, positioned, 'No', 'left', 'top');
-        }
-      }
-
-      // Handle single path via 'next' if no yes/no paths
-      if (!hasYes && !hasNo && node.next) {
-        const nextNode = chartData.nodes.find(n => n.id === node.next);
-        if (nextNode) {
-          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          layoutNode(node.next, getNodeColumn(nextNode), nextY, positioned, undefined, 'bottom', 'top');
-        }
-      }
-    } else if (node.variant === 'secondary') {
-      // Secondary → next node
-      if (node.next) {
-        const nextNode = chartData.nodes.find(n => n.id === node.next);
-        if (!nextNode) return;
-
-        const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-        const targetColumn = getNodeColumn(nextNode);
-
-        layoutNode(node.next, targetColumn, nextY, positioned, undefined, 'bottom', 'top');
-      }
-    }
+      layoutNode(conn.targetId, targetColumn, targetY, positioned, conn, fromSide, toSide);
+    });
   }
 
   // Start layout from root - use column 1 as default starting position
@@ -275,7 +263,7 @@ export function calculateLayout(
   layoutNode(chartData.rootId, rootColumn, 50 * cfg.scale);
 
   // Calculate final dimensions
-  const minWidth = (columns[3] ?? 450) * cfg.scale + cfg.secondaryWidth * cfg.scale + 100 * cfg.scale;
+  const minWidth = (columns[3] ?? 550) * cfg.scale + cfg.secondaryWidth * cfg.scale + 100 * cfg.scale;
   const calculatedWidth = Math.max(maxX + 100 * cfg.scale, minWidth);
 
   return {
