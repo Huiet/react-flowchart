@@ -313,6 +313,486 @@ const example4_ConditionalFlow: FlowChartData = {
 };
 
 // ============================================================================
+// EXAMPLE 5: Software Development Workflow
+// ============================================================================
+const example5_SoftwareDev: FlowChartData = {
+  rootId: 'planning',
+  nodes: [
+    {
+      id: 'planning',
+      variant: 'primary',
+      label: 'Sprint\nPlanning',
+      connections: [{ targetId: 'design' }],
+    },
+    {
+      id: 'design',
+      variant: 'neutral',
+      label: 'Design\nReview',
+      connections: [{ targetId: 'development' }],
+    },
+    {
+      id: 'development',
+      variant: 'secondary',
+      label: 'Development\n& Testing',
+      connections: [{ targetId: 'code-review' }],
+    },
+    {
+      id: 'code-review',
+      variant: 'neutral',
+      column: 1,
+      label: 'Code Review\nApproved?',
+      connections: [
+        { targetId: 'qa-testing', label: 'Yes', color: 'green' },
+        { targetId: 'development', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'qa-testing',
+      variant: 'secondary',
+      column: 2,
+      label: 'QA\nTesting',
+      connections: [{ targetId: 'qa-decision' }],
+    },
+    {
+      id: 'qa-decision',
+      variant: 'neutral',
+      label: 'Tests\nPassing?',
+      connections: [
+        { targetId: 'staging', label: 'Yes', color: 'green' },
+        { targetId: 'bug-fix', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'bug-fix',
+      variant: 'secondary',
+      label: 'Bug\nFixes',
+      connections: [{ targetId: 'qa-testing', label: 'Retest', color: 'orange' }],
+    },
+    {
+      id: 'staging',
+      variant: 'primary',
+      column: 3,
+      label: 'Deploy to\nStaging',
+      connections: [{ targetId: 'uat' }],
+    },
+    {
+      id: 'uat',
+      variant: 'neutral',
+      column: 1,
+      label: 'User Acceptance\nTest OK?',
+      connections: [
+        { targetId: 'production', label: 'Yes', color: 'green' },
+        { targetId: 'staging', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'production',
+      variant: 'primary',
+      column: 2,
+      label: 'Deploy to\nProduction',
+      connections: [{ targetId: 'monitor' }],
+    },
+    {
+      id: 'monitor',
+      variant: 'secondary',
+      label: 'Monitor &\nSupport',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 6: Financial Planning
+// ============================================================================
+const example6_FinancialPlanning: FlowChartData = {
+  rootId: 'assess',
+  nodes: [
+    {
+      id: 'assess',
+      variant: 'primary',
+      label: 'Assess Current\nFinances',
+      connections: [{ targetId: 'emergency-fund' }],
+    },
+    {
+      id: 'emergency-fund',
+      variant: 'neutral',
+      label: 'Emergency Fund\n(3-6 months)?',
+      connections: [
+        { targetId: 'debt-check', label: 'Yes', color: 'green' },
+        { targetId: 'build-emergency', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'build-emergency',
+      variant: 'secondary',
+      label: 'Build Emergency\nFund First',
+      connections: [{ targetId: 'debt-check' }],
+    },
+    {
+      id: 'debt-check',
+      variant: 'neutral',
+      label: 'High-Interest\nDebt?',
+      connections: [
+        { targetId: 'pay-debt', label: 'Yes', color: 'red' },
+        { targetId: 'retirement-check', label: 'No', color: 'green' },
+      ],
+    },
+    {
+      id: 'pay-debt',
+      variant: 'secondary',
+      label: 'Pay Off\nDebt',
+      connections: [{ targetId: 'retirement-check' }],
+    },
+    {
+      id: 'retirement-check',
+      variant: 'neutral',
+      column: 1,
+      label: '401k Match\nAvailable?',
+      connections: [
+        { targetId: 'max-match', label: 'Yes', color: 'green' },
+        { targetId: 'ira', label: 'No', color: 'blue' },
+      ],
+    },
+    {
+      id: 'max-match',
+      variant: 'secondary',
+      column: 2,
+      label: 'Maximize\nEmployer Match',
+      connections: [{ targetId: 'ira' }],
+    },
+    {
+      id: 'ira',
+      variant: 'primary',
+      column: 3,
+      label: 'Max Out\nIRA',
+      connections: [{ targetId: 'invest-more' }],
+    },
+    {
+      id: 'invest-more',
+      variant: 'neutral',
+      column: 1,
+      label: 'More to\nInvest?',
+      connections: [
+        { targetId: 'taxable', label: 'Yes', color: 'green' },
+        { targetId: 'review', label: 'No', color: 'blue' },
+      ],
+    },
+    {
+      id: 'taxable',
+      variant: 'secondary',
+      column: 2,
+      label: 'Taxable\nBrokerage',
+      connections: [{ targetId: 'review' }],
+    },
+    {
+      id: 'review',
+      variant: 'primary',
+      column: 3,
+      label: 'Annual\nReview',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 7: Vacation Planning
+// ============================================================================
+const example7_VacationPlanning: FlowChartData = {
+  rootId: 'start-planning',
+  nodes: [
+    {
+      id: 'start-planning',
+      variant: 'primary',
+      label: 'Start\nPlanning',
+      connections: [{ targetId: 'budget' }],
+    },
+    {
+      id: 'budget',
+      variant: 'neutral',
+      label: 'Set Budget\n& Dates',
+      connections: [{ targetId: 'destination' }],
+    },
+    {
+      id: 'destination',
+      variant: 'neutral',
+      label: 'Choose\nDestination',
+      connections: [
+        { targetId: 'domestic', label: 'Domestic', color: 'blue' },
+        { targetId: 'international', label: 'International', color: 'green' },
+      ],
+    },
+    {
+      id: 'domestic',
+      variant: 'secondary',
+      label: 'Book\nDomestic Travel',
+      connections: [{ targetId: 'accommodation' }],
+    },
+    {
+      id: 'international',
+      variant: 'secondary',
+      label: 'Book\nInternational',
+      connections: [{ targetId: 'passport-check' }],
+    },
+    {
+      id: 'passport-check',
+      variant: 'neutral',
+      column: 1,
+      label: 'Passport\nValid?',
+      connections: [
+        { targetId: 'accommodation', label: 'Yes', color: 'green' },
+        { targetId: 'renew-passport', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'renew-passport',
+      variant: 'secondary',
+      column: 2,
+      label: 'Renew\nPassport',
+      connections: [{ targetId: 'accommodation' }],
+    },
+    {
+      id: 'accommodation',
+      variant: 'primary',
+      column: 3,
+      label: 'Book\nAccommodation',
+      connections: [{ targetId: 'activities' }],
+    },
+    {
+      id: 'activities',
+      variant: 'neutral',
+      column: 1,
+      label: 'Plan\nActivities',
+      connections: [{ targetId: 'packing' }],
+    },
+    {
+      id: 'packing',
+      variant: 'secondary',
+      column: 2,
+      label: 'Pack\nBags',
+      connections: [{ targetId: 'enjoy' }],
+    },
+    {
+      id: 'enjoy',
+      variant: 'primary',
+      column: 3,
+      label: 'Enjoy\nVacation!',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 8: Customer Support Workflow
+// ============================================================================
+const example8_CustomerSupport: FlowChartData = {
+  rootId: 'ticket-received',
+  nodes: [
+    {
+      id: 'ticket-received',
+      variant: 'primary',
+      label: 'Support Ticket\nReceived',
+      connections: [{ targetId: 'categorize' }],
+    },
+    {
+      id: 'categorize',
+      variant: 'neutral',
+      label: 'Ticket\nPriority?',
+      connections: [
+        { targetId: 'critical', label: 'Critical', color: 'red' },
+        { targetId: 'high', label: 'High', color: 'orange' },
+        { targetId: 'normal', label: 'Normal', color: 'blue' },
+      ],
+    },
+    {
+      id: 'critical',
+      variant: 'secondary',
+      label: 'Immediate\nEscalation',
+      connections: [{ targetId: 'investigate' }],
+    },
+    {
+      id: 'high',
+      variant: 'secondary',
+      label: 'Assign to\nSenior Agent',
+      connections: [{ targetId: 'investigate' }],
+    },
+    {
+      id: 'normal',
+      variant: 'secondary',
+      label: 'Queue for\nNext Agent',
+      connections: [{ targetId: 'investigate' }],
+    },
+    {
+      id: 'investigate',
+      variant: 'neutral',
+      column: 1,
+      label: 'Investigate\nIssue',
+      connections: [{ targetId: 'known-issue' }],
+    },
+    {
+      id: 'known-issue',
+      variant: 'neutral',
+      label: 'Known\nIssue?',
+      connections: [
+        { targetId: 'apply-solution', label: 'Yes', color: 'green' },
+        { targetId: 'research', label: 'No', color: 'orange' },
+      ],
+    },
+    {
+      id: 'apply-solution',
+      variant: 'secondary',
+      label: 'Apply Known\nSolution',
+      connections: [{ targetId: 'test-solution' }],
+    },
+    {
+      id: 'research',
+      variant: 'secondary',
+      label: 'Research &\nDevelop Fix',
+      connections: [{ targetId: 'test-solution' }],
+    },
+    {
+      id: 'test-solution',
+      variant: 'neutral',
+      column: 1,
+      label: 'Solution\nWorks?',
+      connections: [
+        { targetId: 'document', label: 'Yes', color: 'green' },
+        { targetId: 'escalate-tech', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'escalate-tech',
+      variant: 'secondary',
+      column: 2,
+      label: 'Escalate to\nEngineering',
+      connections: [{ targetId: 'investigate', label: 'Retry', color: 'orange' }],
+    },
+    {
+      id: 'document',
+      variant: 'primary',
+      column: 2,
+      label: 'Document\nSolution',
+      connections: [{ targetId: 'close-ticket' }],
+    },
+    {
+      id: 'close-ticket',
+      variant: 'secondary',
+      label: 'Close Ticket\n& Follow Up',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 9: E-commerce Purchase Flow
+// ============================================================================
+const example9_Ecommerce: FlowChartData = {
+  rootId: 'browse',
+  nodes: [
+    {
+      id: 'browse',
+      variant: 'primary',
+      label: 'Browse\nProducts',
+      connections: [{ targetId: 'add-to-cart' }],
+    },
+    {
+      id: 'add-to-cart',
+      variant: 'neutral',
+      label: 'Add to\nCart',
+      connections: [{ targetId: 'continue-shopping' }],
+    },
+    {
+      id: 'continue-shopping',
+      variant: 'neutral',
+      label: 'Continue\nShopping?',
+      connections: [
+        { targetId: 'browse', label: 'Yes', color: 'blue' },
+        { targetId: 'checkout', label: 'No', color: 'green' },
+      ],
+    },
+    {
+      id: 'checkout',
+      variant: 'primary',
+      label: 'Start\nCheckout',
+      connections: [{ targetId: 'account-check' }],
+    },
+    {
+      id: 'account-check',
+      variant: 'neutral',
+      label: 'Logged\nIn?',
+      connections: [
+        { targetId: 'shipping', label: 'Yes', color: 'green' },
+        { targetId: 'guest-or-login', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'guest-or-login',
+      variant: 'neutral',
+      label: 'Guest or\nCreate Account?',
+      connections: [
+        { targetId: 'shipping', label: 'Guest', color: 'blue' },
+        { targetId: 'create-account', label: 'Create', color: 'green' },
+      ],
+    },
+    {
+      id: 'create-account',
+      variant: 'secondary',
+      label: 'Create\nAccount',
+      connections: [{ targetId: 'shipping' }],
+    },
+    {
+      id: 'shipping',
+      variant: 'primary',
+      column: 3,
+      label: 'Enter Shipping\nAddress',
+      connections: [{ targetId: 'payment' }],
+    },
+    {
+      id: 'payment',
+      variant: 'neutral',
+      column: 1,
+      label: 'Enter Payment\nInfo',
+      connections: [{ targetId: 'verify-payment' }],
+    },
+    {
+      id: 'verify-payment',
+      variant: 'neutral',
+      label: 'Payment\nVerified?',
+      connections: [
+        { targetId: 'confirm-order', label: 'Yes', color: 'green' },
+        { targetId: 'payment-failed', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'payment-failed',
+      variant: 'secondary',
+      label: 'Payment\nFailed',
+      connections: [{ targetId: 'payment', label: 'Retry', color: 'orange' }],
+    },
+    {
+      id: 'confirm-order',
+      variant: 'primary',
+      column: 3,
+      label: 'Order\nConfirmation',
+      connections: [{ targetId: 'fulfillment' }],
+    },
+    {
+      id: 'fulfillment',
+      variant: 'secondary',
+      column: 1,
+      label: 'Fulfillment &\nShipping',
+      connections: [{ targetId: 'delivered' }],
+    },
+    {
+      id: 'delivered',
+      variant: 'primary',
+      column: 2,
+      label: 'Delivered',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
 // Example Definitions
 // ============================================================================
 interface ExampleDef {
@@ -335,6 +815,50 @@ const examples: ExampleDef[] = [
     hasActivePath: true,
     maxWidth: 3500,
     scale: 1.1,
+  },
+  {
+    id: 'software-dev',
+    name: 'Software Development Workflow',
+    description: 'Complete CI/CD pipeline from planning through production deployment',
+    data: example5_SoftwareDev,
+    hasActivePath: true,
+    maxWidth: 800,
+    scale: 1,
+  },
+  {
+    id: 'financial-planning',
+    name: 'Personal Financial Planning',
+    description: 'Step-by-step guide to building financial security and wealth',
+    data: example6_FinancialPlanning,
+    hasActivePath: true,
+    maxWidth: 900,
+    scale: 1,
+  },
+  {
+    id: 'vacation-planning',
+    name: 'Vacation Planning',
+    description: 'Complete vacation planning process from budgeting to departure',
+    data: example7_VacationPlanning,
+    maxWidth: 900,
+    scale: 1,
+  },
+  {
+    id: 'customer-support',
+    name: 'Customer Support Workflow',
+    description: 'Ticket triage, investigation, and resolution with escalation paths',
+    data: example8_CustomerSupport,
+    hasActivePath: true,
+    maxWidth: 800,
+    scale: 1,
+  },
+  {
+    id: 'ecommerce',
+    name: 'E-commerce Purchase Flow',
+    description: 'Online shopping from browsing through delivery',
+    data: example9_Ecommerce,
+    hasActivePath: true,
+    maxWidth: 900,
+    scale: 1,
   },
   {
     id: 'loop-back',
@@ -367,6 +891,7 @@ const examples: ExampleDef[] = [
 export function FlowChartV2Demo() {
   const [selectedExample, setSelectedExample] = React.useState<string>('financial');
   const [showActivePath, setShowActivePath] = React.useState(false);
+  const [userScale, setUserScale] = React.useState<number>(1);
 
   const currentExample = examples.find((ex) => ex.id === selectedExample) || examples[0];
 
@@ -427,6 +952,100 @@ export function FlowChartV2Demo() {
       };
     }
 
+    if (selectedExample === 'software-dev') {
+      // Path: Shows a bug fix loop
+      return {
+        ...currentExample.data,
+        nodes: currentExample.data.nodes.map((node) => {
+          const activeNodeIds = [
+            'planning',
+            'design',
+            'development',
+            'code-review',
+            'qa-testing',
+            'qa-decision',
+            'bug-fix',
+          ];
+          return {
+            ...node,
+            isActive: activeNodeIds.includes(node.id),
+          };
+        }),
+      };
+    }
+
+    if (selectedExample === 'financial-planning') {
+      // Path: Shows the complete financial planning path
+      return {
+        ...currentExample.data,
+        nodes: currentExample.data.nodes.map((node) => {
+          const activeNodeIds = [
+            'assess',
+            'emergency-fund',
+            'build-emergency',
+            'debt-check',
+            'retirement-check',
+            'max-match',
+            'ira',
+            'invest-more',
+            'taxable',
+            'review',
+          ];
+          return {
+            ...node,
+            isActive: activeNodeIds.includes(node.id),
+          };
+        }),
+      };
+    }
+
+    if (selectedExample === 'customer-support') {
+      // Path: Shows escalation to engineering
+      return {
+        ...currentExample.data,
+        nodes: currentExample.data.nodes.map((node) => {
+          const activeNodeIds = [
+            'ticket-received',
+            'categorize',
+            'high',
+            'investigate',
+            'known-issue',
+            'research',
+            'test-solution',
+            'escalate-tech',
+          ];
+          return {
+            ...node,
+            isActive: activeNodeIds.includes(node.id),
+          };
+        }),
+      };
+    }
+
+    if (selectedExample === 'ecommerce') {
+      // Path: Shows payment retry flow
+      return {
+        ...currentExample.data,
+        nodes: currentExample.data.nodes.map((node) => {
+          const activeNodeIds = [
+            'browse',
+            'add-to-cart',
+            'continue-shopping',
+            'checkout',
+            'account-check',
+            'shipping',
+            'payment',
+            'verify-payment',
+            'payment-failed',
+          ];
+          return {
+            ...node,
+            isActive: activeNodeIds.includes(node.id),
+          };
+        }),
+      };
+    }
+
     return currentExample.data;
   };
 
@@ -475,6 +1094,42 @@ export function FlowChartV2Demo() {
           </select>
           <p style={{ marginTop: '8px', color: '#666', fontSize: '14px', fontStyle: 'italic' }}>
             {currentExample.description}
+          </p>
+        </div>
+
+        {/* Scale Slider */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 'bold',
+              color: '#1e3a5f',
+            }}
+          >
+            Scale: {userScale.toFixed(2)}x
+          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ color: '#666', fontSize: '14px', minWidth: '40px' }}>0.5x</span>
+            <input
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.1"
+              value={userScale}
+              onChange={(e) => setUserScale(parseFloat(e.target.value))}
+              style={{
+                flex: 1,
+                height: '6px',
+                borderRadius: '3px',
+                outline: 'none',
+                cursor: 'pointer',
+              }}
+            />
+            <span style={{ color: '#666', fontSize: '14px', minWidth: '40px' }}>2.0x</span>
+          </div>
+          <p style={{ marginTop: '8px', color: '#666', fontSize: '12px', fontStyle: 'italic' }}>
+            Adjust the scale to zoom in or out on the flowchart
           </p>
         </div>
 
@@ -559,7 +1214,7 @@ export function FlowChartV2Demo() {
             title={currentExample.name}
             subtitle={currentExample.description}
             maxWidth={currentExample.maxWidth}
-            scale={currentExample.scale}
+            scale={userScale}
           />
         </div>
 

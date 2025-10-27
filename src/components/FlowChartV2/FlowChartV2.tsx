@@ -97,6 +97,54 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     }
   };
 
+  // Helper function to check if a horizontal line segment intersects with a node
+  const horizontalSegmentIntersectsNode = (
+    y: number,
+    x1: number,
+    x2: number,
+    node: PositionedNode
+  ): boolean => {
+    const buffer = 10 * finalScale;
+    const minX = Math.min(x1, x2);
+    const maxX = Math.max(x1, x2);
+
+    // Check if line's Y is within node's Y range (with buffer)
+    if (y < node.y - buffer || y > node.y + node.height + buffer) {
+      return false;
+    }
+
+    // Check if line's X range overlaps with node's X range (with buffer)
+    if (maxX < node.x - buffer || minX > node.x + node.width + buffer) {
+      return false;
+    }
+
+    return true;
+  };
+
+  // Helper function to check if a vertical line segment intersects with a node
+  const verticalSegmentIntersectsNode = (
+    x: number,
+    y1: number,
+    y2: number,
+    node: PositionedNode
+  ): boolean => {
+    const buffer = 10 * finalScale;
+    const minY = Math.min(y1, y2);
+    const maxY = Math.max(y1, y2);
+
+    // Check if line's X is within node's X range (with buffer)
+    if (x < node.x - buffer || x > node.x + node.width + buffer) {
+      return false;
+    }
+
+    // Check if line's Y range overlaps with node's Y range (with buffer)
+    if (maxY < node.y - buffer || minY > node.y + node.height + buffer) {
+      return false;
+    }
+
+    return true;
+  };
+
   return (
     <div className={className} style={{ width: '100%', overflow: 'auto' }}>
       <svg
@@ -278,31 +326,120 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             // For 180-degree cases, must go perpendicular before reversing
             if (fromSide === 'bottom' && toSide === 'top') {
               // Exit bottom, must go down, then horizontal, then up
-              // Go down min distance, horizontally to target X, then up to target
-              pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${end.x} ${firstPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              // Check if direct horizontal route would collide with nodes
+              const otherNodes = layout.nodes.filter(
+                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
+              );
+
+              let horizontalY = firstPoint.y;
+              let needsGutterRoute = otherNodes.some((node) =>
+                horizontalSegmentIntersectsNode(horizontalY, start.x, end.x, node)
+              );
+
+              if (needsGutterRoute) {
+                // Route around nodes using gutter (go to side, then up/down in gutter, then horizontal)
+                const gutterX = start.x < end.x ? from.x + from.width + 30 * finalScale : from.x - 30 * finalScale;
+                pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${gutterX} ${firstPoint.y} L ${gutterX} ${lastPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              } else {
+                pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${end.x} ${firstPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              }
             } else if (fromSide === 'top' && toSide === 'bottom') {
               // Exit top, must go up, then horizontal, then down
-              pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${end.x} ${firstPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              const otherNodes = layout.nodes.filter(
+                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
+              );
+
+              let horizontalY = firstPoint.y;
+              let needsGutterRoute = otherNodes.some((node) =>
+                horizontalSegmentIntersectsNode(horizontalY, start.x, end.x, node)
+              );
+
+              if (needsGutterRoute) {
+                const gutterX = start.x < end.x ? from.x + from.width + 30 * finalScale : from.x - 30 * finalScale;
+                pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${gutterX} ${firstPoint.y} L ${gutterX} ${lastPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              } else {
+                pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${end.x} ${firstPoint.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              }
             } else if (fromSide === 'right' && toSide === 'left') {
               // Exit right, must go right, then vertical, then left
-              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+              const otherNodes = layout.nodes.filter(
+                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
+              );
+
+              let verticalX = firstPoint.x;
+              let needsGutterRoute = otherNodes.some((node) =>
+                verticalSegmentIntersectsNode(verticalX, start.y, end.y, node)
+              );
+
+              if (needsGutterRoute) {
+                const gutterY = start.y < end.y ? from.y + from.height + 30 * finalScale : from.y - 30 * finalScale;
+                pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${gutterY} L ${lastPoint.x} ${gutterY} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+              } else {
+                pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+              }
             } else if (fromSide === 'left' && toSide === 'right') {
               // Exit left, must go left, then vertical, then right
-              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+              const otherNodes = layout.nodes.filter(
+                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
+              );
+
+              let verticalX = firstPoint.x;
+              let needsGutterRoute = otherNodes.some((node) =>
+                verticalSegmentIntersectsNode(verticalX, start.y, end.y, node)
+              );
+
+              if (needsGutterRoute) {
+                const gutterY = start.y < end.y ? from.y + from.height + 30 * finalScale : from.y - 30 * finalScale;
+                pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${gutterY} L ${lastPoint.x} ${gutterY} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+              } else {
+                pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+              }
             }
           } else {
-            // Non-180 cases - can go more directly
+            // Non-180 cases - can go more directly, but still check for collisions
             if ((fromSide === 'bottom' || fromSide === 'top') && (toSide === 'left' || toSide === 'right')) {
               // Vertical exit to horizontal entry
-              // Go vertical to target Y, then horizontal to target
-              pathD = `M ${start.x} ${start.y} L ${start.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+              const otherNodes = layout.nodes.filter(
+                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
+              );
+
+              let needsGutterRoute = otherNodes.some(
+                (node) =>
+                  verticalSegmentIntersectsNode(start.x, start.y, end.y, node) ||
+                  horizontalSegmentIntersectsNode(end.y, start.x, end.x, node)
+              );
+
+              if (needsGutterRoute) {
+                // Use midpoint routing
+                pathD = `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
+              } else {
+                pathD = `M ${start.x} ${start.y} L ${start.x} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+              }
             } else if ((fromSide === 'left' || fromSide === 'right') && (toSide === 'top' || toSide === 'bottom')) {
               // Horizontal exit to vertical entry
-              // Go horizontal to target X, then vertical to target
-              pathD = `M ${start.x} ${start.y} L ${end.x} ${start.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              const otherNodes = layout.nodes.filter(
+                (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
+              );
+
+              let needsGutterRoute = otherNodes.some(
+                (node) =>
+                  horizontalSegmentIntersectsNode(start.y, start.x, end.x, node) ||
+                  verticalSegmentIntersectsNode(end.x, start.y, end.y, node)
+              );
+
+              if (needsGutterRoute) {
+                // Use midpoint routing
+                pathD = `M ${start.x} ${start.y} L ${midX} ${start.y} L ${midX} ${end.y} L ${end.x} ${end.y}`;
+              } else {
+                pathD = `M ${start.x} ${start.y} L ${end.x} ${start.y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              }
             } else {
-              // Same direction (e.g., bottom to bottom, right to right) - straight line
-              pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+              // Same direction (e.g., bottom to bottom, right to right) - use midpoint
+              if (fromSide === 'bottom' || fromSide === 'top') {
+                pathD = `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
+              } else {
+                pathD = `M ${start.x} ${start.y} L ${midX} ${start.y} L ${midX} ${end.y} L ${end.x} ${end.y}`;
+              }
             }
           }
 
