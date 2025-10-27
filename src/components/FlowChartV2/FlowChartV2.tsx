@@ -145,7 +145,192 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     return true;
   };
 
-  // Find a safe horizontal corridor between nodes - simpler version
+  // NEW GRID-BASED PATH CALCULATION
+  const calculateGridBasedPath = (
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+    fromNode: PositionedNode,
+    toNode: PositionedNode,
+    fromSide: 'top' | 'right' | 'bottom' | 'left',
+    toSide: 'top' | 'right' | 'bottom' | 'left',
+    corridorOffset: number,
+    allNodes: PositionedNode[],
+    scale: number
+  ): string => {
+    // Base perpendicular distance (8px minimum)
+    const baseMinDistance = 8 * scale;
+    const exitDistance = baseMinDistance + Math.abs(corridorOffset);
+    const entryDistance = baseMinDistance + Math.abs(corridorOffset);
+
+    // Calculate exit point (perpendicular from start)
+    let exitPoint: { x: number; y: number };
+    switch (fromSide) {
+      case 'right':
+        exitPoint = { x: start.x + exitDistance, y: start.y };
+        break;
+      case 'left':
+        exitPoint = { x: start.x - exitDistance, y: start.y };
+        break;
+      case 'bottom':
+        exitPoint = { x: start.x, y: start.y + exitDistance };
+        break;
+      case 'top':
+        exitPoint = { x: start.x, y: start.y - exitDistance };
+        break;
+    }
+
+    // Calculate entry point (perpendicular to end)
+    let entryPoint: { x: number; y: number };
+    switch (toSide) {
+      case 'right':
+        entryPoint = { x: end.x + entryDistance, y: end.y };
+        break;
+      case 'left':
+        entryPoint = { x: end.x - entryDistance, y: end.y };
+        break;
+      case 'bottom':
+        entryPoint = { x: end.x, y: end.y + entryDistance };
+        break;
+      case 'top':
+        entryPoint = { x: end.x, y: end.y - entryDistance };
+        break;
+    }
+
+    // Find all horizontal and vertical gutters
+    const horizontalGutters = calculateHorizontalGutters(allNodes);
+    const verticalGutters = calculateVerticalGutters(allNodes);
+
+    // Determine if we're exiting/entering vertically or horizontally
+    const exitVertical = fromSide === 'top' || fromSide === 'bottom';
+    const entryVertical = toSide === 'top' || toSide === 'bottom';
+
+    // Build path through gutters
+    let pathSegments: { x: number; y: number }[] = [start, exitPoint];
+
+    if (exitVertical && entryVertical) {
+      // Vertical → Vertical: exit vertically, cross horizontally through gutter, enter vertically
+      const gutterY = findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) + corridorOffset;
+      pathSegments.push({ x: exitPoint.x, y: gutterY });
+      pathSegments.push({ x: entryPoint.x, y: gutterY });
+      pathSegments.push({ x: entryPoint.x, y: entryPoint.y });
+    } else if (!exitVertical && !entryVertical) {
+      // Horizontal → Horizontal: exit horizontally, cross vertically through gutter, enter horizontally
+      const gutterX = findBestVerticalGutter(exitPoint.x, entryPoint.x, verticalGutters, fromNode, toNode) + corridorOffset;
+      pathSegments.push({ x: gutterX, y: exitPoint.y });
+      pathSegments.push({ x: gutterX, y: entryPoint.y });
+      pathSegments.push({ x: entryPoint.x, y: entryPoint.y });
+    } else if (exitVertical && !entryVertical) {
+      // Vertical → Horizontal: exit vertically, cross horizontally, enter horizontally
+      const gutterY = findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) + corridorOffset;
+      pathSegments.push({ x: exitPoint.x, y: gutterY });
+      pathSegments.push({ x: entryPoint.x, y: gutterY });
+      pathSegments.push({ x: entryPoint.x, y: entryPoint.y });
+    } else {
+      // Horizontal → Vertical: exit horizontally, cross vertically, enter vertically
+      const gutterY = findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) + corridorOffset;
+      pathSegments.push({ x: exitPoint.x, y: gutterY });
+      pathSegments.push({ x: entryPoint.x, y: gutterY });
+      pathSegments.push({ x: entryPoint.x, y: entryPoint.y });
+    }
+
+    pathSegments.push(end);
+
+    // Build SVG path string
+    return pathSegments.map((point, i) =>
+      `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+    ).join(' ');
+  };
+
+  // Calculate horizontal gutters (between rows of nodes)
+  const calculateHorizontalGutters = (nodes: PositionedNode[]): { top: number; bottom: number; center: number }[] => {
+    const sortedByY = [...nodes].sort((a, b) => a.y - b.y);
+    const gutters: { top: number; bottom: number; center: number }[] = [];
+
+    for (let i = 0; i < sortedByY.length - 1; i++) {
+      const top = sortedByY[i].y + sortedByY[i].height;
+      const bottom = sortedByY[i + 1].y;
+      if (bottom > top) {
+        gutters.push({ top, bottom, center: (top + bottom) / 2 });
+      }
+    }
+
+    return gutters;
+  };
+
+  // Calculate vertical gutters (between columns of nodes)
+  const calculateVerticalGutters = (nodes: PositionedNode[]): { left: number; right: number; center: number }[] => {
+    const sortedByX = [...nodes].sort((a, b) => a.x - b.x);
+    const gutters: { left: number; right: number; center: number }[] = [];
+
+    for (let i = 0; i < sortedByX.length - 1; i++) {
+      const left = sortedByX[i].x + sortedByX[i].width;
+      const right = sortedByX[i + 1].x;
+      if (right > left) {
+        gutters.push({ left, right, center: (left + right) / 2 });
+      }
+    }
+
+    return gutters;
+  };
+
+  // Find the best horizontal gutter for routing between two Y positions
+  const findBestHorizontalGutter = (
+    fromY: number,
+    toY: number,
+    gutters: { top: number; bottom: number; center: number }[],
+    fromNode: PositionedNode,
+    toNode: PositionedNode
+  ): number => {
+    // Find gutter between the two nodes
+    const fromBottom = fromNode.y + fromNode.height;
+    const toTop = toNode.y;
+
+    // Find gutter that contains the space between nodes
+    const targetGutter = gutters.find(g =>
+      g.top >= fromBottom && g.bottom <= toTop ||
+      g.top <= fromBottom && g.bottom >= toTop ||
+      (fromBottom >= g.top && fromBottom <= g.bottom) ||
+      (toTop >= g.top && toTop <= g.bottom)
+    );
+
+    if (targetGutter) {
+      return targetGutter.center;
+    }
+
+    // Fallback: use midpoint
+    return (fromY + toY) / 2;
+  };
+
+  // Find the best vertical gutter for routing between two X positions
+  const findBestVerticalGutter = (
+    fromX: number,
+    toX: number,
+    gutters: { left: number; right: number; center: number }[],
+    fromNode: PositionedNode,
+    toNode: PositionedNode
+  ): number => {
+    // Find gutter between the two nodes
+    const fromRight = fromNode.x + fromNode.width;
+    const toLeft = toNode.x;
+
+    // Find gutter that contains the space between nodes
+    const targetGutter = gutters.find(g =>
+      g.left >= fromRight && g.right <= toLeft ||
+      g.left <= fromRight && g.right >= toLeft ||
+      (fromRight >= g.left && fromRight <= g.right) ||
+      (toLeft >= g.left && toLeft <= g.right)
+    );
+
+    if (targetGutter) {
+      return targetGutter.center;
+    }
+
+    // Fallback: use midpoint
+    return (fromX + toX) / 2;
+  };
+
+  // OLD CORRIDOR FINDING FUNCTIONS (kept for reference)
+  // Find a safe horizontal corridor centered in the gutter between nodes
   const findSafeHorizontalY = (
     x1: number,
     x2: number,
@@ -155,24 +340,58 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     const minX = Math.min(x1, x2);
     const maxX = Math.max(x1, x2);
 
-    // Try the preferred Y first
-    if (!otherNodes.some(node => horizontalSegmentIntersectsNode(preferredY, minX, maxX, node))) {
+    // Find nodes that are in the X range of this corridor
+    const nodesInRange = otherNodes.filter(node => {
+      return !(maxX < node.x || minX > node.x + node.width);
+    });
+
+    if (nodesInRange.length === 0) {
+      // No nodes in range, use preferred Y
       return preferredY;
     }
 
-    // Try above and below each node systematically
-    const testOffsets = [-50, 50, -100, 100, -150, 150];
-    for (const offset of testOffsets) {
-      const testY = preferredY + offset * finalScale;
-      if (!otherNodes.some(node => horizontalSegmentIntersectsNode(testY, minX, maxX, node))) {
-        return testY;
+    // Find the gutter that contains preferredY
+    // Sort nodes by Y position
+    const sortedNodes = [...nodesInRange].sort((a, b) => a.y - b.y);
+
+    // Find the gap that contains preferredY or is closest to it
+    let bestGutterY = preferredY;
+    let foundGutter = false;
+
+    // Check gap before first node
+    const firstNodeTop = sortedNodes[0].y;
+    if (preferredY < firstNodeTop) {
+      bestGutterY = firstNodeTop / 2; // Center in the space from 0 to first node
+      foundGutter = true;
+    }
+
+    // Check gaps between nodes
+    if (!foundGutter) {
+      for (let i = 0; i < sortedNodes.length - 1; i++) {
+        const nodeBottom = sortedNodes[i].y + sortedNodes[i].height;
+        const nextNodeTop = sortedNodes[i + 1].y;
+
+        if (preferredY >= nodeBottom && preferredY <= nextNodeTop) {
+          // Found the gutter containing preferredY
+          bestGutterY = (nodeBottom + nextNodeTop) / 2; // Center of gutter
+          foundGutter = true;
+          break;
+        }
       }
     }
 
-    return preferredY; // Fallback
+    // Check gap after last node
+    if (!foundGutter) {
+      const lastNodeBottom = sortedNodes[sortedNodes.length - 1].y + sortedNodes[sortedNodes.length - 1].height;
+      if (preferredY >= lastNodeBottom) {
+        bestGutterY = preferredY; // Use preferred if beyond all nodes
+      }
+    }
+
+    return bestGutterY;
   };
 
-  // Find a safe vertical corridor between nodes - simpler version
+  // Find a safe vertical corridor centered in the gutter between nodes
   const findSafeVerticalX = (
     y1: number,
     y2: number,
@@ -182,21 +401,55 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     const minY = Math.min(y1, y2);
     const maxY = Math.max(y1, y2);
 
-    // Try the preferred X first
-    if (!otherNodes.some(node => verticalSegmentIntersectsNode(preferredX, minY, maxY, node))) {
+    // Find nodes that are in the Y range of this corridor
+    const nodesInRange = otherNodes.filter(node => {
+      return !(maxY < node.y || minY > node.y + node.height);
+    });
+
+    if (nodesInRange.length === 0) {
+      // No nodes in range, use preferred X
       return preferredX;
     }
 
-    // Try left and right of each node systematically
-    const testOffsets = [-50, 50, -100, 100, -150, 150];
-    for (const offset of testOffsets) {
-      const testX = preferredX + offset * finalScale;
-      if (!otherNodes.some(node => verticalSegmentIntersectsNode(testX, minY, maxY, node))) {
-        return testX;
+    // Find the gutter that contains preferredX
+    // Sort nodes by X position
+    const sortedNodes = [...nodesInRange].sort((a, b) => a.x - b.x);
+
+    // Find the gap that contains preferredX or is closest to it
+    let bestGutterX = preferredX;
+    let foundGutter = false;
+
+    // Check gap before first node
+    const firstNodeLeft = sortedNodes[0].x;
+    if (preferredX < firstNodeLeft) {
+      bestGutterX = firstNodeLeft / 2; // Center in the space from 0 to first node
+      foundGutter = true;
+    }
+
+    // Check gaps between nodes
+    if (!foundGutter) {
+      for (let i = 0; i < sortedNodes.length - 1; i++) {
+        const nodeRight = sortedNodes[i].x + sortedNodes[i].width;
+        const nextNodeLeft = sortedNodes[i + 1].x;
+
+        if (preferredX >= nodeRight && preferredX <= nextNodeLeft) {
+          // Found the gutter containing preferredX
+          bestGutterX = (nodeRight + nextNodeLeft) / 2; // Center of gutter
+          foundGutter = true;
+          break;
+        }
       }
     }
 
-    return preferredX; // Fallback
+    // Check gap after last node
+    if (!foundGutter) {
+      const lastNodeRight = sortedNodes[sortedNodes.length - 1].x + sortedNodes[sortedNodes.length - 1].width;
+      if (preferredX >= lastNodeRight) {
+        bestGutterX = preferredX; // Use preferred if beyond all nodes
+      }
+    }
+
+    return bestGutterX;
   };
 
   return (
@@ -327,24 +580,33 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
           const start = getStaggeredConnectionPoint(from, fromSide, true, index);
           const end = getStaggeredConnectionPoint(to, toSide, false, index);
-          const midY = start.y + (end.y - start.y) / 2;
-          const midX = start.x + (end.x - start.x) / 2;
 
           // Calculate a deterministic offset for this connection to prevent overlapping parallel lines
-          // Use a simple hash of the connection to get a consistent offset
           const connectionHash = (from.node.id + to.node.id + index).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
           const offsetAmount = 4 * finalScale; // 4px offset increments
           const corridorOffset = ((connectionHash % 5) - 2) * offsetAmount; // Range: -8px to +8px
 
-          // Create arrow path with minimum travel distance in exit direction
-          // Base minimum is 8px, but we add the absolute value of offset to create gaps between arrows
+          // NEW GRID-BASED ROUTING SYSTEM
+          const pathD = calculateGridBasedPath(
+            start,
+            end,
+            from,
+            to,
+            fromSide,
+            toSide,
+            corridorOffset,
+            layout.nodes,
+            finalScale
+          );
+
+          // OLD ROUTING SYSTEM (commented out for comparison)
+          /*
           const baseMinDistance = 8 * finalScale;
           const exitDistance = baseMinDistance + Math.abs(corridorOffset);
           const entryDistance = baseMinDistance + Math.abs(corridorOffset);
 
           let pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
 
-          // Calculate initial offset point based on exit side - MUST travel this distance perpendicular
           let firstPoint: { x: number; y: number };
           switch (fromSide) {
             case 'right':
@@ -361,7 +623,6 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
               break;
           }
 
-          // Calculate approach point based on entry side - MUST approach from this direction
           let lastPoint: { x: number; y: number };
           switch (toSide) {
             case 'right':
@@ -378,74 +639,46 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
               break;
           }
 
-          // Build path with Manhattan routing
-          // EVERY path must: start → firstPoint (perpendicular exit) → routing → lastPoint (perpendicular entry) → end
-
-          // Get list of nodes to avoid (all except source and destination)
           const otherNodes = layout.nodes.filter(
             (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
           );
 
-          // Determine routing based on exit and entry directions
           const exitVertical = fromSide === 'top' || fromSide === 'bottom';
           const entryVertical = toSide === 'top' || toSide === 'bottom';
 
           if (exitVertical && entryVertical) {
-            // CASE 1: Vertical exit → Vertical entry (e.g., bottom → top, top → bottom)
-            // Path: start → vertical to firstPoint → horizontal across → vertical to lastPoint → end
-            // Apply offset at the corner points where direction changes
-            const safeY = findSafeHorizontalY(start.x, end.x, firstPoint.y, otherNodes);
-            const corner1Y = firstPoint.y + corridorOffset; // First corner after exit
-            const corner2Y = safeY + corridorOffset; // Corridor segment
-            pathD = `M ${start.x} ${start.y} L ${start.x} ${corner1Y} L ${start.x} ${corner2Y} L ${end.x} ${corner2Y} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+            const safeY = findSafeHorizontalY(start.x, end.x, firstPoint.y, otherNodes) + corridorOffset;
+            pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${start.x} ${safeY} L ${end.x} ${safeY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
           } else if (!exitVertical && !entryVertical) {
-            // CASE 2: Horizontal exit → Horizontal entry (e.g., right → left, left → right)
-            // Path: start → horizontal to firstPoint → vertical down/up → horizontal to lastPoint → end
-            // Apply offset at the corner points where direction changes
-            const safeX = findSafeVerticalX(start.y, end.y, firstPoint.x, otherNodes);
-            const corner1X = firstPoint.x + corridorOffset; // First corner after exit
-            const corner2X = safeX + corridorOffset; // Corridor segment
-            pathD = `M ${start.x} ${start.y} L ${corner1X} ${start.y} L ${corner2X} ${start.y} L ${corner2X} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+            const safeX = findSafeVerticalX(start.y, end.y, firstPoint.x, otherNodes) + corridorOffset;
+            pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${safeX} ${start.y} L ${safeX} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
           } else if (exitVertical && !entryVertical) {
-            // CASE 3: Vertical exit → Horizontal entry (e.g., bottom → left, top → right)
-            // Path: start → vertical to firstPoint → horizontal across → horizontal to lastPoint → end
-            // Apply offset at the corner points
-            const safeY = findSafeHorizontalY(start.x, end.x, firstPoint.y, otherNodes);
-            const corner1Y = firstPoint.y + corridorOffset;
-            const corner2Y = safeY + corridorOffset;
-            pathD = `M ${start.x} ${start.y} L ${start.x} ${corner1Y} L ${start.x} ${corner2Y} L ${end.x} ${corner2Y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
+            const safeY = findSafeHorizontalY(start.x, end.x, firstPoint.y, otherNodes) + corridorOffset;
+            pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${start.x} ${safeY} L ${end.x} ${safeY} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
           } else {
-            // CASE 4: Horizontal exit → Vertical entry (e.g., right → bottom, left → top)
-            // Path: start → horizontal to firstPoint → vertical to safe corridor → horizontal to target X → vertical to lastPoint → end
-            // Check if we need special routing to avoid passing through source node
             const exitingLeft = fromSide === 'left';
             const exitingRight = fromSide === 'right';
             const targetIsBelow = end.y > start.y;
 
-            // If exiting left but target is to the right (or vice versa), route perpendicular first
             const needsSpecialRouting =
               (exitingLeft && end.x > start.x) ||
               (exitingRight && end.x < start.x);
 
             if (needsSpecialRouting) {
-              // Go horizontal to firstPoint, then vertical to clear the node, then horizontal to target X, then vertical to lastPoint, then end
               const intermediateY = targetIsBelow
                 ? from.y + from.height + 20 * finalScale
                 : from.y - 20 * finalScale;
-              const safeY = findSafeHorizontalY(firstPoint.x, end.x, intermediateY, otherNodes);
-              const cornerY = safeY + corridorOffset;
-              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${cornerY} L ${end.x} ${cornerY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              const safeY = findSafeHorizontalY(firstPoint.x, end.x, intermediateY, otherNodes) + corridorOffset;
+              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${safeY} L ${end.x} ${safeY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
             } else {
-              // Normal routing: start → horizontal to firstPoint → vertical → horizontal to target X → vertical to lastPoint → end
-              // Need to find safe horizontal corridor to traverse to get to target X, then enter vertically
               const intermediateY = targetIsBelow
                 ? Math.max(firstPoint.y, lastPoint.y) + 20 * finalScale
                 : Math.min(firstPoint.y, lastPoint.y) - 20 * finalScale;
-              const safeY = findSafeHorizontalY(firstPoint.x, end.x, intermediateY, otherNodes);
-              const cornerY = safeY + corridorOffset;
-              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${cornerY} L ${end.x} ${cornerY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
+              const safeY = findSafeHorizontalY(firstPoint.x, end.x, intermediateY, otherNodes) + corridorOffset;
+              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${safeY} L ${end.x} ${safeY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
             }
           }
+          */
 
           // Determine arrow color and marker based on connection color and active state
           let arrowColor = '#333333';

@@ -6,6 +6,8 @@ export interface NodeConnection {
   targetId: string;
   label?: string;
   color?: ConnectionColor; // Also used as the active color for the arrow
+  fromSide?: 'top' | 'right' | 'bottom' | 'left'; // Optional: explicitly set exit side
+  toSide?: 'top' | 'right' | 'bottom' | 'left';   // Optional: explicitly set entry side
 }
 
 // Unified node structure - all nodes have the same properties

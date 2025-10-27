@@ -209,48 +209,95 @@ export function calculateLayout(
       const targetColumn = getNodeColumn(targetNode);
       const targetDims = getNodeDimensions(targetNode);
 
-      // Determine connection sides and position based on variants
+      // Determine connection sides and position
       let targetY: number;
       let fromSide: 'top' | 'right' | 'bottom' | 'left';
       let toSide: 'top' | 'right' | 'bottom' | 'left';
 
-      // Default routing logic based on node positions
-      if (node.variant === 'primary' && targetNode.variant === 'neutral') {
-        // Primary → Neutral: horizontal connection at same level
-        const primaryMidpoint = positioned.height / 2;
-        const targetMidpoint = targetDims.height / 2;
-        targetY = y + primaryMidpoint - targetMidpoint;
-        fromSide = 'right';
-        toSide = 'left';
-      } else if (node.variant === 'neutral' && targetNode.variant === 'secondary') {
-        // Neutral → Secondary: horizontal connection at same level
-        const neutralMidpoint = positioned.height / 2;
-        const secondaryMidpoint = targetDims.height / 2;
-        // Offset slightly if multiple connections exist
-        const offset = connIndex > 0 ? connIndex * 15 * cfg.scale : 0;
-        targetY = y + neutralMidpoint - secondaryMidpoint + offset;
-        fromSide = 'right';
-        toSide = 'left';
-      } else if (node.variant === 'neutral' && targetNode.variant === 'neutral') {
-        // Neutral → Neutral: vertical connection
-        targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-        fromSide = 'bottom';
-        toSide = 'top';
-      } else if (targetNode.variant === 'primary') {
-        // Any → Primary: loop back, exit from left/bottom
-        targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-        fromSide = node.variant === 'neutral' ? 'left' : 'bottom';
-        toSide = 'top';
-      } else if (node.variant === 'secondary') {
-        // Secondary → Any: vertical connection
-        targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-        fromSide = 'bottom';
-        toSide = 'top';
+      // Check if explicit directions are provided in the connection
+      if (conn.fromSide && conn.toSide) {
+        // Use explicitly provided directions
+        fromSide = conn.fromSide;
+        toSide = conn.toSide;
+        // Position target based on toSide
+        if (toSide === 'top') {
+          targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+        } else if (toSide === 'bottom') {
+          targetY = y - targetDims.height - cfg.nodeSpacing * cfg.scale;
+        } else {
+          // Horizontal entry - try to align at same level
+          const sourceMidpoint = positioned.height / 2;
+          const targetMidpoint = targetDims.height / 2;
+          targetY = y + sourceMidpoint - targetMidpoint;
+        }
       } else {
-        // Default: vertical connection
-        targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-        fromSide = 'bottom';
-        toSide = 'top';
+        // Automatic routing based on variants and positions
+        // Calculate relative position of target
+        const targetIsRight = targetColumn > column;
+        const targetIsLeft = targetColumn < column;
+
+        if (node.variant === 'primary' && targetNode.variant === 'neutral') {
+          // Primary → Neutral: horizontal connection at same level
+          const primaryMidpoint = positioned.height / 2;
+          const targetMidpoint = targetDims.height / 2;
+          targetY = y + primaryMidpoint - targetMidpoint;
+          fromSide = 'right';
+          toSide = 'left';
+        } else if (node.variant === 'neutral' && targetNode.variant === 'secondary') {
+          // Neutral → Secondary: horizontal connection at same level
+          const neutralMidpoint = positioned.height / 2;
+          const secondaryMidpoint = targetDims.height / 2;
+          // Offset slightly if multiple connections exist
+          const offset = connIndex > 0 ? connIndex * 15 * cfg.scale : 0;
+          targetY = y + neutralMidpoint - secondaryMidpoint + offset;
+          fromSide = 'right';
+          toSide = 'left';
+        } else if (node.variant === 'neutral' && targetNode.variant === 'neutral') {
+          // Neutral → Neutral: vertical connection
+          targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+          fromSide = 'bottom';
+          toSide = 'top';
+        } else if (targetNode.variant === 'primary') {
+          // Any → Primary: check actual position instead of assuming loop back
+          if (targetIsRight) {
+            // Target is to the right - horizontal connection
+            const sourceMidpoint = positioned.height / 2;
+            const targetMidpoint = targetDims.height / 2;
+            targetY = y + sourceMidpoint - targetMidpoint;
+            fromSide = 'right';
+            toSide = 'left';
+          } else if (targetIsLeft) {
+            // Target is to the left - loop back pattern
+            targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+            fromSide = 'left';
+            toSide = 'top';
+          } else {
+            // Same column - vertical connection
+            targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+            fromSide = 'bottom';
+            toSide = 'top';
+          }
+        } else if (node.variant === 'secondary') {
+          // Secondary → Any: check actual position
+          if (targetIsRight) {
+            // Target is to the right - horizontal connection
+            const sourceMidpoint = positioned.height / 2;
+            const targetMidpoint = targetDims.height / 2;
+            targetY = y + sourceMidpoint - targetMidpoint;
+            fromSide = 'right';
+            toSide = 'left';
+          } else {
+            // Default vertical connection
+            targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+            fromSide = 'bottom';
+            toSide = 'top';
+          }
+        } else {
+          // Default: vertical connection
+          targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+          fromSide = 'bottom';
+          toSide = 'top';
+        }
       }
 
       layoutNode(conn.targetId, targetColumn, targetY, positioned, conn, fromSide, toSide);
