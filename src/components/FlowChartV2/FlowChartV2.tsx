@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FlowChartData, ColumnPositions } from './types';
+import type { FlowChartData, ColumnPositions, PositionedNode } from './types';
 import { calculateLayout } from './layoutEngine';
 import { Node } from './Node';
 
@@ -35,6 +35,67 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
   const layout = finalScale !== 1
     ? calculateLayout(data, { scale: finalScale }, columnPositions)
     : initialLayout;
+
+  // Calculate staggering data for connections
+  const fromSideCounts = new Map<string, { side: string; count: number; index: number }[]>();
+  const toSideCounts = new Map<string, { side: string; count: number; index: number }[]>();
+
+  layout.connections.forEach((conn, idx) => {
+    const fromKey = `${conn.from.node.id}-${conn.fromSide}`;
+    const toKey = `${conn.to.node.id}-${conn.toSide}`;
+
+    if (!fromSideCounts.has(fromKey)) {
+      fromSideCounts.set(fromKey, []);
+    }
+    if (!toSideCounts.has(toKey)) {
+      toSideCounts.set(toKey, []);
+    }
+
+    fromSideCounts.get(fromKey)!.push({ side: conn.fromSide, count: 0, index: idx });
+    toSideCounts.get(toKey)!.push({ side: conn.toSide, count: 0, index: idx });
+  });
+
+  // Update counts
+  fromSideCounts.forEach((arr) => {
+    arr.forEach((item) => {
+      item.count = arr.length;
+    });
+  });
+  toSideCounts.forEach((arr) => {
+    arr.forEach((item) => {
+      item.count = arr.length;
+    });
+  });
+
+  // Helper function to get staggered connection point
+  const getStaggeredConnectionPoint = (
+    node: PositionedNode,
+    side: 'top' | 'right' | 'bottom' | 'left',
+    isFrom: boolean,
+    connectionIndex: number
+  ) => {
+    const key = `${node.node.id}-${side}`;
+    const sideMap = isFrom ? fromSideCounts : toSideCounts;
+    const sideInfo = sideMap.get(key)?.find((item) => item.index === connectionIndex);
+    const count = sideInfo?.count || 1;
+    const positionIndex = sideMap.get(key)?.findIndex((item) => item.index === connectionIndex) || 0;
+
+    // Calculate offset for staggering
+    const spacing = count > 1 ? 20 * finalScale : 0;
+    const totalWidth = (count - 1) * spacing;
+    const offset = positionIndex * spacing - totalWidth / 2;
+
+    switch (side) {
+      case 'top':
+        return { x: node.x + node.width / 2 + offset, y: node.y };
+      case 'right':
+        return { x: node.x + node.width, y: node.y + node.height / 2 + offset };
+      case 'bottom':
+        return { x: node.x + node.width / 2 + offset, y: node.y + node.height };
+      case 'left':
+        return { x: node.x, y: node.y + node.height / 2 + offset };
+    }
+  };
 
   return (
     <div className={className} style={{ width: '100%', overflow: 'auto' }}>
@@ -162,24 +223,8 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
         {layout.connections.map((connection, index) => {
           const { from, to, fromSide, toSide, isActive, label } = connection;
 
-          const getConnectionPoint = (
-            node: typeof from | typeof to,
-            side: 'top' | 'right' | 'bottom' | 'left'
-          ) => {
-            switch (side) {
-              case 'top':
-                return { x: node.x + node.width / 2, y: node.y };
-              case 'right':
-                return { x: node.x + node.width, y: node.y + node.height / 2 };
-              case 'bottom':
-                return { x: node.x + node.width / 2, y: node.y + node.height };
-              case 'left':
-                return { x: node.x, y: node.y + node.height / 2 };
-            }
-          };
-
-          const start = getConnectionPoint(from, fromSide);
-          const end = getConnectionPoint(to, toSide);
+          const start = getStaggeredConnectionPoint(from, fromSide, true, index);
+          const end = getStaggeredConnectionPoint(to, toSide, false, index);
           const midY = start.y + (end.y - start.y) / 2;
           const midX = start.x + (end.x - start.x) / 2;
 
@@ -266,24 +311,8 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
           const { from, to, label, fromSide, toSide, isActive } = connection;
 
-          const getConnectionPoint = (
-            node: typeof from | typeof to,
-            side: 'top' | 'right' | 'bottom' | 'left'
-          ) => {
-            switch (side) {
-              case 'top':
-                return { x: node.x + node.width / 2, y: node.y };
-              case 'right':
-                return { x: node.x + node.width, y: node.y + node.height / 2 };
-              case 'bottom':
-                return { x: node.x + node.width / 2, y: node.y + node.height };
-              case 'left':
-                return { x: node.x, y: node.y + node.height / 2 };
-            }
-          };
-
-          const start = getConnectionPoint(from, fromSide);
-          const end = getConnectionPoint(to, toSide);
+          const start = getStaggeredConnectionPoint(from, fromSide, true, index);
+          const end = getStaggeredConnectionPoint(to, toSide, false, index);
           const midY = start.y + (end.y - start.y) / 2;
           const midX = start.x + (end.x - start.x) / 2;
 
