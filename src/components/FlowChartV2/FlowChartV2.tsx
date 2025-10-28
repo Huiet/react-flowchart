@@ -97,56 +97,19 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     }
   };
 
-  // Helper function to check if a horizontal line segment intersects with a node
-  const horizontalSegmentIntersectsNode = (
-    y: number,
-    x1: number,
-    x2: number,
-    node: PositionedNode
-  ): boolean => {
-    const buffer = 25 * finalScale; // Much larger buffer for safety
-    const minX = Math.min(x1, x2);
-    const maxX = Math.max(x1, x2);
-
-    // Check if line's Y is within node's Y range (with buffer)
-    if (y < node.y - buffer || y > node.y + node.height + buffer) {
-      return false;
-    }
-
-    // Check if line's X range overlaps with node's X range (with buffer)
-    if (maxX < node.x - buffer || minX > node.x + node.width + buffer) {
-      return false;
-    }
-
-    return true;
-  };
-
-  // Helper function to check if a vertical line segment intersects with a node
-  const verticalSegmentIntersectsNode = (
-    x: number,
-    y1: number,
-    y2: number,
-    node: PositionedNode
-  ): boolean => {
-    const buffer = 25 * finalScale; // Much larger buffer for safety
-    const minY = Math.min(y1, y2);
-    const maxY = Math.max(y1, y2);
-
-    // Check if line's X is within node's X range (with buffer)
-    if (x < node.x - buffer || x > node.x + node.width + buffer) {
-      return false;
-    }
-
-    // Check if line's Y range overlaps with node's Y range (with buffer)
-    if (maxY < node.y - buffer || minY > node.y + node.height + buffer) {
-      return false;
-    }
-
-    return true;
-  };
-
-  // NEW GRID-BASED PATH CALCULATION
-  const calculateGridBasedPath = (
+  /**
+   * Creates SVG for arrow, using the grid structure of the folwchart to avoid collisions with nodes and other arrows
+   * @param start
+   * @param end
+   * @param fromNode
+   * @param toNode
+   * @param fromSide
+   * @param toSide
+   * @param corridorOffset
+   * @param allNodes
+   * @param scale
+   */
+  const calculateGridBasedPathForConnection = (
     start: { x: number; y: number },
     end: { x: number; y: number },
     fromNode: PositionedNode,
@@ -157,10 +120,9 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     allNodes: PositionedNode[],
     scale: number
   ): string => {
-    // Base perpendicular distance (8px minimum)
-    const baseMinDistance = 8 * scale;
-    const exitDistance = baseMinDistance + Math.abs(corridorOffset);
-    const entryDistance = baseMinDistance + Math.abs(corridorOffset);
+    const minimumDistanceToNodeConnection = 8 * scale;
+    const exitDistance = minimumDistanceToNodeConnection + Math.abs(corridorOffset);
+    const entryDistance = minimumDistanceToNodeConnection + Math.abs(corridorOffset);
 
     // Calculate exit point (perpendicular from start)
     let exitPoint: { x: number; y: number };
@@ -205,7 +167,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     const entryVertical = toSide === 'top' || toSide === 'bottom';
 
     // Build path through gutters
-    let pathSegments: { x: number; y: number }[] = [start, exitPoint];
+    const pathSegments: { x: number; y: number }[] = [start, exitPoint];
 
     if (exitVertical && entryVertical) {
       // Vertical → Vertical: exit vertically, cross horizontally through gutter, enter vertically
@@ -339,131 +301,6 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
     // Fallback: use midpoint
     return (fromX + toX) / 2;
-  };
-
-  // OLD CORRIDOR FINDING FUNCTIONS (kept for reference)
-  // Find a safe horizontal corridor centered in the gutter between nodes
-  const findSafeHorizontalY = (
-    x1: number,
-    x2: number,
-    preferredY: number,
-    otherNodes: PositionedNode[]
-  ): number => {
-    const minX = Math.min(x1, x2);
-    const maxX = Math.max(x1, x2);
-
-    // Find nodes that are in the X range of this corridor
-    const nodesInRange = otherNodes.filter((node) => {
-      return !(maxX < node.x || minX > node.x + node.width);
-    });
-
-    if (nodesInRange.length === 0) {
-      // No nodes in range, use preferred Y
-      return preferredY;
-    }
-
-    // Find the gutter that contains preferredY
-    // Sort nodes by Y position
-    const sortedNodes = [...nodesInRange].sort((a, b) => a.y - b.y);
-
-    // Find the gap that contains preferredY or is closest to it
-    let bestGutterY = preferredY;
-    let foundGutter = false;
-
-    // Check gap before first node
-    const firstNodeTop = sortedNodes[0].y;
-    if (preferredY < firstNodeTop) {
-      bestGutterY = firstNodeTop / 2; // Center in the space from 0 to first node
-      foundGutter = true;
-    }
-
-    // Check gaps between nodes
-    if (!foundGutter) {
-      for (let i = 0; i < sortedNodes.length - 1; i++) {
-        const nodeBottom = sortedNodes[i].y + sortedNodes[i].height;
-        const nextNodeTop = sortedNodes[i + 1].y;
-
-        if (preferredY >= nodeBottom && preferredY <= nextNodeTop) {
-          // Found the gutter containing preferredY
-          bestGutterY = (nodeBottom + nextNodeTop) / 2; // Center of gutter
-          foundGutter = true;
-          break;
-        }
-      }
-    }
-
-    // Check gap after last node
-    if (!foundGutter) {
-      const lastNodeBottom =
-        sortedNodes[sortedNodes.length - 1].y + sortedNodes[sortedNodes.length - 1].height;
-      if (preferredY >= lastNodeBottom) {
-        bestGutterY = preferredY; // Use preferred if beyond all nodes
-      }
-    }
-
-    return bestGutterY;
-  };
-
-  // Find a safe vertical corridor centered in the gutter between nodes
-  const findSafeVerticalX = (
-    y1: number,
-    y2: number,
-    preferredX: number,
-    otherNodes: PositionedNode[]
-  ): number => {
-    const minY = Math.min(y1, y2);
-    const maxY = Math.max(y1, y2);
-
-    // Find nodes that are in the Y range of this corridor
-    const nodesInRange = otherNodes.filter((node) => {
-      return !(maxY < node.y || minY > node.y + node.height);
-    });
-
-    if (nodesInRange.length === 0) {
-      // No nodes in range, use preferred X
-      return preferredX;
-    }
-
-    // Find the gutter that contains preferredX
-    // Sort nodes by X position
-    const sortedNodes = [...nodesInRange].sort((a, b) => a.x - b.x);
-
-    // Find the gap that contains preferredX or is closest to it
-    let bestGutterX = preferredX;
-    let foundGutter = false;
-
-    // Check gap before first node
-    const firstNodeLeft = sortedNodes[0].x;
-    if (preferredX < firstNodeLeft) {
-      bestGutterX = firstNodeLeft / 2; // Center in the space from 0 to first node
-      foundGutter = true;
-    }
-
-    // Check gaps between nodes
-    if (!foundGutter) {
-      for (let i = 0; i < sortedNodes.length - 1; i++) {
-        const nodeRight = sortedNodes[i].x + sortedNodes[i].width;
-        const nextNodeLeft = sortedNodes[i + 1].x;
-
-        if (preferredX >= nodeRight && preferredX <= nextNodeLeft) {
-          // Found the gutter containing preferredX
-          bestGutterX = (nodeRight + nextNodeLeft) / 2; // Center of gutter
-          foundGutter = true;
-          break;
-        }
-      }
-    }
-
-    // Check gap after last node
-    if (!foundGutter) {
-      const lastNodeRight =
-        sortedNodes[sortedNodes.length - 1].x + sortedNodes[sortedNodes.length - 1].width;
-      if (preferredX >= lastNodeRight) {
-        bestGutterX = preferredX; // Use preferred if beyond all nodes
-      }
-    }
-
-    return bestGutterX;
   };
 
   return (
@@ -602,8 +439,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
           const offsetAmount = 4 * finalScale; // 4px offset increments
           const corridorOffset = ((connectionHash % 5) - 2) * offsetAmount; // Range: -8px to +8px
 
-          // NEW GRID-BASED ROUTING SYSTEM
-          const pathD = calculateGridBasedPath(
+          const pathD = calculateGridBasedPathForConnection(
             start,
             end,
             from,
@@ -614,87 +450,6 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             layout.nodes,
             finalScale
           );
-
-          // OLD ROUTING SYSTEM (commented out for comparison)
-          /*
-          const baseMinDistance = 8 * finalScale;
-          const exitDistance = baseMinDistance + Math.abs(corridorOffset);
-          const entryDistance = baseMinDistance + Math.abs(corridorOffset);
-
-          let pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
-
-          let firstPoint: { x: number; y: number };
-          switch (fromSide) {
-            case 'right':
-              firstPoint = { x: start.x + exitDistance, y: start.y };
-              break;
-            case 'left':
-              firstPoint = { x: start.x - exitDistance, y: start.y };
-              break;
-            case 'bottom':
-              firstPoint = { x: start.x, y: start.y + exitDistance };
-              break;
-            case 'top':
-              firstPoint = { x: start.x, y: start.y - exitDistance };
-              break;
-          }
-
-          let lastPoint: { x: number; y: number };
-          switch (toSide) {
-            case 'right':
-              lastPoint = { x: end.x + entryDistance, y: end.y };
-              break;
-            case 'left':
-              lastPoint = { x: end.x - entryDistance, y: end.y };
-              break;
-            case 'bottom':
-              lastPoint = { x: end.x, y: end.y + entryDistance };
-              break;
-            case 'top':
-              lastPoint = { x: end.x, y: end.y - entryDistance };
-              break;
-          }
-
-          const otherNodes = layout.nodes.filter(
-            (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
-          );
-
-          const exitVertical = fromSide === 'top' || fromSide === 'bottom';
-          const entryVertical = toSide === 'top' || toSide === 'bottom';
-
-          if (exitVertical && entryVertical) {
-            const safeY = findSafeHorizontalY(start.x, end.x, firstPoint.y, otherNodes) + corridorOffset;
-            pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${start.x} ${safeY} L ${end.x} ${safeY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
-          } else if (!exitVertical && !entryVertical) {
-            const safeX = findSafeVerticalX(start.y, end.y, firstPoint.x, otherNodes) + corridorOffset;
-            pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${safeX} ${start.y} L ${safeX} ${end.y} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
-          } else if (exitVertical && !entryVertical) {
-            const safeY = findSafeHorizontalY(start.x, end.x, firstPoint.y, otherNodes) + corridorOffset;
-            pathD = `M ${start.x} ${start.y} L ${start.x} ${firstPoint.y} L ${start.x} ${safeY} L ${end.x} ${safeY} L ${lastPoint.x} ${end.y} L ${end.x} ${end.y}`;
-          } else {
-            const exitingLeft = fromSide === 'left';
-            const exitingRight = fromSide === 'right';
-            const targetIsBelow = end.y > start.y;
-
-            const needsSpecialRouting =
-              (exitingLeft && end.x > start.x) ||
-              (exitingRight && end.x < start.x);
-
-            if (needsSpecialRouting) {
-              const intermediateY = targetIsBelow
-                ? from.y + from.height + 20 * finalScale
-                : from.y - 20 * finalScale;
-              const safeY = findSafeHorizontalY(firstPoint.x, end.x, intermediateY, otherNodes) + corridorOffset;
-              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${safeY} L ${end.x} ${safeY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
-            } else {
-              const intermediateY = targetIsBelow
-                ? Math.max(firstPoint.y, lastPoint.y) + 20 * finalScale
-                : Math.min(firstPoint.y, lastPoint.y) - 20 * finalScale;
-              const safeY = findSafeHorizontalY(firstPoint.x, end.x, intermediateY, otherNodes) + corridorOffset;
-              pathD = `M ${start.x} ${start.y} L ${firstPoint.x} ${start.y} L ${firstPoint.x} ${safeY} L ${end.x} ${safeY} L ${end.x} ${lastPoint.y} L ${end.x} ${end.y}`;
-            }
-          }
-          */
 
           // Determine arrow color and marker based on connection color and active state
           let arrowColor = '#333333';

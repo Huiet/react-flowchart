@@ -132,15 +132,25 @@ export const calculateLayout = (
     return positioned;
   };
 
-  function layoutNode(
+  /**
+   * Primary function to take a node and traverse through it's connections to form a flowchart.
+   * Start with a nodeId as the primary node, a y position, and iterate through connections recursively till the flowchart is created
+   * This function creates the connections that is returned by calculateLayout
+   * @param nodeId - current node id
+   * @param y - current y position
+   * @param parentNode - previous node being added
+   * @param connection - current connection being applied from previous node
+   * @param explicitFromSide - explicit config for what direction the node connection should start from
+   * @param explicitToSide - explicit config for what direction the node connection should end on
+   */
+  const layoutNode = (
     nodeId: string | undefined,
-    x: number,
     y: number,
     parentNode?: PositionedNode,
     connection?: NodeConnection,
     explicitFromSide?: 'top' | 'right' | 'bottom' | 'left',
     explicitToSide?: 'top' | 'right' | 'bottom' | 'left'
-  ) {
+  ) => {
     if (!nodeId) {
       if (parentNode) {
         console.error('Layout warning: Node ID is undefined from parent:', parentNode.node.id);
@@ -197,7 +207,7 @@ export const calculateLayout = (
     }
 
     // Handle all outgoing connections from this node
-    node.connections.forEach((conn, connIndex) => {
+    node.connections.forEach((conn) => {
       const targetNode = chartData.nodes.find((n) => n.id === conn.targetId);
       if (!targetNode) {
         console.error(
@@ -231,83 +241,74 @@ export const calculateLayout = (
           targetY = y + sourceMidpoint - targetMidpoint;
         }
       } else {
-        // Automatic routing based on variants and positions
-        // Calculate relative position of target
+        // position based connection
+        // PRIORITY: Vertical positioning first, then horizontal
+        // If nodes are on different rows, use top/bottom exits/entries
+
         const targetIsRight = targetColumn > column;
         const targetIsLeft = targetColumn < column;
+        const targetIsSameColumn = targetColumn === column;
 
-        if (node.variant === 'primary' && targetNode.variant === 'neutral') {
-          // Primary → Neutral: horizontal connection at same level
-          const primaryMidpoint = positioned.height / 2;
-          const targetMidpoint = targetDims.height / 2;
-          targetY = y + primaryMidpoint - targetMidpoint;
-          fromSide = 'right';
-          toSide = 'left';
-        } else if (node.variant === 'neutral' && targetNode.variant === 'secondary') {
-          // Neutral → Secondary: horizontal connection at same level
-          const neutralMidpoint = positioned.height / 2;
-          const secondaryMidpoint = targetDims.height / 2;
-          // Offset slightly if multiple connections exist
-          const offset = connIndex > 0 ? connIndex * 15 * cfg.scale : 0;
-          targetY = y + neutralMidpoint - secondaryMidpoint + offset;
-          fromSide = 'right';
-          toSide = 'left';
-        } else if (node.variant === 'neutral' && targetNode.variant === 'neutral') {
-          // Neutral → Neutral: vertical connection
-          targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          fromSide = 'bottom';
-          toSide = 'top';
-        } else if (targetNode.variant === 'primary') {
-          // Any → Primary: check actual position instead of assuming loop back
-          if (targetIsRight) {
-            // Target is to the right - horizontal connection
-            const sourceMidpoint = positioned.height / 2;
-            const targetMidpoint = targetDims.height / 2;
-            targetY = y + sourceMidpoint - targetMidpoint;
-            fromSide = 'right';
-            toSide = 'left';
-          } else if (targetIsLeft) {
-            // Target is to the left - loop back pattern
-            targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-            fromSide = 'left';
-            toSide = 'top';
-          } else {
-            // Same column - vertical connection
-            targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-            fromSide = 'bottom';
-            toSide = 'top';
-          }
-        } else if (node.variant === 'secondary') {
-          // Secondary → Any: check actual position
-          if (targetIsRight) {
-            // Target is to the right - horizontal connection
-            const sourceMidpoint = positioned.height / 2;
-            const targetMidpoint = targetDims.height / 2;
-            targetY = y + sourceMidpoint - targetMidpoint;
-            fromSide = 'right';
-            toSide = 'left';
-          } else {
-            // Default vertical connection
-            targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-            fromSide = 'bottom';
-            toSide = 'top';
-          }
+        // Check if target node is already positioned (for loop-backs)
+        const existingTarget = nodeMap.get(conn.targetId);
+        let targetWillBeBelow = true; // Default assumption
+        let targetWillBeSameRow = false;
+
+        if (existingTarget) {
+          // Target already exists - compare actual Y positions
+          const currentRowBottom = y + positioned.height;
+          // Check if roughly same row (within node height tolerance)
+          targetWillBeSameRow = Math.abs(y - existingTarget.y) < positioned.height;
+          targetWillBeBelow = existingTarget.y > currentRowBottom;
         } else {
-          // Default: vertical connection
+          // Target not yet positioned - estimate based on column and layout
+          // Nodes in same column are typically stacked vertically
+          targetWillBeBelow = targetIsSameColumn || !targetIsRight;
+          targetWillBeSameRow = !targetIsSameColumn && targetIsRight;
+        }
+
+        // PRIORITY 1: Check vertical positioning (different rows)
+        if (!targetWillBeSameRow) {
+          if (targetWillBeBelow) {
+            // Target is on a row below → exit bottom, enter top
+            targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+            fromSide = 'bottom';
+            toSide = 'top';
+          } else {
+            // Target is on a row above → exit top, enter bottom
+            targetY = y - targetDims.height - cfg.nodeSpacing * cfg.scale;
+            fromSide = 'top';
+            toSide = 'bottom';
+          }
+        }
+        // PRIORITY 2: Same row - use horizontal connections
+        else if (targetIsRight) {
+          // Target is to the right on same row → exit right, enter left
+          const sourceMidpoint = positioned.height / 2;
+          const targetMidpoint = targetDims.height / 2;
+          targetY = y + sourceMidpoint - targetMidpoint;
+          fromSide = 'right';
+          toSide = 'left';
+        } else if (targetIsLeft) {
+          // Target is to the left on same row → exit left, enter right
+          const sourceMidpoint = positioned.height / 2;
+          const targetMidpoint = targetDims.height / 2;
+          targetY = y + sourceMidpoint - targetMidpoint;
+          fromSide = 'left';
+          toSide = 'right';
+        } else {
+          // Fallback: vertical connection
           targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
           fromSide = 'bottom';
           toSide = 'top';
         }
       }
-
-      layoutNode(conn.targetId, targetColumn, targetY, positioned, conn, fromSide, toSide);
+      layoutNode(conn.targetId, targetY, positioned, conn, fromSide, toSide);
     });
-  }
+  };
 
   // Start layout from root - use column 1 as default starting position
-  const rootNode = chartData.nodes.find((n) => n.id === chartData.rootId);
-  const rootColumn = rootNode ? getNodeColumn(rootNode) : (columns[1] ?? 50) * cfg.scale;
-  layoutNode(chartData.rootId, rootColumn, 50 * cfg.scale);
+  layoutNode(chartData.rootId, 50 * cfg.scale);
 
   // Calculate final dimensions
   const minWidth =
