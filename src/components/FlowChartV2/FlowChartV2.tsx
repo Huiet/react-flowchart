@@ -1,13 +1,12 @@
 import React from 'react';
-import type { FlowChartData, ColumnPositions, PositionedNode } from './types';
 import { calculateLayout } from './layoutEngine';
 import { Node } from './Node';
+import type { ColumnPositions, FlowChartData, PositionedNode } from './types';
 
 interface FlowChartV2Props {
   data: FlowChartData;
   title?: string;
   subtitle?: string;
-  className?: string;
   columnPositions?: Partial<ColumnPositions>;
   scale?: number;
   maxWidth?: number;
@@ -17,7 +16,6 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
   data,
   title,
   subtitle,
-  className = '',
   columnPositions,
   scale: providedScale,
   maxWidth,
@@ -32,9 +30,10 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
   }
 
   // Recalculate layout with final scale
-  const layout = finalScale !== 1
-    ? calculateLayout(data, { scale: finalScale }, columnPositions)
-    : initialLayout;
+  const layout =
+    finalScale !== 1
+      ? calculateLayout(data, { scale: finalScale }, columnPositions)
+      : initialLayout;
 
   // Calculate staggering data for connections
   const fromSideCounts = new Map<string, { side: string; count: number; index: number }[]>();
@@ -78,7 +77,8 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     const sideMap = isFrom ? fromSideCounts : toSideCounts;
     const sideInfo = sideMap.get(key)?.find((item) => item.index === connectionIndex);
     const count = sideInfo?.count || 1;
-    const positionIndex = sideMap.get(key)?.findIndex((item) => item.index === connectionIndex) || 0;
+    const positionIndex =
+      sideMap.get(key)?.findIndex((item) => item.index === connectionIndex) || 0;
 
     // Calculate offset for staggering
     const spacing = count > 1 ? 20 * finalScale : 0;
@@ -209,25 +209,33 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
     if (exitVertical && entryVertical) {
       // Vertical → Vertical: exit vertically, cross horizontally through gutter, enter vertically
-      const gutterY = findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) + corridorOffset;
+      const gutterY =
+        findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) +
+        corridorOffset;
       pathSegments.push({ x: exitPoint.x, y: gutterY });
       pathSegments.push({ x: entryPoint.x, y: gutterY });
       pathSegments.push({ x: entryPoint.x, y: entryPoint.y });
     } else if (!exitVertical && !entryVertical) {
       // Horizontal → Horizontal: exit horizontally, cross vertically through gutter, enter horizontally
-      const gutterX = findBestVerticalGutter(exitPoint.x, entryPoint.x, verticalGutters, fromNode, toNode) + corridorOffset;
+      const gutterX =
+        findBestVerticalGutter(exitPoint.x, entryPoint.x, verticalGutters, fromNode, toNode) +
+        corridorOffset;
       pathSegments.push({ x: gutterX, y: exitPoint.y });
       pathSegments.push({ x: gutterX, y: entryPoint.y });
       pathSegments.push({ x: entryPoint.x, y: entryPoint.y });
     } else if (exitVertical && !entryVertical) {
       // Vertical → Horizontal: exit vertically, cross horizontally, enter horizontally
-      const gutterY = findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) + corridorOffset;
+      const gutterY =
+        findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) +
+        corridorOffset;
       pathSegments.push({ x: exitPoint.x, y: gutterY });
       pathSegments.push({ x: entryPoint.x, y: gutterY });
       pathSegments.push({ x: entryPoint.x, y: entryPoint.y });
     } else {
       // Horizontal → Vertical: exit horizontally, cross vertically, enter vertically
-      const gutterY = findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) + corridorOffset;
+      const gutterY =
+        findBestHorizontalGutter(exitPoint.y, entryPoint.y, horizontalGutters, fromNode, toNode) +
+        corridorOffset;
       pathSegments.push({ x: exitPoint.x, y: gutterY });
       pathSegments.push({ x: entryPoint.x, y: gutterY });
       pathSegments.push({ x: entryPoint.x, y: entryPoint.y });
@@ -236,13 +244,13 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     pathSegments.push(end);
 
     // Build SVG path string
-    return pathSegments.map((point, i) =>
-      `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
-    ).join(' ');
+    return pathSegments.map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
   };
 
   // Calculate horizontal gutters (between rows of nodes)
-  const calculateHorizontalGutters = (nodes: PositionedNode[]): { top: number; bottom: number; center: number }[] => {
+  const calculateHorizontalGutters = (
+    nodes: PositionedNode[]
+  ): { top: number; bottom: number; center: number }[] => {
     const sortedByY = [...nodes].sort((a, b) => a.y - b.y);
     const gutters: { top: number; bottom: number; center: number }[] = [];
 
@@ -258,7 +266,9 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
   };
 
   // Calculate vertical gutters (between columns of nodes)
-  const calculateVerticalGutters = (nodes: PositionedNode[]): { left: number; right: number; center: number }[] => {
+  const calculateVerticalGutters = (
+    nodes: PositionedNode[]
+  ): { left: number; right: number; center: number }[] => {
     const sortedByX = [...nodes].sort((a, b) => a.x - b.x);
     const gutters: { left: number; right: number; center: number }[] = [];
 
@@ -286,11 +296,12 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     const toTop = toNode.y;
 
     // Find gutter that contains the space between nodes
-    const targetGutter = gutters.find(g =>
-      g.top >= fromBottom && g.bottom <= toTop ||
-      g.top <= fromBottom && g.bottom >= toTop ||
-      (fromBottom >= g.top && fromBottom <= g.bottom) ||
-      (toTop >= g.top && toTop <= g.bottom)
+    const targetGutter = gutters.find(
+      (g) =>
+        (g.top >= fromBottom && g.bottom <= toTop) ||
+        (g.top <= fromBottom && g.bottom >= toTop) ||
+        (fromBottom >= g.top && fromBottom <= g.bottom) ||
+        (toTop >= g.top && toTop <= g.bottom)
     );
 
     if (targetGutter) {
@@ -314,11 +325,12 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     const toLeft = toNode.x;
 
     // Find gutter that contains the space between nodes
-    const targetGutter = gutters.find(g =>
-      g.left >= fromRight && g.right <= toLeft ||
-      g.left <= fromRight && g.right >= toLeft ||
-      (fromRight >= g.left && fromRight <= g.right) ||
-      (toLeft >= g.left && toLeft <= g.right)
+    const targetGutter = gutters.find(
+      (g) =>
+        (g.left >= fromRight && g.right <= toLeft) ||
+        (g.left <= fromRight && g.right >= toLeft) ||
+        (fromRight >= g.left && fromRight <= g.right) ||
+        (toLeft >= g.left && toLeft <= g.right)
     );
 
     if (targetGutter) {
@@ -341,7 +353,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     const maxX = Math.max(x1, x2);
 
     // Find nodes that are in the X range of this corridor
-    const nodesInRange = otherNodes.filter(node => {
+    const nodesInRange = otherNodes.filter((node) => {
       return !(maxX < node.x || minX > node.x + node.width);
     });
 
@@ -382,7 +394,8 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
     // Check gap after last node
     if (!foundGutter) {
-      const lastNodeBottom = sortedNodes[sortedNodes.length - 1].y + sortedNodes[sortedNodes.length - 1].height;
+      const lastNodeBottom =
+        sortedNodes[sortedNodes.length - 1].y + sortedNodes[sortedNodes.length - 1].height;
       if (preferredY >= lastNodeBottom) {
         bestGutterY = preferredY; // Use preferred if beyond all nodes
       }
@@ -402,7 +415,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
     const maxY = Math.max(y1, y2);
 
     // Find nodes that are in the Y range of this corridor
-    const nodesInRange = otherNodes.filter(node => {
+    const nodesInRange = otherNodes.filter((node) => {
       return !(maxY < node.y || minY > node.y + node.height);
     });
 
@@ -443,7 +456,8 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
     // Check gap after last node
     if (!foundGutter) {
-      const lastNodeRight = sortedNodes[sortedNodes.length - 1].x + sortedNodes[sortedNodes.length - 1].width;
+      const lastNodeRight =
+        sortedNodes[sortedNodes.length - 1].x + sortedNodes[sortedNodes.length - 1].width;
       if (preferredX >= lastNodeRight) {
         bestGutterX = preferredX; // Use preferred if beyond all nodes
       }
@@ -453,7 +467,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
   };
 
   return (
-    <div className={className} style={{ width: '100%', overflow: 'auto' }}>
+    <div style={{ width: '100%', overflow: 'auto' }}>
       <svg
         width={layout.width}
         height={layout.height}
@@ -582,7 +596,9 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
           const end = getStaggeredConnectionPoint(to, toSide, false, index);
 
           // Calculate a deterministic offset for this connection to prevent overlapping parallel lines
-          const connectionHash = (from.node.id + to.node.id + index).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const connectionHash = (from.node.id + to.node.id + index)
+            .split('')
+            .reduce((acc, char) => acc + char.charCodeAt(0), 0);
           const offsetAmount = 4 * finalScale; // 4px offset increments
           const corridorOffset = ((connectionHash % 5) - 2) * offsetAmount; // Range: -8px to +8px
 
@@ -808,7 +824,9 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
           // Calculate label position on the first segment after exit distance
           // Match the same logic as arrow paths for consistency
-          const connectionHash = (from.node.id + to.node.id + index).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const connectionHash = (from.node.id + to.node.id + index)
+            .split('')
+            .reduce((acc, char) => acc + char.charCodeAt(0), 0);
           const offsetAmount = 4 * finalScale;
           const corridorOffset = ((connectionHash % 5) - 2) * offsetAmount;
           const baseMinDistance = 8 * finalScale;

@@ -15,7 +15,7 @@ export interface FlowNode {
   id: string;
   variant: NodeVariant;  // Dictates the colors: primary, neutral, or secondary
   label: string;
-  column?: number;       // Optional column position (1, 2, 3, etc.). Defaults based on variant: primary=1, neutral=2, secondary=3
+  column: number;        // Required column position (1, 2, 3, etc.)
   isActive?: boolean;    // Whether this node is on the active/taken path
   connections: NodeConnection[]; // Array of outgoing connections
 }

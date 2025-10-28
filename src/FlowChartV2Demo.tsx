@@ -13,6 +13,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'period-1',
       variant: 'primary',
+      column: 1,
       label: 'Period 1',
       connections: [{ targetId: 'decision-1' }],
     },
@@ -21,6 +22,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'decision-1',
       variant: 'neutral',
+      column: 2,
       label: 'Are all underlyings at or\nabove the 100%\nautocall barrier?',
       connections: [
         { targetId: 'outcome-early-1', label: 'Yes', color: 'green' },
@@ -32,6 +34,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'outcome-early-1',
       variant: 'secondary',
+      column: 3,
       label: 'Early Redemption +\n8.68% coupon',
       connections: [], // Terminal - no next
     },
@@ -40,6 +43,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'decision-2',
       variant: 'neutral',
+      column: 2,
       label: 'Are all underlyings at or\nabove the 80% coupon\nbarrier?',
       connections: [
         { targetId: 'outcome-payment-1', label: 'Yes', color: 'green' },
@@ -51,6 +55,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'outcome-payment-1',
       variant: 'secondary',
+      column: 3,
       label: 'Payment of 8.68%\ncoupon (3 monthly)',
       connections: [{ targetId: 'period-2-3' }], // Also goes to Period 2-3!
     },
@@ -59,6 +64,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'period-2-3',
       variant: 'primary',
+      column: 1,
       label: 'Periods\n2-3',
       connections: [{ targetId: 'decision-3' }],
     },
@@ -67,6 +73,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'decision-3',
       variant: 'neutral',
+      column: 2,
       label: 'Are all underlyings at or\nabove the 100%\nautocall barrier?',
       connections: [
         { targetId: 'outcome-early-2', label: 'Yes', color: 'green' },
@@ -78,6 +85,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'outcome-early-2',
       variant: 'secondary',
+      column: 3,
       label: 'Early Redemption +\n8.68% coupon',
       connections: [], // Terminal - no next
     },
@@ -86,6 +94,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'decision-4',
       variant: 'neutral',
+      column: 2,
       label: 'Are all underlyings at or\nabove the 80% coupon\nbarrier?',
       connections: [
         { targetId: 'outcome-payment-2', label: 'Yes', color: 'green' },
@@ -97,6 +106,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'outcome-payment-2',
       variant: 'secondary',
+      column: 3,
       label: 'Payment of 8.68%\ncoupon (3 monthly)',
       connections: [{ targetId: 'period-4' }],
     },
@@ -105,6 +115,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'period-4',
       variant: 'primary',
+      column: 1,
       label: 'Period 4\n(Maturity\nDate)',
       connections: [{ targetId: 'decision-5' }],
     },
@@ -113,6 +124,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'decision-5',
       variant: 'neutral',
+      column: 2,
       label: 'Are all underlyings\nabove the 80 %\nautocall/protection\nbarrier?',
       connections: [
         { targetId: 'outcome-final-yes', label: 'Yes', color: 'green' },
@@ -124,6 +136,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'outcome-final-yes',
       variant: 'secondary',
+      column: 3,
       label: '100% of Capital + 8.68%\ncoupon',
       connections: [],
     },
@@ -131,6 +144,7 @@ const example1_Financial: FlowChartData = {
     {
       id: 'outcome-final-no',
       variant: 'secondary',
+      column: 3,
       label: 'Investor receives the\nperformance of the worst\nperforming underlying',
       connections: [],
     },
@@ -147,18 +161,21 @@ const example2_LoopBack: FlowChartData = {
     {
       id: 'start',
       variant: 'primary',
+      column: 1,
       label: 'Start\nProcess',
       connections: [{ targetId: 'process-data' }],
     },
     {
       id: 'process-data',
       variant: 'neutral',
+      column: 2,
       label: 'Process\nData Batch',
       connections: [{ targetId: 'validation' }],
     },
     {
       id: 'validation',
       variant: 'neutral',
+      column: 2,
       label: 'Data\nValid?',
       connections: [
         { targetId: 'check-more', label: 'Yes', color: 'green' },
@@ -168,6 +185,7 @@ const example2_LoopBack: FlowChartData = {
     {
       id: 'fix-data',
       variant: 'secondary',
+      column: 3,
       label: 'Fix\nIssues',
       connections: [
         { targetId: 'process-data', label: 'Retry', color: 'blue' }, // Loop back
@@ -176,6 +194,7 @@ const example2_LoopBack: FlowChartData = {
     {
       id: 'check-more',
       variant: 'neutral',
+      column: 2,
       label: 'More Data\nto Process?',
       connections: [
         { targetId: 'process-data', label: 'Yes', color: 'green' }, // Loop back
@@ -185,6 +204,7 @@ const example2_LoopBack: FlowChartData = {
     {
       id: 'finalize',
       variant: 'secondary',
+      column: 3,
       label: 'Finalize\nResults',
       connections: [],
     },
@@ -201,12 +221,14 @@ const example3_MultipleConnections: FlowChartData = {
     {
       id: 'intake',
       variant: 'primary',
+      column: 1,
       label: 'Customer\nRequest',
       connections: [{ targetId: 'priority-check' }],
     },
     {
       id: 'priority-check',
       variant: 'neutral',
+      column: 2,
       label: 'Priority\nLevel?',
       connections: [
         { targetId: 'urgent-path', label: 'Urgent', color: 'red' },
@@ -217,18 +239,21 @@ const example3_MultipleConnections: FlowChartData = {
     {
       id: 'urgent-path',
       variant: 'secondary',
+      column: 3,
       label: 'Immediate\nEscalation',
       connections: [{ targetId: 'resolution' }],
     },
     {
       id: 'normal-path',
       variant: 'secondary',
+      column: 3,
       label: 'Standard\nProcessing',
       connections: [{ targetId: 'quality-check' }],
     },
     {
       id: 'low-path',
       variant: 'secondary',
+      column: 3,
       label: 'Queue for\nLater',
       connections: [{ targetId: 'quality-check' }],
     },
@@ -270,12 +295,14 @@ const example4_ConditionalFlow: FlowChartData = {
     {
       id: 'init',
       variant: 'primary',
+      column: 1,
       label: 'Initialize',
       connections: [{ targetId: 'auth-check' }],
     },
     {
       id: 'auth-check',
       variant: 'neutral',
+      column: 2,
       label: 'User\nAuthenticated?',
       connections: [
         { targetId: 'role-check', label: 'Yes', color: 'green' },
@@ -285,12 +312,14 @@ const example4_ConditionalFlow: FlowChartData = {
     {
       id: 'login',
       variant: 'secondary',
+      column: 3,
       label: 'Login\nRequired',
       connections: [{ targetId: 'auth-check', label: 'Retry', color: 'blue' }],
     },
     {
       id: 'role-check',
       variant: 'neutral',
+      column: 2,
       label: 'Has Admin\nRole?',
       connections: [
         { targetId: 'admin-panel', label: 'Yes', color: 'green' },
@@ -300,12 +329,14 @@ const example4_ConditionalFlow: FlowChartData = {
     {
       id: 'admin-panel',
       variant: 'secondary',
+      column: 3,
       label: 'Admin\nDashboard',
       connections: [],
     },
     {
       id: 'user-panel',
       variant: 'secondary',
+      column: 3,
       label: 'User\nDashboard',
       connections: [],
     },
@@ -321,18 +352,21 @@ const example5_SoftwareDev: FlowChartData = {
     {
       id: 'planning',
       variant: 'primary',
+      column: 1,
       label: 'Sprint\nPlanning',
       connections: [{ targetId: 'design' }],
     },
     {
       id: 'design',
       variant: 'neutral',
+      column: 2,
       label: 'Design\nReview',
       connections: [{ targetId: 'development' }],
     },
     {
       id: 'development',
       variant: 'secondary',
+      column: 3,
       label: 'Development\n& Testing',
       connections: [{ targetId: 'code-review' }],
     },
@@ -356,6 +390,7 @@ const example5_SoftwareDev: FlowChartData = {
     {
       id: 'qa-decision',
       variant: 'neutral',
+      column: 2,
       label: 'Tests\nPassing?',
       connections: [
         { targetId: 'staging', label: 'Yes', color: 'green' },
@@ -365,6 +400,7 @@ const example5_SoftwareDev: FlowChartData = {
     {
       id: 'bug-fix',
       variant: 'secondary',
+      column: 3,
       label: 'Bug\nFixes',
       connections: [{ targetId: 'qa-testing', label: 'Retest', color: 'orange' }],
     },
@@ -395,6 +431,7 @@ const example5_SoftwareDev: FlowChartData = {
     {
       id: 'monitor',
       variant: 'secondary',
+      column: 3,
       label: 'Monitor &\nSupport',
       connections: [],
     },
@@ -410,12 +447,14 @@ const example6_FinancialPlanning: FlowChartData = {
     {
       id: 'assess',
       variant: 'primary',
+      column: 1,
       label: 'Assess Current\nFinances',
       connections: [{ targetId: 'emergency-fund' }],
     },
     {
       id: 'emergency-fund',
       variant: 'neutral',
+      column: 2,
       label: 'Emergency Fund\n(3-6 months)?',
       connections: [
         { targetId: 'debt-check', label: 'Yes', color: 'green' },
@@ -425,12 +464,14 @@ const example6_FinancialPlanning: FlowChartData = {
     {
       id: 'build-emergency',
       variant: 'secondary',
+      column: 3,
       label: 'Build Emergency\nFund First',
       connections: [{ targetId: 'debt-check' }],
     },
     {
       id: 'debt-check',
       variant: 'neutral',
+      column: 2,
       label: 'High-Interest\nDebt?',
       connections: [
         { targetId: 'pay-debt', label: 'Yes', color: 'red' },
@@ -440,6 +481,7 @@ const example6_FinancialPlanning: FlowChartData = {
     {
       id: 'pay-debt',
       variant: 'secondary',
+      column: 3,
       label: 'Pay Off\nDebt',
       connections: [{ targetId: 'retirement-check' }],
     },
@@ -503,18 +545,21 @@ const example7_VacationPlanning: FlowChartData = {
     {
       id: 'start-planning',
       variant: 'primary',
+      column: 1,
       label: 'Start\nPlanning',
       connections: [{ targetId: 'budget' }],
     },
     {
       id: 'budget',
       variant: 'neutral',
+      column: 2,
       label: 'Set Budget\n& Dates',
       connections: [{ targetId: 'destination' }],
     },
     {
       id: 'destination',
       variant: 'neutral',
+      column: 2,
       label: 'Choose\nDestination',
       connections: [
         { targetId: 'domestic', label: 'Domestic', color: 'blue' },
@@ -524,12 +569,14 @@ const example7_VacationPlanning: FlowChartData = {
     {
       id: 'domestic',
       variant: 'secondary',
+      column: 3,
       label: 'Book\nDomestic Travel',
       connections: [{ targetId: 'accommodation' }],
     },
     {
       id: 'international',
       variant: 'secondary',
+      column: 3,
       label: 'Book\nInternational',
       connections: [{ targetId: 'passport-check' }],
     },
@@ -590,12 +637,14 @@ const example8_CustomerSupport: FlowChartData = {
     {
       id: 'ticket-received',
       variant: 'primary',
+      column: 1,
       label: 'Support Ticket\nReceived',
       connections: [{ targetId: 'categorize' }],
     },
     {
       id: 'categorize',
       variant: 'neutral',
+      column: 2,
       label: 'Ticket\nPriority?',
       connections: [
         { targetId: 'critical', label: 'Critical', color: 'red' },
@@ -606,18 +655,21 @@ const example8_CustomerSupport: FlowChartData = {
     {
       id: 'critical',
       variant: 'secondary',
+      column: 3,
       label: 'Immediate\nEscalation',
       connections: [{ targetId: 'investigate' }],
     },
     {
       id: 'high',
       variant: 'secondary',
+      column: 3,
       label: 'Assign to\nSenior Agent',
       connections: [{ targetId: 'investigate' }],
     },
     {
       id: 'normal',
       variant: 'secondary',
+      column: 3,
       label: 'Queue for\nNext Agent',
       connections: [{ targetId: 'investigate' }],
     },
@@ -631,6 +683,7 @@ const example8_CustomerSupport: FlowChartData = {
     {
       id: 'known-issue',
       variant: 'neutral',
+      column: 2,
       label: 'Known\nIssue?',
       connections: [
         { targetId: 'apply-solution', label: 'Yes', color: 'green' },
@@ -640,12 +693,14 @@ const example8_CustomerSupport: FlowChartData = {
     {
       id: 'apply-solution',
       variant: 'secondary',
+      column: 3,
       label: 'Apply Known\nSolution',
       connections: [{ targetId: 'test-solution' }],
     },
     {
       id: 'research',
       variant: 'secondary',
+      column: 3,
       label: 'Research &\nDevelop Fix',
       connections: [{ targetId: 'test-solution' }],
     },
@@ -676,6 +731,7 @@ const example8_CustomerSupport: FlowChartData = {
     {
       id: 'close-ticket',
       variant: 'secondary',
+      column: 3,
       label: 'Close Ticket\n& Follow Up',
       connections: [],
     },
@@ -691,18 +747,21 @@ const example9_Ecommerce: FlowChartData = {
     {
       id: 'browse',
       variant: 'primary',
+      column: 1,
       label: 'Browse\nProducts',
       connections: [{ targetId: 'add-to-cart' }],
     },
     {
       id: 'add-to-cart',
       variant: 'neutral',
+      column: 2,
       label: 'Add to\nCart',
       connections: [{ targetId: 'continue-shopping' }],
     },
     {
       id: 'continue-shopping',
       variant: 'neutral',
+      column: 2,
       label: 'Continue\nShopping?',
       connections: [
         { targetId: 'browse', label: 'Yes', color: 'blue' },
@@ -712,12 +771,14 @@ const example9_Ecommerce: FlowChartData = {
     {
       id: 'checkout',
       variant: 'primary',
+      column: 1,
       label: 'Start\nCheckout',
       connections: [{ targetId: 'account-check' }],
     },
     {
       id: 'account-check',
       variant: 'neutral',
+      column: 2,
       label: 'Logged\nIn?',
       connections: [
         { targetId: 'shipping', label: 'Yes', color: 'green' },
@@ -727,6 +788,7 @@ const example9_Ecommerce: FlowChartData = {
     {
       id: 'guest-or-login',
       variant: 'neutral',
+      column: 2,
       label: 'Guest or\nCreate Account?',
       connections: [
         { targetId: 'shipping', label: 'Guest', color: 'blue' },
@@ -736,6 +798,7 @@ const example9_Ecommerce: FlowChartData = {
     {
       id: 'create-account',
       variant: 'secondary',
+      column: 3,
       label: 'Create\nAccount',
       connections: [{ targetId: 'shipping' }],
     },
@@ -756,6 +819,7 @@ const example9_Ecommerce: FlowChartData = {
     {
       id: 'verify-payment',
       variant: 'neutral',
+      column: 2,
       label: 'Payment\nVerified?',
       connections: [
         { targetId: 'confirm-order', label: 'Yes', color: 'green' },
@@ -765,6 +829,7 @@ const example9_Ecommerce: FlowChartData = {
     {
       id: 'payment-failed',
       variant: 'secondary',
+      column: 3,
       label: 'Payment\nFailed',
       connections: [{ targetId: 'payment', label: 'Retry', color: 'orange' }],
     },
