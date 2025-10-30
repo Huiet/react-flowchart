@@ -1,0 +1,289 @@
+.chartContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.legend {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legendSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.dateRangeSection {
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.legendTitle {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.legendItem:hover {
+  background-color: #f5f5f5;
+}
+
+.legendItem:last-child {
+  margin-bottom: 0;
+}
+
+.legendColorBox {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legendLabel {
+  font-size: 13px;
+  color: #666;
+  user-select: none;
+  flex: 1;
+}
+
+.legendItem.disabled .legendLabel {
+  opacity: 0.4;
+}
+
+.legendItem.disabled .legendColorBox {
+  opacity: 0.3;
+}
+
+.dateRangeButtons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dateRangeButton {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #666;
+  text-align: center;
+}
+
+.dateRangeButton:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.dateRangeButton.active {
+  background: #0071e3;
+  color: white;
+  border-color: #0071e3;
+}
+
+.dateRangeButton.active:hover {
+  background: #005bb5;
+  border-color: #005bb5;
+}
+
+.dateRangeButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f5f5f5;
+  color: #999;
+}
+
+.dateRangeButton:disabled:hover {
+  background: #f5f5f5;
+  border-color: #ddd;
+}
+
+/* D3 Styles */
+.chartContainer :global(.axis) text {
+  font-size: 12px;
+  fill: #666;
+}
+
+.chartContainer :global(.x-axis) text {
+  text-anchor: end;
+}
+
+.chartContainer :global(.axis) line,
+.chartContainer :global(.axis) path {
+  stroke: #ddd;
+  shape-rendering: crispEdges;
+}
+
+.chartContainer :global(.grid) line {
+  stroke: #e0e0e0;
+  stroke-opacity: 0.7;
+  shape-rendering: crispEdges;
+}
+
+.chartContainer :global(.grid) path {
+  stroke-width: 0;
+}
+
+.chartContainer :global(.line) {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chartContainer :global(.annotation-line) {
+  stroke-width: 1;
+  stroke-dasharray: 5, 5;
+  opacity: 0.6;
+}
+
+.chartContainer :global(.annotation-text) {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #333;
+}
+
+.chartContainer :global(.annotation-background) {
+  fill: white;
+  opacity: 0.9;
+}
+
+.chartContainer :global(.annotation-connector) {
+  pointer-events: none;
+}
+
+.chartContainer :global(.custom-annotation-dot) {
+  cursor: pointer;
+  transition: r 0.2s;
+}
+
+.chartContainer :global(.custom-annotation-dot:hover) {
+  filter: brightness(1.2);
+}
+
+.chartContainer :global(.custom-annotation-label) {
+  font-size: 11px;
+  fill: #333;
+  pointer-events: none;
+}
+
+.chartContainer :global(.reference-line) {
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.chartContainer :global(.reference-line-label) {
+  font-size: 11px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.chartContainer :global(.zoom-overlay) {
+  cursor: move;
+  fill: none;
+  pointer-events: all;
+}
+
+.chartContainer :global(.crosshair) {
+  stroke: #666;
+  stroke-width: 1;
+  stroke-dasharray: 3, 3;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.tooltip {
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  font-size: 12px;
+  z-index: 1000;
+  min-width: 160px;
+}
+
+.tooltipDate {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+.tooltipLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  gap: 12px;
+}
+
+.tooltipLine:last-child {
+  margin-bottom: 0;
+}
+
+.tooltipLineName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.tooltipColorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tooltipLabel {
+  color: #666;
+  font-size: 12px;
+}
+
+.tooltipValue {
+  font-weight: 600;
+  color: #333;
+  font-size: 12px;
+}

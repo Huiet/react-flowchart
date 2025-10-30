@@ -152,706 +152,1025 @@ const example1_Financial: FlowChartData = {
 };
 
 // ============================================================================
-// EXAMPLE 2: Loop-Back Pattern
+// EXAMPLE 2: Computer Troubleshooting
 // ============================================================================
-// Demonstrates arrows pointing back to earlier steps
-const example2_LoopBack: FlowChartData = {
+// Based on real-world IT support troubleshooting flowcharts
+const example2_ComputerTroubleshooting: FlowChartData = {
   rootId: 'start',
   nodes: [
     {
       id: 'start',
       variant: 'primary',
       column: 1,
-      label: 'Start\nProcess',
-      connections: [{ targetId: 'process-data' }],
+      label: 'Computer\nWon\'t Start',
+      connections: [{ targetId: 'power-connected' }],
     },
     {
-      id: 'process-data',
+      id: 'power-connected',
       variant: 'neutral',
       column: 2,
-      label: 'Process\nData Batch',
-      connections: [{ targetId: 'validation' }],
-    },
-    {
-      id: 'validation',
-      variant: 'neutral',
-      column: 2,
-      label: 'Data\nValid?',
+      label: 'Is power cable\nconnected?',
       connections: [
-        { targetId: 'check-more', label: 'Yes', color: 'green' },
-        { targetId: 'fix-data', label: 'No', color: 'red' },
+        { targetId: 'lights-on', label: 'Yes', color: 'green' },
+        { targetId: 'plug-in', label: 'No', color: 'red' },
       ],
     },
     {
-      id: 'fix-data',
+      id: 'plug-in',
       variant: 'secondary',
       column: 3,
-      label: 'Fix\nIssues',
-      connections: [
-        { targetId: 'process-data', label: 'Retry', color: 'blue' }, // Loop back
-      ],
+      label: 'Plug in\npower cable',
+      connections: [{ targetId: 'power-connected', label: 'Retry', color: 'blue' }],
     },
     {
-      id: 'check-more',
+      id: 'lights-on',
       variant: 'neutral',
       column: 2,
-      label: 'More Data\nto Process?',
+      label: 'Are indicator\nlights on?',
       connections: [
-        { targetId: 'process-data', label: 'Yes', color: 'green' }, // Loop back
-        { targetId: 'finalize', label: 'No', color: 'red' },
+        { targetId: 'display-check', label: 'Yes', color: 'green' },
+        { targetId: 'power-supply', label: 'No', color: 'red' },
       ],
     },
     {
-      id: 'finalize',
+      id: 'power-supply',
       variant: 'secondary',
       column: 3,
-      label: 'Finalize\nResults',
+      label: 'Check power supply\n& outlets',
+      connections: [{ targetId: 'lights-on', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'display-check',
+      variant: 'neutral',
+      column: 2,
+      label: 'Does display\nshow anything?',
+      connections: [
+        { targetId: 'boot-sequence', label: 'Yes', color: 'green' },
+        { targetId: 'monitor-check', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'monitor-check',
+      variant: 'secondary',
+      column: 3,
+      label: 'Check monitor\nconnections',
+      connections: [{ targetId: 'display-check', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'boot-sequence',
+      variant: 'neutral',
+      column: 1,
+      label: 'Does it boot\nto OS?',
+      connections: [
+        { targetId: 'resolved', label: 'Yes', color: 'green' },
+        { targetId: 'safe-mode', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'safe-mode',
+      variant: 'secondary',
+      column: 2,
+      label: 'Try booting in\nSafe Mode',
+      connections: [
+        { targetId: 'resolved', label: 'Works', color: 'green' },
+        { targetId: 'hardware-failure', label: 'Fails', color: 'red' },
+      ],
+    },
+    {
+      id: 'hardware-failure',
+      variant: 'secondary',
+      column: 3,
+      label: 'Likely hardware\nfailure - contact IT',
+      connections: [],
+    },
+    {
+      id: 'resolved',
+      variant: 'primary',
+      column: 3,
+      label: 'Problem\nResolved!',
       connections: [],
     },
   ],
 };
 
 // ============================================================================
-// EXAMPLE 3: Multiple Connections with Different Colors
+// EXAMPLE 3: Medical Emergency Response
 // ============================================================================
-// Demonstrates multiple arrows from the same node with different colors
-const example3_MultipleConnections: FlowChartData = {
-  rootId: 'intake',
+// Based on EMT assessment and emergency response protocols
+const example3_MedicalEmergency: FlowChartData = {
+  rootId: 'scene-arrival',
   nodes: [
     {
-      id: 'intake',
+      id: 'scene-arrival',
       variant: 'primary',
       column: 1,
-      label: 'Customer\nRequest',
-      connections: [{ targetId: 'priority-check' }],
+      label: 'Arrive at\nScene',
+      connections: [{ targetId: 'scene-safe' }],
     },
     {
-      id: 'priority-check',
+      id: 'scene-safe',
       variant: 'neutral',
       column: 2,
-      label: 'Priority\nLevel?',
+      label: 'Is scene\nsafe?',
       connections: [
-        { targetId: 'urgent-path', label: 'Urgent', color: 'red' },
-        { targetId: 'normal-path', label: 'Normal', color: 'blue' },
-        { targetId: 'low-path', label: 'Low', color: 'green' },
+        { targetId: 'assess-consciousness', label: 'Yes', color: 'green' },
+        { targetId: 'secure-scene', label: 'No', color: 'red' },
       ],
     },
     {
-      id: 'urgent-path',
+      id: 'secure-scene',
       variant: 'secondary',
       column: 3,
-      label: 'Immediate\nEscalation',
-      connections: [{ targetId: 'resolution' }],
+      label: 'Secure scene\nwait for backup',
+      connections: [{ targetId: 'scene-safe', label: 'Retry', color: 'blue' }],
     },
     {
-      id: 'normal-path',
-      variant: 'secondary',
-      column: 3,
-      label: 'Standard\nProcessing',
-      connections: [{ targetId: 'quality-check' }],
+      id: 'assess-consciousness',
+      variant: 'neutral',
+      column: 2,
+      label: 'Patient\nconscious?',
+      connections: [
+        { targetId: 'breathing-check', label: 'Yes', color: 'green' },
+        { targetId: 'check-airway', label: 'No', color: 'red' },
+      ],
     },
     {
-      id: 'low-path',
+      id: 'check-airway',
       variant: 'secondary',
       column: 3,
-      label: 'Queue for\nLater',
+      label: 'Open airway\ncheck breathing',
+      connections: [{ targetId: 'breathing-check' }],
+    },
+    {
+      id: 'breathing-check',
+      variant: 'neutral',
+      column: 1,
+      label: 'Breathing\nnormally?',
+      connections: [
+        { targetId: 'circulation-check', label: 'Yes', color: 'green' },
+        { targetId: 'assist-breathing', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'assist-breathing',
+      variant: 'secondary',
+      column: 2,
+      label: 'Provide rescue\nbreathing/CPR',
+      connections: [{ targetId: 'call-als', color: 'red' }],
+    },
+    {
+      id: 'circulation-check',
+      variant: 'neutral',
+      column: 2,
+      label: 'Severe bleeding\nor shock?',
+      connections: [
+        { targetId: 'vital-signs', label: 'No', color: 'green' },
+        { targetId: 'control-bleeding', label: 'Yes', color: 'red' },
+      ],
+    },
+    {
+      id: 'control-bleeding',
+      variant: 'secondary',
+      column: 3,
+      label: 'Control bleeding\ntreat for shock',
+      connections: [{ targetId: 'call-als', color: 'red' }],
+    },
+    {
+      id: 'vital-signs',
+      variant: 'neutral',
+      column: 2,
+      label: 'Vital signs\nstable?',
+      connections: [
+        { targetId: 'transport-routine', label: 'Yes', color: 'green' },
+        { targetId: 'call-als', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'call-als',
+      variant: 'primary',
+      column: 1,
+      label: 'Call ALS\nEmergency Transport',
+      connections: [],
+    },
+    {
+      id: 'transport-routine',
+      variant: 'primary',
+      column: 3,
+      label: 'Routine\nTransport to Hospital',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 4: Customer Complaint Escalation
+// ============================================================================
+// Based on standard customer service escalation protocols
+const example4_ComplaintEscalation: FlowChartData = {
+  rootId: 'complaint-received',
+  nodes: [
+    {
+      id: 'complaint-received',
+      variant: 'primary',
+      column: 1,
+      label: 'Complaint\nReceived',
+      connections: [{ targetId: 'log-complaint' }],
+    },
+    {
+      id: 'log-complaint',
+      variant: 'neutral',
+      column: 2,
+      label: 'Log complaint\n& assess severity',
+      connections: [{ targetId: 'severity-check' }],
+    },
+    {
+      id: 'severity-check',
+      variant: 'neutral',
+      column: 2,
+      label: 'Severity\nLevel?',
+      connections: [
+        { targetId: 'critical-escalate', label: 'Critical', color: 'red' },
+        { targetId: 'high-assign', label: 'High', color: 'orange' },
+        { targetId: 'front-desk', label: 'Normal', color: 'blue' },
+      ],
+    },
+    {
+      id: 'front-desk',
+      variant: 'secondary',
+      column: 3,
+      label: 'Front Desk\nAgent Handles',
+      connections: [{ targetId: 'agent-resolve' }],
+    },
+    {
+      id: 'agent-resolve',
+      variant: 'neutral',
+      column: 1,
+      label: 'Agent able\nto resolve?',
+      connections: [
+        { targetId: 'update-customer', label: 'Yes', color: 'green' },
+        { targetId: 'escalate-supervisor', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'high-assign',
+      variant: 'secondary',
+      column: 3,
+      label: 'Assign to\nSenior Agent',
+      connections: [{ targetId: 'senior-resolve' }],
+    },
+    {
+      id: 'senior-resolve',
+      variant: 'neutral',
+      column: 1,
+      label: 'Senior agent\nresolves?',
+      connections: [
+        { targetId: 'update-customer', label: 'Yes', color: 'green' },
+        { targetId: 'escalate-supervisor', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'escalate-supervisor',
+      variant: 'secondary',
+      column: 2,
+      label: 'Escalate to\nSupervisor',
+      connections: [{ targetId: 'supervisor-resolve' }],
+    },
+    {
+      id: 'supervisor-resolve',
+      variant: 'neutral',
+      column: 2,
+      label: 'Supervisor\nresolves?',
+      connections: [
+        { targetId: 'update-customer', label: 'Yes', color: 'green' },
+        { targetId: 'escalate-manager', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'critical-escalate',
+      variant: 'secondary',
+      column: 3,
+      label: 'Immediate\nManager Escalation',
+      connections: [{ targetId: 'escalate-manager' }],
+    },
+    {
+      id: 'escalate-manager',
+      variant: 'primary',
+      column: 1,
+      label: 'Manager\nFinal Decision',
+      connections: [{ targetId: 'update-customer' }],
+    },
+    {
+      id: 'update-customer',
+      variant: 'primary',
+      column: 3,
+      label: 'Update Customer\n& Close Ticket',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 5: Password Reset Flow
+// ============================================================================
+// Common IT support scenario for account recovery
+const example5_PasswordReset: FlowChartData = {
+  rootId: 'forgot-password',
+  nodes: [
+    {
+      id: 'forgot-password',
+      variant: 'primary',
+      column: 1,
+      label: 'User Forgot\nPassword',
+      connections: [{ targetId: 'enter-email' }],
+    },
+    {
+      id: 'enter-email',
+      variant: 'neutral',
+      column: 2,
+      label: 'Enter email\naddress',
+      connections: [{ targetId: 'email-exists' }],
+    },
+    {
+      id: 'email-exists',
+      variant: 'neutral',
+      column: 2,
+      label: 'Email in\nsystem?',
+      connections: [
+        { targetId: 'verify-identity', label: 'Yes', color: 'green' },
+        { targetId: 'email-not-found', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'email-not-found',
+      variant: 'secondary',
+      column: 3,
+      label: 'Email not found\ntry again',
+      connections: [{ targetId: 'enter-email', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'verify-identity',
+      variant: 'neutral',
+      column: 2,
+      label: 'Choose verification:\nSMS or Security Questions?',
+      connections: [
+        { targetId: 'send-sms', label: 'SMS', color: 'blue' },
+        { targetId: 'security-questions', label: 'Questions', color: 'orange' },
+      ],
+    },
+    {
+      id: 'send-sms',
+      variant: 'secondary',
+      column: 3,
+      label: 'Send code\nvia SMS',
+      connections: [{ targetId: 'verify-code' }],
+    },
+    {
+      id: 'verify-code',
+      variant: 'neutral',
+      column: 1,
+      label: 'Code\nvalid?',
+      connections: [
+        { targetId: 'reset-password', label: 'Yes', color: 'green' },
+        { targetId: 'code-invalid', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'code-invalid',
+      variant: 'secondary',
+      column: 2,
+      label: 'Invalid code',
+      connections: [
+        { targetId: 'verify-code', label: 'Retry', color: 'blue' },
+        { targetId: 'contact-support', label: 'Too many tries', color: 'red' },
+      ],
+    },
+    {
+      id: 'security-questions',
+      variant: 'secondary',
+      column: 3,
+      label: 'Answer security\nquestions',
+      connections: [{ targetId: 'answers-correct' }],
+    },
+    {
+      id: 'answers-correct',
+      variant: 'neutral',
+      column: 1,
+      label: 'Answers\ncorrect?',
+      connections: [
+        { targetId: 'reset-password', label: 'Yes', color: 'green' },
+        { targetId: 'answers-wrong', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'answers-wrong',
+      variant: 'secondary',
+      column: 2,
+      label: 'Incorrect answers',
+      connections: [
+        { targetId: 'security-questions', label: 'Retry', color: 'blue' },
+        { targetId: 'contact-support', label: 'Too many tries', color: 'red' },
+      ],
+    },
+    {
+      id: 'reset-password',
+      variant: 'primary',
+      column: 2,
+      label: 'Enter new\npassword',
+      connections: [{ targetId: 'password-valid' }],
+    },
+    {
+      id: 'password-valid',
+      variant: 'neutral',
+      column: 2,
+      label: 'Password meets\nrequirements?',
+      connections: [
+        { targetId: 'success', label: 'Yes', color: 'green' },
+        { targetId: 'password-weak', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'password-weak',
+      variant: 'secondary',
+      column: 3,
+      label: 'Password too weak',
+      connections: [{ targetId: 'reset-password', label: 'Try again', color: 'blue' }],
+    },
+    {
+      id: 'contact-support',
+      variant: 'primary',
+      column: 3,
+      label: 'Contact\nSupport Team',
+      connections: [],
+    },
+    {
+      id: 'success',
+      variant: 'primary',
+      column: 3,
+      label: 'Password Reset\nSuccessful!',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 6: Printer Troubleshooting
+// ============================================================================
+// Based on common printer issue resolution steps
+const example6_PrinterTroubleshooting: FlowChartData = {
+  rootId: 'printer-issue',
+  nodes: [
+    {
+      id: 'printer-issue',
+      variant: 'primary',
+      column: 1,
+      label: 'Printer Won\'t\nPrint',
+      connections: [{ targetId: 'power-on' }],
+    },
+    {
+      id: 'power-on',
+      variant: 'neutral',
+      column: 2,
+      label: 'Printer\npowered on?',
+      connections: [
+        { targetId: 'check-errors', label: 'Yes', color: 'green' },
+        { targetId: 'turn-on', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'turn-on',
+      variant: 'secondary',
+      column: 3,
+      label: 'Turn on\nprinter',
+      connections: [{ targetId: 'power-on', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'check-errors',
+      variant: 'neutral',
+      column: 2,
+      label: 'Error messages\ndisplayed?',
+      connections: [
+        { targetId: 'check-connection', label: 'No', color: 'green' },
+        { targetId: 'resolve-error', label: 'Yes', color: 'red' },
+      ],
+    },
+    {
+      id: 'resolve-error',
+      variant: 'secondary',
+      column: 3,
+      label: 'Clear paper jam\nor error',
+      connections: [{ targetId: 'check-errors', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'check-connection',
+      variant: 'neutral',
+      column: 1,
+      label: 'Connected to\ncomputer/network?',
+      connections: [
+        { targetId: 'check-queue', label: 'Yes', color: 'green' },
+        { targetId: 'reconnect', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'reconnect',
+      variant: 'secondary',
+      column: 2,
+      label: 'Check cables\nor WiFi',
+      connections: [{ targetId: 'check-connection', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'check-queue',
+      variant: 'neutral',
+      column: 2,
+      label: 'Jobs stuck in\nprint queue?',
+      connections: [
+        { targetId: 'check-supplies', label: 'No', color: 'green' },
+        { targetId: 'clear-queue', label: 'Yes', color: 'red' },
+      ],
+    },
+    {
+      id: 'clear-queue',
+      variant: 'secondary',
+      column: 3,
+      label: 'Clear print\nqueue',
+      connections: [{ targetId: 'test-print' }],
+    },
+    {
+      id: 'check-supplies',
+      variant: 'neutral',
+      column: 2,
+      label: 'Paper & ink\navailable?',
+      connections: [
+        { targetId: 'test-print', label: 'Yes', color: 'green' },
+        { targetId: 'add-supplies', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'add-supplies',
+      variant: 'secondary',
+      column: 3,
+      label: 'Add paper\nor replace ink',
+      connections: [{ targetId: 'test-print' }],
+    },
+    {
+      id: 'test-print',
+      variant: 'neutral',
+      column: 1,
+      label: 'Test print\nsucceeds?',
+      connections: [
+        { targetId: 'resolved', label: 'Yes', color: 'green' },
+        { targetId: 'driver-check', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'driver-check',
+      variant: 'secondary',
+      column: 2,
+      label: 'Reinstall printer\ndrivers',
+      connections: [
+        { targetId: 'resolved', label: 'Works', color: 'green' },
+        { targetId: 'contact-it', label: 'Fails', color: 'red' },
+      ],
+    },
+    {
+      id: 'contact-it',
+      variant: 'primary',
+      column: 3,
+      label: 'Contact IT\nSupport',
+      connections: [],
+    },
+    {
+      id: 'resolved',
+      variant: 'primary',
+      column: 3,
+      label: 'Printer\nWorking!',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 7: Online Order Fulfillment
+// ============================================================================
+// E-commerce order processing workflow
+const example7_OrderFulfillment: FlowChartData = {
+  rootId: 'order-received',
+  nodes: [
+    {
+      id: 'order-received',
+      variant: 'primary',
+      column: 1,
+      label: 'Order\nReceived',
+      connections: [{ targetId: 'payment-check' }],
+    },
+    {
+      id: 'payment-check',
+      variant: 'neutral',
+      column: 2,
+      label: 'Payment\nverified?',
+      connections: [
+        { targetId: 'inventory-check', label: 'Yes', color: 'green' },
+        { targetId: 'payment-issue', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'payment-issue',
+      variant: 'secondary',
+      column: 3,
+      label: 'Contact customer\nfor payment',
+      connections: [
+        { targetId: 'payment-check', label: 'Resolved', color: 'green' },
+        { targetId: 'cancel-order', label: 'Failed', color: 'red' },
+      ],
+    },
+    {
+      id: 'inventory-check',
+      variant: 'neutral',
+      column: 2,
+      label: 'All items\nin stock?',
+      connections: [
+        { targetId: 'pick-pack', label: 'Yes', color: 'green' },
+        { targetId: 'partial-stock', label: 'Partial', color: 'orange' },
+        { targetId: 'out-of-stock', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'partial-stock',
+      variant: 'secondary',
+      column: 3,
+      label: 'Contact customer\nfor options',
+      connections: [
+        { targetId: 'pick-pack', label: 'Ship available', color: 'green' },
+        { targetId: 'cancel-order', label: 'Cancel', color: 'red' },
+      ],
+    },
+    {
+      id: 'out-of-stock',
+      variant: 'secondary',
+      column: 3,
+      label: 'Notify customer\nof backorder',
+      connections: [
+        { targetId: 'inventory-check', label: 'Wait', color: 'blue' },
+        { targetId: 'cancel-order', label: 'Cancel', color: 'red' },
+      ],
+    },
+    {
+      id: 'pick-pack',
+      variant: 'primary',
+      column: 1,
+      label: 'Pick & Pack\nItems',
       connections: [{ targetId: 'quality-check' }],
     },
     {
       id: 'quality-check',
       variant: 'neutral',
-      column: 1,
-      label: 'Meets\nStandards?',
-      connections: [
-        { targetId: 'resolution', label: 'Yes', color: 'green' },
-        { targetId: 'rework', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'rework',
-      variant: 'secondary',
       column: 2,
-      label: 'Requires\nRework',
+      label: 'Quality check\npassed?',
       connections: [
-        { targetId: 'normal-path', label: 'Reprocess', color: 'orange' }, // Loop back
+        { targetId: 'print-label', label: 'Yes', color: 'green' },
+        { targetId: 'pick-pack', label: 'No', color: 'red' },
       ],
     },
     {
-      id: 'resolution',
-      variant: 'primary',
+      id: 'print-label',
+      variant: 'secondary',
       column: 3,
-      label: 'Resolved',
-      connections: [],
+      label: 'Print shipping\nlabel',
+      connections: [{ targetId: 'ship-order' }],
     },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 4: Conditional Path with Multiple Decision Points
-// ============================================================================
-const example4_ConditionalFlow: FlowChartData = {
-  rootId: 'init',
-  nodes: [
     {
-      id: 'init',
+      id: 'ship-order',
       variant: 'primary',
       column: 1,
-      label: 'Initialize',
-      connections: [{ targetId: 'auth-check' }],
+      label: 'Ship via\nCarrier',
+      connections: [{ targetId: 'notify-customer' }],
     },
     {
-      id: 'auth-check',
-      variant: 'neutral',
-      column: 2,
-      label: 'User\nAuthenticated?',
-      connections: [
-        { targetId: 'role-check', label: 'Yes', color: 'green' },
-        { targetId: 'login', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'login',
-      variant: 'secondary',
-      column: 3,
-      label: 'Login\nRequired',
-      connections: [{ targetId: 'auth-check', label: 'Retry', color: 'blue' }],
-    },
-    {
-      id: 'role-check',
-      variant: 'neutral',
-      column: 2,
-      label: 'Has Admin\nRole?',
-      connections: [
-        { targetId: 'admin-panel', label: 'Yes', color: 'green' },
-        { targetId: 'user-panel', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'admin-panel',
-      variant: 'secondary',
-      column: 3,
-      label: 'Admin\nDashboard',
-      connections: [],
-    },
-    {
-      id: 'user-panel',
-      variant: 'secondary',
-      column: 3,
-      label: 'User\nDashboard',
-      connections: [],
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 5: Software Development Workflow
-// ============================================================================
-const example5_SoftwareDev: FlowChartData = {
-  rootId: 'planning',
-  nodes: [
-    {
-      id: 'planning',
-      variant: 'primary',
-      column: 1,
-      label: 'Sprint\nPlanning',
-      connections: [{ targetId: 'design' }],
-    },
-    {
-      id: 'design',
-      variant: 'neutral',
-      column: 2,
-      label: 'Design\nReview',
-      connections: [{ targetId: 'development' }],
-    },
-    {
-      id: 'development',
-      variant: 'secondary',
-      column: 3,
-      label: 'Development\n& Testing',
-      connections: [{ targetId: 'code-review' }],
-    },
-    {
-      id: 'code-review',
-      variant: 'neutral',
-      column: 1,
-      label: 'Code Review\nApproved?',
-      connections: [
-        { targetId: 'qa-testing', label: 'Yes', color: 'green' },
-        { targetId: 'development', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'qa-testing',
+      id: 'notify-customer',
       variant: 'secondary',
       column: 2,
-      label: 'QA\nTesting',
-      connections: [{ targetId: 'qa-decision' }],
-    },
-    {
-      id: 'qa-decision',
-      variant: 'neutral',
-      column: 2,
-      label: 'Tests\nPassing?',
-      connections: [
-        { targetId: 'staging', label: 'Yes', color: 'green' },
-        { targetId: 'bug-fix', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'bug-fix',
-      variant: 'secondary',
-      column: 3,
-      label: 'Bug\nFixes',
-      connections: [{ targetId: 'qa-testing', label: 'Retest', color: 'orange' }],
-    },
-    {
-      id: 'staging',
-      variant: 'primary',
-      column: 3,
-      label: 'Deploy to\nStaging',
-      connections: [{ targetId: 'uat' }],
-    },
-    {
-      id: 'uat',
-      variant: 'neutral',
-      column: 1,
-      label: 'User Acceptance\nTest OK?',
-      connections: [
-        { targetId: 'production', label: 'Yes', color: 'green' },
-        { targetId: 'staging', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'production',
-      variant: 'primary',
-      column: 2,
-      label: 'Deploy to\nProduction',
-      connections: [{ targetId: 'monitor' }],
-    },
-    {
-      id: 'monitor',
-      variant: 'secondary',
-      column: 3,
-      label: 'Monitor &\nSupport',
-      connections: [],
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 6: Financial Planning
-// ============================================================================
-const example6_FinancialPlanning: FlowChartData = {
-  rootId: 'assess',
-  nodes: [
-    {
-      id: 'assess',
-      variant: 'primary',
-      column: 1,
-      label: 'Assess Current\nFinances',
-      connections: [{ targetId: 'emergency-fund' }],
-    },
-    {
-      id: 'emergency-fund',
-      variant: 'neutral',
-      column: 2,
-      label: 'Emergency Fund\n(3-6 months)?',
-      connections: [
-        { targetId: 'debt-check', label: 'Yes', color: 'green' },
-        { targetId: 'build-emergency', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'build-emergency',
-      variant: 'secondary',
-      column: 3,
-      label: 'Build Emergency\nFund First',
-      connections: [{ targetId: 'debt-check' }],
-    },
-    {
-      id: 'debt-check',
-      variant: 'neutral',
-      column: 2,
-      label: 'High-Interest\nDebt?',
-      connections: [
-        { targetId: 'pay-debt', label: 'Yes', color: 'red' },
-        { targetId: 'retirement-check', label: 'No', color: 'green' },
-      ],
-    },
-    {
-      id: 'pay-debt',
-      variant: 'secondary',
-      column: 3,
-      label: 'Pay Off\nDebt',
-      connections: [{ targetId: 'retirement-check' }],
-    },
-    {
-      id: 'retirement-check',
-      variant: 'neutral',
-      column: 1,
-      label: '401k Match\nAvailable?',
-      connections: [
-        { targetId: 'max-match', label: 'Yes', color: 'green' },
-        { targetId: 'ira', label: 'No', color: 'blue' },
-      ],
-    },
-    {
-      id: 'max-match',
-      variant: 'secondary',
-      column: 2,
-      label: 'Maximize\nEmployer Match',
-      connections: [{ targetId: 'ira' }],
-    },
-    {
-      id: 'ira',
-      variant: 'primary',
-      column: 3,
-      label: 'Max Out\nIRA',
-      connections: [{ targetId: 'invest-more' }],
-    },
-    {
-      id: 'invest-more',
-      variant: 'neutral',
-      column: 1,
-      label: 'More to\nInvest?',
-      connections: [
-        { targetId: 'taxable', label: 'Yes', color: 'green' },
-        { targetId: 'review', label: 'No', color: 'blue' },
-      ],
-    },
-    {
-      id: 'taxable',
-      variant: 'secondary',
-      column: 2,
-      label: 'Taxable\nBrokerage',
-      connections: [{ targetId: 'review' }],
-    },
-    {
-      id: 'review',
-      variant: 'primary',
-      column: 3,
-      label: 'Annual\nReview',
-      connections: [],
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 7: Vacation Planning
-// ============================================================================
-const example7_VacationPlanning: FlowChartData = {
-  rootId: 'start-planning',
-  nodes: [
-    {
-      id: 'start-planning',
-      variant: 'primary',
-      column: 1,
-      label: 'Start\nPlanning',
-      connections: [{ targetId: 'budget' }],
-    },
-    {
-      id: 'budget',
-      variant: 'neutral',
-      column: 2,
-      label: 'Set Budget\n& Dates',
-      connections: [{ targetId: 'destination' }],
-    },
-    {
-      id: 'destination',
-      variant: 'neutral',
-      column: 2,
-      label: 'Choose\nDestination',
-      connections: [
-        { targetId: 'domestic', label: 'Domestic', color: 'blue' },
-        { targetId: 'international', label: 'International', color: 'green' },
-      ],
-    },
-    {
-      id: 'domestic',
-      variant: 'secondary',
-      column: 3,
-      label: 'Book\nDomestic Travel',
-      connections: [{ targetId: 'accommodation' }],
-    },
-    {
-      id: 'international',
-      variant: 'secondary',
-      column: 3,
-      label: 'Book\nInternational',
-      connections: [{ targetId: 'passport-check' }],
-    },
-    {
-      id: 'passport-check',
-      variant: 'neutral',
-      column: 1,
-      label: 'Passport\nValid?',
-      connections: [
-        { targetId: 'accommodation', label: 'Yes', color: 'green' },
-        { targetId: 'renew-passport', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'renew-passport',
-      variant: 'secondary',
-      column: 2,
-      label: 'Renew\nPassport',
-      connections: [{ targetId: 'accommodation' }],
-    },
-    {
-      id: 'accommodation',
-      variant: 'primary',
-      column: 3,
-      label: 'Book\nAccommodation',
-      connections: [{ targetId: 'activities' }],
-    },
-    {
-      id: 'activities',
-      variant: 'neutral',
-      column: 1,
-      label: 'Plan\nActivities',
-      connections: [{ targetId: 'packing' }],
-    },
-    {
-      id: 'packing',
-      variant: 'secondary',
-      column: 2,
-      label: 'Pack\nBags',
-      connections: [{ targetId: 'enjoy' }],
-    },
-    {
-      id: 'enjoy',
-      variant: 'primary',
-      column: 3,
-      label: 'Enjoy\nVacation!',
-      connections: [],
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 8: Customer Support Workflow
-// ============================================================================
-const example8_CustomerSupport: FlowChartData = {
-  rootId: 'ticket-received',
-  nodes: [
-    {
-      id: 'ticket-received',
-      variant: 'primary',
-      column: 1,
-      label: 'Support Ticket\nReceived',
-      connections: [{ targetId: 'categorize' }],
-    },
-    {
-      id: 'categorize',
-      variant: 'neutral',
-      column: 2,
-      label: 'Ticket\nPriority?',
-      connections: [
-        { targetId: 'critical', label: 'Critical', color: 'red' },
-        { targetId: 'high', label: 'High', color: 'orange' },
-        { targetId: 'normal', label: 'Normal', color: 'blue' },
-      ],
-    },
-    {
-      id: 'critical',
-      variant: 'secondary',
-      column: 3,
-      label: 'Immediate\nEscalation',
-      connections: [{ targetId: 'investigate' }],
-    },
-    {
-      id: 'high',
-      variant: 'secondary',
-      column: 3,
-      label: 'Assign to\nSenior Agent',
-      connections: [{ targetId: 'investigate' }],
-    },
-    {
-      id: 'normal',
-      variant: 'secondary',
-      column: 3,
-      label: 'Queue for\nNext Agent',
-      connections: [{ targetId: 'investigate' }],
-    },
-    {
-      id: 'investigate',
-      variant: 'neutral',
-      column: 1,
-      label: 'Investigate\nIssue',
-      connections: [{ targetId: 'known-issue' }],
-    },
-    {
-      id: 'known-issue',
-      variant: 'neutral',
-      column: 2,
-      label: 'Known\nIssue?',
-      connections: [
-        { targetId: 'apply-solution', label: 'Yes', color: 'green' },
-        { targetId: 'research', label: 'No', color: 'orange' },
-      ],
-    },
-    {
-      id: 'apply-solution',
-      variant: 'secondary',
-      column: 3,
-      label: 'Apply Known\nSolution',
-      connections: [{ targetId: 'test-solution' }],
-    },
-    {
-      id: 'research',
-      variant: 'secondary',
-      column: 3,
-      label: 'Research &\nDevelop Fix',
-      connections: [{ targetId: 'test-solution' }],
-    },
-    {
-      id: 'test-solution',
-      variant: 'neutral',
-      column: 1,
-      label: 'Solution\nWorks?',
-      connections: [
-        { targetId: 'document', label: 'Yes', color: 'green' },
-        { targetId: 'escalate-tech', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'escalate-tech',
-      variant: 'secondary',
-      column: 2,
-      label: 'Escalate to\nEngineering',
-      connections: [{ targetId: 'investigate', label: 'Retry', color: 'orange' }],
-    },
-    {
-      id: 'document',
-      variant: 'primary',
-      column: 2,
-      label: 'Document\nSolution',
-      connections: [{ targetId: 'close-ticket' }],
-    },
-    {
-      id: 'close-ticket',
-      variant: 'secondary',
-      column: 3,
-      label: 'Close Ticket\n& Follow Up',
-      connections: [],
-    },
-  ],
-};
-
-// ============================================================================
-// EXAMPLE 9: E-commerce Purchase Flow
-// ============================================================================
-const example9_Ecommerce: FlowChartData = {
-  rootId: 'browse',
-  nodes: [
-    {
-      id: 'browse',
-      variant: 'primary',
-      column: 1,
-      label: 'Browse\nProducts',
-      connections: [{ targetId: 'add-to-cart' }],
-    },
-    {
-      id: 'add-to-cart',
-      variant: 'neutral',
-      column: 2,
-      label: 'Add to\nCart',
-      connections: [{ targetId: 'continue-shopping' }],
-    },
-    {
-      id: 'continue-shopping',
-      variant: 'neutral',
-      column: 2,
-      label: 'Continue\nShopping?',
-      connections: [
-        { targetId: 'browse', label: 'Yes', color: 'blue' },
-        { targetId: 'checkout', label: 'No', color: 'green' },
-      ],
-    },
-    {
-      id: 'checkout',
-      variant: 'primary',
-      column: 1,
-      label: 'Start\nCheckout',
-      connections: [{ targetId: 'account-check' }],
-    },
-    {
-      id: 'account-check',
-      variant: 'neutral',
-      column: 2,
-      label: 'Logged\nIn?',
-      connections: [
-        { targetId: 'shipping', label: 'Yes', color: 'green' },
-        { targetId: 'guest-or-login', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'guest-or-login',
-      variant: 'neutral',
-      column: 2,
-      label: 'Guest or\nCreate Account?',
-      connections: [
-        { targetId: 'shipping', label: 'Guest', color: 'blue' },
-        { targetId: 'create-account', label: 'Create', color: 'green' },
-      ],
-    },
-    {
-      id: 'create-account',
-      variant: 'secondary',
-      column: 3,
-      label: 'Create\nAccount',
-      connections: [{ targetId: 'shipping' }],
-    },
-    {
-      id: 'shipping',
-      variant: 'primary',
-      column: 3,
-      label: 'Enter Shipping\nAddress',
-      connections: [{ targetId: 'payment' }],
-    },
-    {
-      id: 'payment',
-      variant: 'neutral',
-      column: 1,
-      label: 'Enter Payment\nInfo',
-      connections: [{ targetId: 'verify-payment' }],
-    },
-    {
-      id: 'verify-payment',
-      variant: 'neutral',
-      column: 2,
-      label: 'Payment\nVerified?',
-      connections: [
-        { targetId: 'confirm-order', label: 'Yes', color: 'green' },
-        { targetId: 'payment-failed', label: 'No', color: 'red' },
-      ],
-    },
-    {
-      id: 'payment-failed',
-      variant: 'secondary',
-      column: 3,
-      label: 'Payment\nFailed',
-      connections: [{ targetId: 'payment', label: 'Retry', color: 'orange' }],
-    },
-    {
-      id: 'confirm-order',
-      variant: 'primary',
-      column: 3,
-      label: 'Order\nConfirmation',
-      connections: [{ targetId: 'fulfillment' }],
-    },
-    {
-      id: 'fulfillment',
-      variant: 'secondary',
-      column: 1,
-      label: 'Fulfillment &\nShipping',
+      label: 'Send tracking\ninfo to customer',
       connections: [{ targetId: 'delivered' }],
     },
     {
       id: 'delivered',
       variant: 'primary',
+      column: 3,
+      label: 'Order\nDelivered',
+      connections: [],
+    },
+    {
+      id: 'cancel-order',
+      variant: 'primary',
+      column: 3,
+      label: 'Order\nCancelled',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 8: Network Connection Troubleshooting
+// ============================================================================
+// Common network connectivity issue resolution
+const example8_NetworkTroubleshooting: FlowChartData = {
+  rootId: 'no-internet',
+  nodes: [
+    {
+      id: 'no-internet',
+      variant: 'primary',
+      column: 1,
+      label: 'No Internet\nConnection',
+      connections: [{ targetId: 'other-devices' }],
+    },
+    {
+      id: 'other-devices',
+      variant: 'neutral',
       column: 2,
-      label: 'Delivered',
+      label: 'Other devices\nconnected?',
+      connections: [
+        { targetId: 'device-issue', label: 'Yes', color: 'green' },
+        { targetId: 'router-check', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'router-check',
+      variant: 'neutral',
+      column: 3,
+      label: 'Router lights\nnormal?',
+      connections: [
+        { targetId: 'modem-check', label: 'Yes', color: 'green' },
+        { targetId: 'restart-router', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'restart-router',
+      variant: 'secondary',
+      column: 3,
+      label: 'Restart\nrouter',
+      connections: [{ targetId: 'router-check', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'modem-check',
+      variant: 'neutral',
+      column: 1,
+      label: 'Modem\nonline?',
+      connections: [
+        { targetId: 'cable-check', label: 'Yes', color: 'green' },
+        { targetId: 'restart-modem', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'restart-modem',
+      variant: 'secondary',
+      column: 2,
+      label: 'Restart\nmodem',
+      connections: [{ targetId: 'modem-check', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'cable-check',
+      variant: 'neutral',
+      column: 2,
+      label: 'All cables\nconnected?',
+      connections: [
+        { targetId: 'test-connection', label: 'Yes', color: 'green' },
+        { targetId: 'reconnect-cables', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'reconnect-cables',
+      variant: 'secondary',
+      column: 3,
+      label: 'Reconnect\ncables',
+      connections: [{ targetId: 'test-connection' }],
+    },
+    {
+      id: 'device-issue',
+      variant: 'neutral',
+      column: 3,
+      label: 'WiFi enabled\non device?',
+      connections: [
+        { targetId: 'forget-network', label: 'Yes', color: 'green' },
+        { targetId: 'enable-wifi', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'enable-wifi',
+      variant: 'secondary',
+      column: 3,
+      label: 'Enable\nWiFi',
+      connections: [{ targetId: 'device-issue', label: 'Retry', color: 'blue' }],
+    },
+    {
+      id: 'forget-network',
+      variant: 'secondary',
+      column: 1,
+      label: 'Forget & reconnect\nto network',
+      connections: [{ targetId: 'test-connection' }],
+    },
+    {
+      id: 'test-connection',
+      variant: 'neutral',
+      column: 2,
+      label: 'Connection\nworking?',
+      connections: [
+        { targetId: 'connected', label: 'Yes', color: 'green' },
+        { targetId: 'contact-isp', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'contact-isp',
+      variant: 'primary',
+      column: 3,
+      label: 'Contact Internet\nService Provider',
+      connections: [],
+    },
+    {
+      id: 'connected',
+      variant: 'primary',
+      column: 3,
+      label: 'Connected!',
+      connections: [],
+    },
+  ],
+};
+
+// ============================================================================
+// EXAMPLE 9: Job Application Screening
+// ============================================================================
+// HR recruitment and applicant screening process
+const example9_JobApplication: FlowChartData = {
+  rootId: 'application-received',
+  nodes: [
+    {
+      id: 'application-received',
+      variant: 'primary',
+      column: 1,
+      label: 'Application\nReceived',
+      connections: [{ targetId: 'initial-review' }],
+    },
+    {
+      id: 'initial-review',
+      variant: 'neutral',
+      column: 2,
+      label: 'Resume meets\nminimum requirements?',
+      connections: [
+        { targetId: 'experience-check', label: 'Yes', color: 'green' },
+        { targetId: 'reject-initial', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'experience-check',
+      variant: 'neutral',
+      column: 2,
+      label: 'Required experience\n& skills?',
+      connections: [
+        { targetId: 'phone-screen', label: 'Yes', color: 'green' },
+        { targetId: 'borderline', label: 'Partial', color: 'orange' },
+        { targetId: 'reject-initial', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'borderline',
+      variant: 'secondary',
+      column: 3,
+      label: 'Review with\nhiring manager',
+      connections: [
+        { targetId: 'phone-screen', label: 'Approve', color: 'green' },
+        { targetId: 'reject-initial', label: 'Decline', color: 'red' },
+      ],
+    },
+    {
+      id: 'phone-screen',
+      variant: 'primary',
+      column: 1,
+      label: 'Phone\nScreen',
+      connections: [{ targetId: 'phone-result' }],
+    },
+    {
+      id: 'phone-result',
+      variant: 'neutral',
+      column: 2,
+      label: 'Phone screen\nsuccessful?',
+      connections: [
+        { targetId: 'technical-test', label: 'Yes', color: 'green' },
+        { targetId: 'reject-phone', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'technical-test',
+      variant: 'secondary',
+      column: 3,
+      label: 'Technical\nAssessment',
+      connections: [{ targetId: 'test-result' }],
+    },
+    {
+      id: 'test-result',
+      variant: 'neutral',
+      column: 1,
+      label: 'Assessment\npassed?',
+      connections: [
+        { targetId: 'onsite-interview', label: 'Yes', color: 'green' },
+        { targetId: 'reject-test', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'onsite-interview',
+      variant: 'primary',
+      column: 2,
+      label: 'Onsite/Virtual\nInterview',
+      connections: [{ targetId: 'team-feedback' }],
+    },
+    {
+      id: 'team-feedback',
+      variant: 'neutral',
+      column: 2,
+      label: 'Team consensus\nto hire?',
+      connections: [
+        { targetId: 'reference-check', label: 'Yes', color: 'green' },
+        { targetId: 'reject-interview', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'reference-check',
+      variant: 'secondary',
+      column: 3,
+      label: 'Check\nReferences',
+      connections: [{ targetId: 'references-ok' }],
+    },
+    {
+      id: 'references-ok',
+      variant: 'neutral',
+      column: 1,
+      label: 'References\nsatisfactory?',
+      connections: [
+        { targetId: 'make-offer', label: 'Yes', color: 'green' },
+        { targetId: 'reject-references', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'make-offer',
+      variant: 'primary',
+      column: 2,
+      label: 'Extend Job\nOffer',
+      connections: [{ targetId: 'offer-response' }],
+    },
+    {
+      id: 'offer-response',
+      variant: 'neutral',
+      column: 2,
+      label: 'Offer\naccepted?',
+      connections: [
+        { targetId: 'hired', label: 'Yes', color: 'green' },
+        { targetId: 'offer-declined', label: 'No', color: 'red' },
+      ],
+    },
+    {
+      id: 'hired',
+      variant: 'primary',
+      column: 3,
+      label: 'Candidate\nHired!',
+      connections: [],
+    },
+    {
+      id: 'reject-initial',
+      variant: 'secondary',
+      column: 3,
+      label: 'Send rejection\n(initial screening)',
+      connections: [],
+    },
+    {
+      id: 'reject-phone',
+      variant: 'secondary',
+      column: 3,
+      label: 'Send rejection\n(after phone screen)',
+      connections: [],
+    },
+    {
+      id: 'reject-test',
+      variant: 'secondary',
+      column: 2,
+      label: 'Send rejection\n(after assessment)',
+      connections: [],
+    },
+    {
+      id: 'reject-interview',
+      variant: 'secondary',
+      column: 3,
+      label: 'Send rejection\n(after interview)',
+      connections: [],
+    },
+    {
+      id: 'reject-references',
+      variant: 'secondary',
+      column: 2,
+      label: 'Send rejection\n(references)',
+      connections: [],
+    },
+    {
+      id: 'offer-declined',
+      variant: 'secondary',
+      column: 3,
+      label: 'Offer\nDeclined',
       connections: [],
     },
   ],
@@ -882,73 +1201,75 @@ const examples: ExampleDef[] = [
     scale: 1.1,
   },
   {
-    id: 'software-dev',
-    name: 'Software Development Workflow',
-    description: 'Complete CI/CD pipeline from planning through production deployment',
-    data: example5_SoftwareDev,
-    hasActivePath: true,
-    maxWidth: 800,
-    scale: 1,
-  },
-  {
-    id: 'financial-planning',
-    name: 'Personal Financial Planning',
-    description: 'Step-by-step guide to building financial security and wealth',
-    data: example6_FinancialPlanning,
+    id: 'computer-troubleshooting',
+    name: 'Computer Troubleshooting',
+    description: 'IT support workflow for diagnosing and fixing computer startup issues',
+    data: example2_ComputerTroubleshooting,
     hasActivePath: true,
     maxWidth: 900,
     scale: 1,
   },
   {
-    id: 'vacation-planning',
-    name: 'Vacation Planning',
-    description: 'Complete vacation planning process from budgeting to departure',
-    data: example7_VacationPlanning,
-    maxWidth: 900,
-    scale: 1,
-  },
-  {
-    id: 'customer-support',
-    name: 'Customer Support Workflow',
-    description: 'Ticket triage, investigation, and resolution with escalation paths',
-    data: example8_CustomerSupport,
-    hasActivePath: true,
-    maxWidth: 800,
-    scale: 1,
-  },
-  {
-    id: 'ecommerce',
-    name: 'E-commerce Purchase Flow',
-    description: 'Online shopping from browsing through delivery',
-    data: example9_Ecommerce,
+    id: 'medical-emergency',
+    name: 'Medical Emergency Response',
+    description: 'EMT assessment protocol for emergency medical situations',
+    data: example3_MedicalEmergency,
     hasActivePath: true,
     maxWidth: 900,
     scale: 1,
   },
   {
-    id: 'loop-back',
-    name: 'Loop-Back Pattern',
-    description: 'Demonstrates arrows pointing back to earlier steps in the workflow',
-    data: example2_LoopBack,
+    id: 'complaint-escalation',
+    name: 'Customer Complaint Escalation',
+    description: 'Multi-tier customer service escalation with severity routing',
+    data: example4_ComplaintEscalation,
     hasActivePath: true,
-    maxWidth: 650,
+    maxWidth: 900,
     scale: 1,
   },
   {
-    id: 'multiple-connections',
-    name: 'Multiple Connections with Colors',
-    description: 'Shows multiple arrows from the same node with different colors and labels',
-    data: example3_MultipleConnections,
+    id: 'password-reset',
+    name: 'Password Reset Flow',
+    description: 'Account recovery with SMS/security questions and retry limits',
+    data: example5_PasswordReset,
     hasActivePath: true,
-    maxWidth: 800,
+    maxWidth: 900,
     scale: 1,
   },
   {
-    id: 'conditional-flow',
-    name: 'Conditional Flow',
-    description: 'Authentication and authorization flow with retry logic',
-    data: example4_ConditionalFlow,
-    maxWidth: 650,
+    id: 'printer-troubleshooting',
+    name: 'Printer Troubleshooting',
+    description: 'Systematic printer diagnosis from power to driver issues',
+    data: example6_PrinterTroubleshooting,
+    hasActivePath: true,
+    maxWidth: 900,
+    scale: 1,
+  },
+  {
+    id: 'order-fulfillment',
+    name: 'Online Order Fulfillment',
+    description: 'E-commerce order processing from payment to delivery',
+    data: example7_OrderFulfillment,
+    hasActivePath: true,
+    maxWidth: 900,
+    scale: 1,
+  },
+  {
+    id: 'network-troubleshooting',
+    name: 'Network Connection Troubleshooting',
+    description: 'Internet connectivity diagnostics for home/office networks',
+    data: example8_NetworkTroubleshooting,
+    hasActivePath: true,
+    maxWidth: 900,
+    scale: 1,
+  },
+  {
+    id: 'job-application',
+    name: 'Job Application Screening',
+    description: 'HR recruitment process from resume review to job offer',
+    data: example9_JobApplication,
+    hasActivePath: true,
+    maxWidth: 900,
     scale: 1,
   },
 ];
@@ -966,152 +1287,110 @@ export function FlowChartV2Demo() {
       return currentExample.data;
     }
 
-    if (selectedExample === 'financial') {
-      // Path: period-1 → decision-1 (No) → decision-2 (No, skip payment) → period-2-3 →
-      //       decision-3 (No) → decision-4 (Yes, get payment) → outcome-payment-2
-      return {
-        ...currentExample.data,
-        nodes: currentExample.data.nodes.map((node) => {
-          const activeNodeIds = [
-            'period-1',
-            'decision-1',
-            'decision-2',
-            'period-2-3',
-            'decision-3',
-            'decision-4',
-            'outcome-payment-2',
-          ];
-          return {
-            ...node,
-            isActive: activeNodeIds.includes(node.id),
-          };
-        }),
-      };
-    }
+    // Define active paths for each example
+    const activePathsMap: Record<string, string[]> = {
+      financial: [
+        'period-1',
+        'decision-1',
+        'decision-2',
+        'period-2-3',
+        'decision-3',
+        'decision-4',
+        'outcome-payment-2',
+      ],
+      'computer-troubleshooting': [
+        'start',
+        'power-connected',
+        'lights-on',
+        'display-check',
+        'boot-sequence',
+        'resolved',
+      ],
+      'medical-emergency': [
+        'scene-arrival',
+        'scene-safe',
+        'assess-consciousness',
+        'breathing-check',
+        'circulation-check',
+        'vital-signs',
+        'transport-routine',
+      ],
+      'complaint-escalation': [
+        'complaint-received',
+        'log-complaint',
+        'severity-check',
+        'high-assign',
+        'senior-resolve',
+        'update-customer',
+      ],
+      'password-reset': [
+        'forgot-password',
+        'enter-email',
+        'email-exists',
+        'verify-identity',
+        'send-sms',
+        'verify-code',
+        'reset-password',
+        'password-valid',
+        'success',
+      ],
+      'printer-troubleshooting': [
+        'printer-issue',
+        'power-on',
+        'check-errors',
+        'check-connection',
+        'check-queue',
+        'check-supplies',
+        'test-print',
+        'resolved',
+      ],
+      'order-fulfillment': [
+        'order-received',
+        'payment-check',
+        'inventory-check',
+        'pick-pack',
+        'quality-check',
+        'print-label',
+        'ship-order',
+        'notify-customer',
+        'delivered',
+      ],
+      'network-troubleshooting': [
+        'no-internet',
+        'other-devices',
+        'router-check',
+        'modem-check',
+        'cable-check',
+        'test-connection',
+        'connected',
+      ],
+      'job-application': [
+        'application-received',
+        'initial-review',
+        'experience-check',
+        'phone-screen',
+        'phone-result',
+        'technical-test',
+        'test-result',
+        'onsite-interview',
+        'team-feedback',
+        'reference-check',
+        'references-ok',
+        'make-offer',
+        'offer-response',
+        'hired',
+      ],
+    };
 
-    if (selectedExample === 'loop-back') {
-      // Path: Shows a loop through fix-data back to process-data
-      return {
-        ...currentExample.data,
-        nodes: currentExample.data.nodes.map((node) => {
-          const activeNodeIds = ['start', 'process-data', 'validation', 'fix-data'];
-          return {
-            ...node,
-            isActive: activeNodeIds.includes(node.id),
-          };
-        }),
-      };
-    }
+    const activeNodeIds = activePathsMap[selectedExample] || [];
 
-    if (selectedExample === 'multiple-connections') {
-      // Path: Shows the urgent path through to resolution
-      return {
-        ...currentExample.data,
-        nodes: currentExample.data.nodes.map((node) => {
-          const activeNodeIds = ['intake', 'priority-check', 'urgent-path', 'resolution'];
-          return {
-            ...node,
-            isActive: activeNodeIds.includes(node.id),
-          };
-        }),
-      };
-    }
-
-    if (selectedExample === 'software-dev') {
-      // Path: Shows a bug fix loop
-      return {
-        ...currentExample.data,
-        nodes: currentExample.data.nodes.map((node) => {
-          const activeNodeIds = [
-            'planning',
-            'design',
-            'development',
-            'code-review',
-            'qa-testing',
-            'qa-decision',
-            'bug-fix',
-          ];
-          return {
-            ...node,
-            isActive: activeNodeIds.includes(node.id),
-          };
-        }),
-      };
-    }
-
-    if (selectedExample === 'financial-planning') {
-      // Path: Shows the complete financial planning path
-      return {
-        ...currentExample.data,
-        nodes: currentExample.data.nodes.map((node) => {
-          const activeNodeIds = [
-            'assess',
-            'emergency-fund',
-            'build-emergency',
-            'debt-check',
-            'retirement-check',
-            'max-match',
-            'ira',
-            'invest-more',
-            'taxable',
-            'review',
-          ];
-          return {
-            ...node,
-            isActive: activeNodeIds.includes(node.id),
-          };
-        }),
-      };
-    }
-
-    if (selectedExample === 'customer-support') {
-      // Path: Shows escalation to engineering
-      return {
-        ...currentExample.data,
-        nodes: currentExample.data.nodes.map((node) => {
-          const activeNodeIds = [
-            'ticket-received',
-            'categorize',
-            'high',
-            'investigate',
-            'known-issue',
-            'research',
-            'test-solution',
-            'escalate-tech',
-          ];
-          return {
-            ...node,
-            isActive: activeNodeIds.includes(node.id),
-          };
-        }),
-      };
-    }
-
-    if (selectedExample === 'ecommerce') {
-      // Path: Shows payment retry flow
-      return {
-        ...currentExample.data,
-        nodes: currentExample.data.nodes.map((node) => {
-          const activeNodeIds = [
-            'browse',
-            'add-to-cart',
-            'continue-shopping',
-            'checkout',
-            'account-check',
-            'shipping',
-            'payment',
-            'verify-payment',
-            'payment-failed',
-          ];
-          return {
-            ...node,
-            isActive: activeNodeIds.includes(node.id),
-          };
-        }),
-      };
-    }
-
-    return currentExample.data;
+    return {
+      ...currentExample.data,
+      nodes: currentExample.data.nodes.map((node) => ({
+        ...node,
+        isActive: activeNodeIds.includes(node.id),
+      })),
+    };
   };
 
   const displayData = getDisplayData();
@@ -1238,42 +1517,6 @@ export function FlowChartV2Demo() {
             padding: '20px',
           }}
         >
-          {selectedExample === 'loop-back' && (
-            <div
-              style={{
-                marginBottom: '15px',
-                padding: '10px',
-                backgroundColor: '#e3f2fd',
-                borderRadius: '5px',
-                border: '1px solid #2196F3',
-              }}
-            >
-              <p style={{ margin: 0, color: '#0d47a1', fontSize: '14px' }}>
-                <strong>🔄 Loop-Back Example:</strong> This flowchart demonstrates looping back to
-                previous nodes. Notice how "Fix Issues" and "More Data to Process?" both loop back
-                to "Process Data Batch". These arrows point from later steps to earlier steps in the
-                flow.
-              </p>
-            </div>
-          )}
-          {selectedExample === 'multiple-connections' && (
-            <div
-              style={{
-                marginBottom: '15px',
-                padding: '10px',
-                backgroundColor: '#f3e5f5',
-                borderRadius: '5px',
-                border: '1px solid #9C27B0',
-              }}
-            >
-              <p style={{ margin: 0, color: '#4a148c', fontSize: '14px' }}>
-                <strong>🎨 Multiple Connections:</strong> The "Priority Level?" node has three
-                outgoing connections with different colors (red for Urgent, blue for Normal, green
-                for Low). This demonstrates how the connections array can handle multiple paths with
-                distinct visual indicators.
-              </p>
-            </div>
-          )}
           <FlowChartV2
             data={displayData}
             title={currentExample.name}

@@ -44,6 +44,22 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
+          backgroundColor: 'rgba(255,255,255,0.1)',
+          borderRadius: '4px',
+          transition: 'background-color 0.2s',
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+      >
+        FlowChart V2
+      </Link>
+      <Link
+        to="/d3-stock-chart-demo"
+        style={{
+          color: '#ffffff',
+          textDecoration: 'none',
+          fontSize: '16px',
+          padding: '8px 16px',
           backgroundColor: '#4CAF50',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
@@ -51,7 +67,7 @@ export function Navigation() {
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#45a049'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4CAF50'}
       >
-        FlowChart V2 (NEW)
+        D3 Stock Chart (NEW)
       </Link>
     </nav>
   );

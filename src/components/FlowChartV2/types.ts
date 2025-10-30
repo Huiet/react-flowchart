@@ -17,7 +17,7 @@ export interface FlowNode {
   label: string;
   column: number;        // Required column position (1, 2, 3, etc.)
   isActive?: boolean;    // Whether this node is on the active/taken path
-  connections: NodeConnection[]; // Array of outgoing connections
+  connections?: NodeConnection[]; // Array of outgoing connections
 }
 
 // Chart data structure

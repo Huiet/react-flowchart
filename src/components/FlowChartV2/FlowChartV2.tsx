@@ -311,8 +311,21 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
         xmlns="http://www.w3.org/2000/svg"
         style={{ minWidth: '100%' }}
       >
-        {/* Define arrowhead markers for different colors */}
+        {/* Define arrowhead markers and filters */}
         <defs>
+          {/* Drop shadow for labels */}
+          <filter id="label-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation={2 * finalScale} />
+            <feOffset dx={0} dy={1 * finalScale} result="offsetblur" />
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.3" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
           {/* Default gray arrowhead */}
           <marker
             id="arrowhead-default"
@@ -355,9 +368,23 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
               fill="#4CAF50"
             />
           </marker>
-          {/* Orange arrowhead for No paths */}
+          {/* Red arrowhead for No paths */}
           <marker
             id="arrowhead-no"
+            markerWidth={6 * finalScale}
+            markerHeight={6 * finalScale}
+            refX={5.5 * finalScale}
+            refY={2.5 * finalScale}
+            orient="auto"
+          >
+            <polygon
+              points={`0 0.5, ${6 * finalScale} ${2.5 * finalScale}, 0 ${4.5 * finalScale}`}
+              fill="#e74c3c"
+            />
+          </marker>
+          {/* Orange arrowhead */}
+          <marker
+            id="arrowhead-orange"
             markerWidth={6 * finalScale}
             markerHeight={6 * finalScale}
             refX={5.5 * finalScale}
@@ -472,7 +499,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
                 break;
               case 'orange':
                 arrowColor = '#FF9800';
-                arrowMarker = 'arrowhead-no';
+                arrowMarker = 'arrowhead-orange';
                 break;
               default:
                 arrowColor = '#2196F3';
@@ -589,19 +616,22 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
 
           let labelPos: { x: number; y: number };
 
-          // Place label on first segment (halfway through the exit distance)
+          // Place label along the first segment, using staggered position to avoid overlaps
+          // Use a larger distance to spread labels out more
+          const labelDistance = 30 * finalScale; // Fixed distance, further from node
+
           switch (fromSide) {
             case 'right':
-              labelPos = { x: start.x + exitDistance / 2, y: start.y };
+              labelPos = { x: start.x + labelDistance, y: start.y };
               break;
             case 'left':
-              labelPos = { x: start.x - exitDistance / 2, y: start.y };
+              labelPos = { x: start.x - labelDistance, y: start.y };
               break;
             case 'bottom':
-              labelPos = { x: start.x, y: start.y + exitDistance / 2 };
+              labelPos = { x: start.x, y: start.y + labelDistance };
               break;
             case 'top':
-              labelPos = { x: start.x, y: start.y - exitDistance / 2 };
+              labelPos = { x: start.x, y: start.y - labelDistance };
               break;
           }
 
@@ -630,14 +660,28 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
             }
           }
 
+          // Calculate text dimensions for dynamic sizing
+          const fontSize = 10 * finalScale;
+          const padding = 6 * finalScale;
+          const charWidth = fontSize * 0.6; // Approximate character width
+          const textWidth = label.length * charWidth;
+          const rectWidth = textWidth + padding * 2;
+          const rectHeight = fontSize + padding * 1.5;
+          const borderRadius = rectHeight / 2;
+
           return (
-            <g key={`label-${index}`}>
-              <circle
-                cx={labelPos.x}
-                cy={labelPos.y}
-                r={15 * finalScale}
+            <g key={`label-${index}`} filter="url(#label-shadow)">
+              {/* Rounded rectangle (pill) background */}
+              <rect
+                x={labelPos.x - rectWidth / 2}
+                y={labelPos.y - rectHeight / 2}
+                width={rectWidth}
+                height={rectHeight}
+                rx={borderRadius}
+                ry={borderRadius}
                 fill={circleColor}
-                stroke="none"
+                stroke="white"
+                strokeWidth={1.5 * finalScale}
               />
               <text
                 x={labelPos.x}
@@ -645,7 +689,7 @@ export const FlowChartV2: React.FC<FlowChartV2Props> = ({
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="#ffffff"
-                fontSize={11 * finalScale}
+                fontSize={fontSize}
                 fontWeight="bold"
                 fontFamily="Arial, sans-serif"
               >

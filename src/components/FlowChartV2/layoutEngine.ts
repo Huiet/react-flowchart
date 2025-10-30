@@ -207,7 +207,7 @@ export const calculateLayout = (
     }
 
     // Handle all outgoing connections from this node
-    node.connections.forEach((conn) => {
+    node.connections?.forEach((conn) => {
       const targetNode = chartData.nodes.find((n) => n.id === conn.targetId);
       if (!targetNode) {
         console.error(
