@@ -15,22 +15,105 @@
 
 .legend {
   position: absolute;
-  top: 20px;
-  right: 20px;
   background: white;
   border: 1px solid #ddd;
   border-radius: 4px;
-  padding: 12px;
+  padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   max-width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
+  user-select: none;
+  z-index: 10;
+  transition: box-shadow 0.2s;
+  overflow: visible;
+}
+
+.legend:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.legend.dragging {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.legend.minimized {
+  width: auto;
+  max-width: max-content;
+  min-width: auto;
+  /*padding: 8px 12px;*/
+}
+
+.dragHandle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: grab;
+  position: relative;
+  border-bottom: 1px solid #eee;
+  overflow: visible;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.01), transparent);
+}
+
+.legend.dragging .dragHandle {
+  cursor: grabbing;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.legend.minimized .dragHandle {
+  border-bottom: none;
+}
+
+.dragHandleContent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  margin-right: 24px;
+}
+
+.gripIcon {
+  color: #999;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.legend:hover .gripIcon {
+  opacity: 0.7;
+  color: #666;
+}
+
+.legend.dragging .gripIcon {
+  opacity: 0.9;
+  color: #444;
+}
+
+.legendHeaderText {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+.minimizeButton {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.minimizeButton:hover {
+  opacity: 1;
 }
 
 .legendSection {
   display: flex;
   flex-direction: column;
+  padding: 12px;
+  gap: 8px;
 }
 
 .dateRangeSection {
@@ -79,7 +162,6 @@
 .legendTitle {
   font-weight: 600;
   font-size: 14px;
-  margin-bottom: 8px;
   color: #333;
 }
 
@@ -94,7 +176,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
   gap: 8px;
 }
 
@@ -113,9 +194,6 @@
   background-color: #f5f5f5;
 }
 
-.legendItemContainer:last-child {
-  margin-bottom: 0;
-}
 
 .indicatorMenuButton {
   flex-shrink: 0;
@@ -149,7 +227,6 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
-  margin-top: 8px;
 }
 
 .dateRangeButton {
@@ -285,6 +362,11 @@
   stroke-dasharray: 3, 3;
   pointer-events: none;
   opacity: 0.6;
+}
+
+.chartContainer :global(.snap-points-group circle) {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: r 0.1s ease-out;
 }
 
 .tooltip {

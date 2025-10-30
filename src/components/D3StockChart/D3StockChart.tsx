@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { IconChartLine, IconChevronDown } from '@tabler/icons-react';
+import {
+  IconChartLine,
+  IconChevronDown,
+  IconChevronUp,
+  IconGripHorizontal,
+  IconMinus,
+} from '@tabler/icons-react';
 import * as d3 from 'd3';
 import { ActionIcon, Group, Menu } from '@mantine/core';
 import { calculateBollingerBands, calculateEMA, calculateSMA } from './indicators';
@@ -27,7 +33,6 @@ interface TooltipData {
 }
 
 const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
-  { value: '1W', label: '1W' },
   { value: '1M', label: '1M' },
   { value: '3M', label: '3M' },
   { value: 'YTD', label: 'YTD' },
@@ -40,7 +45,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   lines,
   width = 800,
   height = 500,
-  margins = { top: 20, right: 120, bottom: 70, left: 60 },
+  margins = { top: 20, right: 20, bottom: 70, left: 60 },
   showMinMaxAnnotations = true,
   customAnnotations = [],
   referenceLines = [],
@@ -50,9 +55,22 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
   const [internalLines, setInternalLines] = useState<StockLine[]>(lines);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>(defaultDateRange);
+  const [legendPosition, setLegendPosition] = useState({ x: 80, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  // Use refs for drag state to avoid re-renders during drag
+  const dragStateRef = useRef({
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    initialPosX: 0,
+    initialPosY: 0,
+  });
 
   // Initialize per-line indicators
   const [indicators, setIndicators] = useState<Record<string, TechnicalIndicators>>(() => {
@@ -589,6 +607,12 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .attr('x1', 0)
       .attr('x2', innerWidth);
 
+    // Add container for snap point indicators
+    const snapPointsGroup = g
+      .append('g')
+      .attr('class', 'snap-points-group')
+      .style('display', 'none');
+
     // Add mouse tracking overlay
     const mouseOverlay = svg
       .append('rect')
@@ -628,14 +652,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       // Check if mouse is within chart bounds
       if (chartX < 0 || chartX > innerWidth || chartY < 0 || chartY > innerHeight) {
         crosshairGroup.style('display', 'none');
+        snapPointsGroup.style('display', 'none');
         setTooltip(null);
         return;
       }
-
-      // Show crosshair (ensure it stays visible)
-      crosshairGroup.style('display', null);
-      crosshairGroup.select('.crosshair-x').attr('x1', chartX).attr('x2', chartX);
-      crosshairGroup.select('.crosshair-y').attr('y1', chartY).attr('y2', chartY);
 
       // Get date at mouse position
       const hoveredDate = xScale.invert(chartX);
@@ -651,19 +671,55 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
             lineName: line.name,
             value: nearestPoint.value,
             color: line.color,
+            point: nearestPoint,
           };
         })
         .filter((v): v is NonNullable<typeof v> => v !== null);
 
       if (tooltipValues.length > 0) {
-        // Get the first point's date for the tooltip header
+        // Get the first line's nearest point to snap the vertical crosshair
         const firstLine = filteredLines[0];
-        const nearestPoint = findNearestPoint(firstLine, hoveredDate);
+        const snapPoint = findNearestPoint(firstLine, hoveredDate);
 
-        if (nearestPoint) {
+        if (snapPoint) {
+          const snapX = xScale(snapPoint.date);
+
+          // Show and position crosshair
+          // Vertical crosshair (x) snaps to nearest point, horizontal crosshair (y) follows mouse
+          crosshairGroup.style('display', null);
+          crosshairGroup.select('.crosshair-x').attr('x1', snapX).attr('x2', snapX);
+          crosshairGroup.select('.crosshair-y').attr('y1', chartY).attr('y2', chartY);
+
+          // Update snap point indicators
+          snapPointsGroup.style('display', null);
+
+          // Clear existing snap points
+          snapPointsGroup.selectAll('circle').remove();
+
+          // Add snap point indicators for each line
+          tooltipValues.forEach((val) => {
+            const pointX = xScale(val.point.date);
+            const pointY = yScale(val.point.value);
+
+            snapPointsGroup
+              .append('circle')
+              .attr('cx', pointX)
+              .attr('cy', pointY)
+              .attr('r', 4)
+              .attr('fill', val.color)
+              .attr('stroke', 'white')
+              .attr('stroke-width', 2)
+              .style('pointer-events', 'none');
+          });
+
           setTooltip({
-            date: nearestPoint.date,
-            values: tooltipValues,
+            date: snapPoint.date,
+            values: tooltipValues.map((v) => ({
+              lineId: v.lineId,
+              lineName: v.lineName,
+              value: v.value,
+              color: v.color,
+            })),
             x: mouseX,
             y: mouseY,
           });
@@ -679,6 +735,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     // Mouse leave handler
     const handleMouseLeave = () => {
       crosshairGroup.style('display', 'none');
+      snapPointsGroup.style('display', 'none');
       setTooltip(null);
     };
 
@@ -742,6 +799,69 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     return Object.values(indicators).some((lineIndicators) => lineIndicators[indicatorKey]);
   };
 
+  // Legend drag handlers
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (!legendRef.current || !containerRef.current) return;
+
+      // Only start dragging if clicking on the drag handle
+      const target = e.target as HTMLElement;
+      const dragHandle = target.closest('[data-drag-handle]');
+
+      if (!dragHandle || !legendRef.current.contains(dragHandle as Node)) {
+        return;
+      }
+
+      e.preventDefault();
+
+      dragStateRef.current = {
+        isDragging: true,
+        startX: e.clientX,
+        startY: e.clientY,
+        initialPosX: legendPosition.x,
+        initialPosY: legendPosition.y,
+      };
+
+      setIsDragging(true);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStateRef.current.isDragging || !containerRef.current || !legendRef.current) return;
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const legendRect = legendRef.current.getBoundingClientRect();
+
+      const deltaX = e.clientX - dragStateRef.current.startX;
+      const deltaY = e.clientY - dragStateRef.current.startY;
+
+      let newX = dragStateRef.current.initialPosX + deltaX;
+      let newY = dragStateRef.current.initialPosY + deltaY;
+
+      // Constrain to container bounds
+      newX = Math.max(0, Math.min(newX, containerRect.width - legendRect.width));
+      newY = Math.max(0, Math.min(newY, containerRect.height - legendRect.height));
+
+      setLegendPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      if (dragStateRef.current.isDragging) {
+        dragStateRef.current.isDragging = false;
+        setIsDragging(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [legendPosition]);
+
   return (
     <div ref={containerRef} className={styles.chartContainer} style={{ width, height }}>
       <svg ref={svgRef} className={styles.svg} width={width} height={height} />
@@ -769,174 +889,66 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       )}
 
       {/* Legend and Date Range Selector */}
-      <div className={styles.legend}>
-        {/* Global Indicators Menu */}
+      <div
+        ref={legendRef}
+        className={`${styles.legend} ${isDragging ? styles.dragging : ''} ${isMinimized ? styles.minimized : ''}`}
+        style={{
+          left: legendPosition.x,
+          top: legendPosition.y,
+        }}
+      >
+        {/* Drag handle */}
+        <div className={styles.dragHandle} data-drag-handle>
+          <div className={styles.dragHandleContent}>
+            <IconGripHorizontal size={16} className={styles.gripIcon} />
+            <span className={styles.legendHeaderText}>Legend</span>
+          </div>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="sm"
+            className={styles.minimizeButton}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMinimized(!isMinimized);
+            }}
+            title={isMinimized ? 'Expand legend' : 'Minimize legend'}
+          >
+            {isMinimized ? <IconChevronDown size={14} /> : <IconMinus size={14} />}
+          </ActionIcon>
+        </div>
 
-        <div className={styles.legendSection}>
-          <Group align={'flex-start'}>
-            <div className={styles.legendTitle}>Indicators</div>
-            <Menu shadow="md" width={200} position="bottom-start" closeOnItemClick={false}>
-              <Menu.Target>
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
-                  title="Toggle indicators for all lines"
-                >
-                  <IconChartLine size={16} />
-                </ActionIcon>
-              </Menu.Target>
-
-              <Menu.Dropdown>
-                <Menu.Label>Apply to All Lines</Menu.Label>
-
-                <Menu.Item
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleGlobalIndicatorToggle('sma20');
-                  }}
-                  leftSection={
-                    <input
-                      type="checkbox"
-                      checked={isGlobalIndicatorEnabled('sma20')}
-                      onChange={() => {}}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                  }
-                >
-                  SMA 20
-                </Menu.Item>
-
-                <Menu.Item
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleGlobalIndicatorToggle('sma50');
-                  }}
-                  leftSection={
-                    <input
-                      type="checkbox"
-                      checked={isGlobalIndicatorEnabled('sma50')}
-                      onChange={() => {}}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                  }
-                >
-                  SMA 50
-                </Menu.Item>
-
-                <Menu.Item
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleGlobalIndicatorToggle('sma200');
-                  }}
-                  leftSection={
-                    <input
-                      type="checkbox"
-                      checked={isGlobalIndicatorEnabled('sma200')}
-                      onChange={() => {}}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                  }
-                >
-                  SMA 200
-                </Menu.Item>
-
-                <Menu.Divider />
-
-                <Menu.Item
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleGlobalIndicatorToggle('ema20');
-                  }}
-                  leftSection={
-                    <input
-                      type="checkbox"
-                      checked={isGlobalIndicatorEnabled('ema20')}
-                      onChange={() => {}}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                  }
-                >
-                  EMA 20
-                </Menu.Item>
-
-                <Menu.Item
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleGlobalIndicatorToggle('ema50');
-                  }}
-                  leftSection={
-                    <input
-                      type="checkbox"
-                      checked={isGlobalIndicatorEnabled('ema50')}
-                      onChange={() => {}}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                  }
-                >
-                  EMA 50
-                </Menu.Item>
-
-                <Menu.Divider />
-
-                <Menu.Item
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleGlobalIndicatorToggle('bollingerBands');
-                  }}
-                  leftSection={
-                    <input
-                      type="checkbox"
-                      checked={isGlobalIndicatorEnabled('bollingerBands')}
-                      onChange={() => {}}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                  }
-                >
-                  Bollinger Bands
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-          {internalLines.map((line) => {
-            const lineIndicators = indicators[line.id] || {};
-            const hasActiveIndicators = Object.values(lineIndicators).some((v) => v);
-
-            return (
-              <div key={line.id} className={styles.legendItemContainer}>
-                <div
-                  className={`${styles.legendItem} ${!line.visible ? styles.disabled : ''}`}
-                  onClick={() => handleLineToggle(line.id)}
-                >
-                  <div className={styles.legendColorBox} style={{ backgroundColor: line.color }} />
-                  <div className={styles.legendLabel}>{line.name}</div>
-                </div>
-
-                <Menu shadow="md" width={200} position="right-start" closeOnItemClick={false}>
+        {/* Legend content - only when expanded */}
+        {!isMinimized && (
+          <>
+            {/* Global Indicators Menu */}
+            <div className={styles.legendSection}>
+              <div className={styles.legendItemContainer}>
+                <div className={styles.legendTitle}>Indicators</div>
+                <Menu shadow="md" width={200} position="bottom-start" closeOnItemClick={false}>
                   <Menu.Target>
                     <ActionIcon
-                      variant={hasActiveIndicators ? 'filled' : 'subtle'}
-                      color={hasActiveIndicators ? 'blue' : 'gray'}
+                      variant="subtle"
+                      color="gray"
                       size="sm"
-                      className={styles.indicatorMenuButton}
-                      onClick={(e) => e.stopPropagation()}
+                      title="Toggle indicators for all lines"
                     >
                       <IconChartLine size={16} />
                     </ActionIcon>
                   </Menu.Target>
 
                   <Menu.Dropdown>
-                    <Menu.Label>Technical Indicators</Menu.Label>
+                    <Menu.Label>Apply to All Lines</Menu.Label>
 
                     <Menu.Item
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleIndicatorToggle(line.id, 'sma20');
+                        handleGlobalIndicatorToggle('sma20');
                       }}
                       leftSection={
                         <input
                           type="checkbox"
-                          checked={lineIndicators.sma20 || false}
+                          checked={isGlobalIndicatorEnabled('sma20')}
                           onChange={() => {}}
                           style={{ pointerEvents: 'none' }}
                         />
@@ -948,12 +960,12 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                     <Menu.Item
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleIndicatorToggle(line.id, 'sma50');
+                        handleGlobalIndicatorToggle('sma50');
                       }}
                       leftSection={
                         <input
                           type="checkbox"
-                          checked={lineIndicators.sma50 || false}
+                          checked={isGlobalIndicatorEnabled('sma50')}
                           onChange={() => {}}
                           style={{ pointerEvents: 'none' }}
                         />
@@ -965,12 +977,12 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                     <Menu.Item
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleIndicatorToggle(line.id, 'sma200');
+                        handleGlobalIndicatorToggle('sma200');
                       }}
                       leftSection={
                         <input
                           type="checkbox"
-                          checked={lineIndicators.sma200 || false}
+                          checked={isGlobalIndicatorEnabled('sma200')}
                           onChange={() => {}}
                           style={{ pointerEvents: 'none' }}
                         />
@@ -984,12 +996,12 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                     <Menu.Item
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleIndicatorToggle(line.id, 'ema20');
+                        handleGlobalIndicatorToggle('ema20');
                       }}
                       leftSection={
                         <input
                           type="checkbox"
-                          checked={lineIndicators.ema20 || false}
+                          checked={isGlobalIndicatorEnabled('ema20')}
                           onChange={() => {}}
                           style={{ pointerEvents: 'none' }}
                         />
@@ -1001,12 +1013,12 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                     <Menu.Item
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleIndicatorToggle(line.id, 'ema50');
+                        handleGlobalIndicatorToggle('ema50');
                       }}
                       leftSection={
                         <input
                           type="checkbox"
-                          checked={lineIndicators.ema50 || false}
+                          checked={isGlobalIndicatorEnabled('ema50')}
                           onChange={() => {}}
                           style={{ pointerEvents: 'none' }}
                         />
@@ -1020,12 +1032,12 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                     <Menu.Item
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleIndicatorToggle(line.id, 'bollingerBands');
+                        handleGlobalIndicatorToggle('bollingerBands');
                       }}
                       leftSection={
                         <input
                           type="checkbox"
-                          checked={lineIndicators.bollingerBands || false}
+                          checked={isGlobalIndicatorEnabled('bollingerBands')}
                           onChange={() => {}}
                           style={{ pointerEvents: 'none' }}
                         />
@@ -1036,31 +1048,177 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                   </Menu.Dropdown>
                 </Menu>
               </div>
-            );
-          })}
-        </div>
 
-        <div className={`${styles.legendSection} ${styles.dateRangeSection}`}>
-          <div className={styles.legendTitle}>Time Range</div>
-          <div className={styles.dateRangeButtons}>
-            {DATE_RANGE_OPTIONS.map((option) => {
-              const isAvailable = isDateRangeAvailable(option.value);
-              return (
-                <button
-                  key={option.value}
-                  className={`${styles.dateRangeButton} ${
-                    selectedDateRange === option.value ? styles.active : ''
-                  }`}
-                  onClick={() => setSelectedDateRange(option.value)}
-                  disabled={!isAvailable}
-                  title={!isAvailable ? 'Not enough data for this range' : undefined}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+              {/* Line items */}
+              {internalLines.map((line) => {
+                const lineIndicators = indicators[line.id] || {};
+                const hasActiveIndicators = Object.values(lineIndicators).some((v) => v);
+
+                return (
+                  <div key={line.id} className={styles.legendItemContainer}>
+                    <div
+                      className={`${styles.legendItem} ${!line.visible ? styles.disabled : ''}`}
+                      onClick={() => handleLineToggle(line.id)}
+                    >
+                      <div
+                        className={styles.legendColorBox}
+                        style={{ backgroundColor: line.color }}
+                      />
+                      <div className={styles.legendLabel}>{line.name}</div>
+                    </div>
+
+                    <Menu shadow="md" width={200} position="right-start" closeOnItemClick={false}>
+                      <Menu.Target>
+                        <ActionIcon
+                          variant={hasActiveIndicators ? 'filled' : 'subtle'}
+                          color={hasActiveIndicators ? 'blue' : 'gray'}
+                          size="sm"
+                          className={styles.indicatorMenuButton}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <IconChartLine size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
+
+                      <Menu.Dropdown>
+                        <Menu.Label>Technical Indicators</Menu.Label>
+
+                        <Menu.Item
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleIndicatorToggle(line.id, 'sma20');
+                          }}
+                          leftSection={
+                            <input
+                              type="checkbox"
+                              checked={lineIndicators.sma20 || false}
+                              onChange={() => {}}
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          }
+                        >
+                          SMA 20
+                        </Menu.Item>
+
+                        <Menu.Item
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleIndicatorToggle(line.id, 'sma50');
+                          }}
+                          leftSection={
+                            <input
+                              type="checkbox"
+                              checked={lineIndicators.sma50 || false}
+                              onChange={() => {}}
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          }
+                        >
+                          SMA 50
+                        </Menu.Item>
+
+                        <Menu.Item
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleIndicatorToggle(line.id, 'sma200');
+                          }}
+                          leftSection={
+                            <input
+                              type="checkbox"
+                              checked={lineIndicators.sma200 || false}
+                              onChange={() => {}}
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          }
+                        >
+                          SMA 200
+                        </Menu.Item>
+
+                        <Menu.Divider />
+
+                        <Menu.Item
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleIndicatorToggle(line.id, 'ema20');
+                          }}
+                          leftSection={
+                            <input
+                              type="checkbox"
+                              checked={lineIndicators.ema20 || false}
+                              onChange={() => {}}
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          }
+                        >
+                          EMA 20
+                        </Menu.Item>
+
+                        <Menu.Item
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleIndicatorToggle(line.id, 'ema50');
+                          }}
+                          leftSection={
+                            <input
+                              type="checkbox"
+                              checked={lineIndicators.ema50 || false}
+                              onChange={() => {}}
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          }
+                        >
+                          EMA 50
+                        </Menu.Item>
+
+                        <Menu.Divider />
+
+                        <Menu.Item
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleIndicatorToggle(line.id, 'bollingerBands');
+                          }}
+                          leftSection={
+                            <input
+                              type="checkbox"
+                              checked={lineIndicators.bollingerBands || false}
+                              onChange={() => {}}
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          }
+                        >
+                          Bollinger Bands
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Time Range Selector */}
+            <div className={`${styles.legendSection} ${styles.dateRangeSection}`}>
+              <div className={styles.legendTitle}>Time Range</div>
+              <div className={styles.dateRangeButtons}>
+                {DATE_RANGE_OPTIONS.map((option) => {
+                  const isAvailable = isDateRangeAvailable(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      className={`${styles.dateRangeButton} ${
+                        selectedDateRange === option.value ? styles.active : ''
+                      }`}
+                      onClick={() => setSelectedDateRange(option.value)}
+                      disabled={!isAvailable}
+                      title={!isAvailable ? 'Not enough data for this range' : undefined}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
