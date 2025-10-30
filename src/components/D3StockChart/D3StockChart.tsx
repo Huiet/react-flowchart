@@ -1,12 +1,16 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { IconChartLine, IconChevronDown } from '@tabler/icons-react';
 import * as d3 from 'd3';
+import { ActionIcon, Group, Menu } from '@mantine/core';
+import { calculateBollingerBands, calculateEMA, calculateSMA } from './indicators';
 import {
-  D3StockChartProps,
-  StockLine,
   CustomAnnotation,
+  D3StockChartProps,
+  DateRange,
   ReferenceLine,
   StockDataPoint,
-  DateRange,
+  StockLine,
+  TechnicalIndicators,
 } from './types';
 import styles from './D3StockChart.module.css';
 
@@ -42,6 +46,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   referenceLines = [],
   onLineToggle,
   defaultDateRange = 'ALL',
+  enabledIndicators,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -49,9 +54,46 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>(defaultDateRange);
 
+  // Initialize per-line indicators
+  const [indicators, setIndicators] = useState<Record<string, TechnicalIndicators>>(() => {
+    if (enabledIndicators) return enabledIndicators;
+
+    // Initialize with all indicators disabled for each line
+    const initialIndicators: Record<string, TechnicalIndicators> = {};
+    lines.forEach((line) => {
+      initialIndicators[line.id] = {
+        sma20: false,
+        sma50: false,
+        sma200: false,
+        ema20: false,
+        ema50: false,
+        bollingerBands: false,
+      };
+    });
+    return initialIndicators;
+  });
+
   // Update internal state when lines prop changes
   useEffect(() => {
     setInternalLines(lines);
+
+    // Initialize indicators for any new lines
+    setIndicators((prev) => {
+      const updated = { ...prev };
+      lines.forEach((line) => {
+        if (!updated[line.id]) {
+          updated[line.id] = {
+            sma20: false,
+            sma50: false,
+            sma200: false,
+            ema20: false,
+            ema50: false,
+            bollingerBands: false,
+          };
+        }
+      });
+      return updated;
+    });
   }, [lines]);
 
   // Calculate date range boundaries
@@ -87,10 +129,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
   // Calculate available date range from all lines
   const dataDateRange = useMemo(() => {
-    const allLines = internalLines.filter(line => line.data.length > 0);
+    const allLines = internalLines.filter((line) => line.data.length > 0);
     if (allLines.length === 0) return null;
 
-    const allDates = allLines.flatMap(line => line.data.map(d => d.date));
+    const allDates = allLines.flatMap((line) => line.data.map((d) => d.date));
     const minDate = d3.min(allDates);
     const maxDate = d3.max(allDates);
 
@@ -135,15 +177,48 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     if (visibleLines.length === 0) return [];
 
     // Get the latest date across all lines
-    const allDates = visibleLines.flatMap(line => line.data.map(d => d.date));
+    const allDates = visibleLines.flatMap((line) => line.data.map((d) => d.date));
     const latestDate = d3.max(allDates) || new Date();
     const startDate = getDateRangeStart(latestDate, selectedDateRange);
 
-    return visibleLines.map(line => ({
+    return visibleLines.map((line) => ({
       ...line,
-      data: line.data.filter(d => d.date >= startDate),
+      data: line.data.filter((d) => d.date >= startDate),
     }));
   }, [internalLines, selectedDateRange]);
+
+  // Calculate technical indicators for each visible line
+  const indicatorData = useMemo(() => {
+    if (filteredLines.length === 0) return {};
+
+    const allIndicators: Record<
+      string,
+      {
+        sma20: ReturnType<typeof calculateSMA> | null;
+        sma50: ReturnType<typeof calculateSMA> | null;
+        sma200: ReturnType<typeof calculateSMA> | null;
+        ema20: ReturnType<typeof calculateEMA> | null;
+        ema50: ReturnType<typeof calculateEMA> | null;
+        bollingerBands: ReturnType<typeof calculateBollingerBands> | null;
+      }
+    > = {};
+
+    filteredLines.forEach((line) => {
+      const lineIndicators = indicators[line.id];
+      if (!lineIndicators) return;
+
+      allIndicators[line.id] = {
+        sma20: lineIndicators.sma20 ? calculateSMA(line.data, 20) : null,
+        sma50: lineIndicators.sma50 ? calculateSMA(line.data, 50) : null,
+        sma200: lineIndicators.sma200 ? calculateSMA(line.data, 200) : null,
+        ema20: lineIndicators.ema20 ? calculateEMA(line.data, 20) : null,
+        ema50: lineIndicators.ema50 ? calculateEMA(line.data, 50) : null,
+        bollingerBands: lineIndicators.bollingerBands ? calculateBollingerBands(line.data) : null,
+      };
+    });
+
+    return allIndicators;
+  }, [filteredLines, indicators]);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -156,11 +231,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     const innerHeight = height - margins.top - margins.bottom;
 
     // Create main group
-    const g = svg
-      .append('g')
-      .attr('transform', `translate(${margins.left},${margins.top})`);
+    const g = svg.append('g').attr('transform', `translate(${margins.left},${margins.top})`);
 
-    if (filteredLines.length === 0 || filteredLines.every(line => line.data.length === 0)) {
+    if (filteredLines.length === 0 || filteredLines.every((line) => line.data.length === 0)) {
       // Show a message when no lines are visible or no data in range
       g.append('text')
         .attr('x', innerWidth / 2)
@@ -183,10 +256,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
     const yScale = d3
       .scaleLinear()
-      .domain([
-        d3.min(allData, (d) => d.value)! * 0.95,
-        d3.max(allData, (d) => d.value)! * 1.05,
-      ])
+      .domain([d3.min(allData, (d) => d.value)! * 0.95, d3.max(allData, (d) => d.value)! * 1.05])
       .range([innerHeight, 0]);
 
     // Add grid
@@ -212,7 +282,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     // Draw lines
     filteredLines.forEach((line) => {
       const lineGenerator = d3
-        .line<typeof line.data[0]>()
+        .line<(typeof line.data)[0]>()
         .x((d) => xScale(d.date))
         .y((d) => yScale(d.value))
         .curve(d3.curveMonotoneX);
@@ -225,6 +295,155 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
         .attr('fill', 'none');
     });
 
+    // Draw technical indicators for each line
+    filteredLines.forEach((line) => {
+      const lineIndicatorData = indicatorData[line.id];
+      if (!lineIndicatorData) return;
+
+      const lineGen = d3
+        .line<{ date: Date; value: number }>()
+        .x((d) => xScale(d.date))
+        .y((d) => yScale(d.value))
+        .curve(d3.curveMonotoneX);
+
+      // Helper function to lighten/darken color based on line color
+      const getIndicatorColor = (baseColor: string, type: 'sma' | 'ema' | 'bb'): string => {
+        // For now, use variations of the line color
+        // Could be enhanced with actual color manipulation
+        return line.color;
+      };
+
+      // Draw Bollinger Bands (fill first, then lines)
+      if (lineIndicatorData.bollingerBands) {
+        const bbData = lineIndicatorData.bollingerBands;
+
+        // Area between upper and lower bands
+        const area = d3
+          .area<(typeof bbData)[0]>()
+          .x((d) => xScale(d.date))
+          .y0((d) => yScale(d.lower))
+          .y1((d) => yScale(d.upper))
+          .curve(d3.curveMonotoneX);
+
+        g.append('path')
+          .datum(bbData)
+          .attr('class', `bollinger-area bollinger-${line.id}`)
+          .attr('d', area)
+          .attr('fill', line.color)
+          .attr('opacity', 0.1);
+
+        // Create line generators for each band
+        const upperLineGen = d3
+          .line<(typeof bbData)[0]>()
+          .x((d) => xScale(d.date))
+          .y((d) => yScale(d.upper))
+          .curve(d3.curveMonotoneX);
+
+        const lowerLineGen = d3
+          .line<(typeof bbData)[0]>()
+          .x((d) => xScale(d.date))
+          .y((d) => yScale(d.lower))
+          .curve(d3.curveMonotoneX);
+
+        const middleLineGen = d3
+          .line<(typeof bbData)[0]>()
+          .x((d) => xScale(d.date))
+          .y((d) => yScale(d.middle))
+          .curve(d3.curveMonotoneX);
+
+        // Upper band line
+        g.append('path')
+          .datum(bbData)
+          .attr('class', `bollinger-upper bollinger-upper-${line.id}`)
+          .attr('d', upperLineGen)
+          .attr('stroke', line.color)
+          .attr('stroke-width', 1.5)
+          .attr('stroke-dasharray', '4,4')
+          .attr('fill', 'none')
+          .attr('opacity', 0.5);
+
+        // Lower band line
+        g.append('path')
+          .datum(bbData)
+          .attr('class', `bollinger-lower bollinger-lower-${line.id}`)
+          .attr('d', lowerLineGen)
+          .attr('stroke', line.color)
+          .attr('stroke-width', 1.5)
+          .attr('stroke-dasharray', '4,4')
+          .attr('fill', 'none')
+          .attr('opacity', 0.5);
+
+        // Middle band (SMA 20)
+        g.append('path')
+          .datum(bbData)
+          .attr('class', `bollinger-middle bollinger-middle-${line.id}`)
+          .attr('d', middleLineGen)
+          .attr('stroke', line.color)
+          .attr('stroke-width', 1)
+          .attr('fill', 'none')
+          .attr('opacity', 0.6);
+      }
+
+      // Draw SMA lines
+      if (lineIndicatorData.sma20) {
+        g.append('path')
+          .datum(lineIndicatorData.sma20)
+          .attr('class', `indicator-sma20 indicator-sma20-${line.id}`)
+          .attr('d', lineGen)
+          .attr('stroke', line.color)
+          .attr('stroke-width', 1.5)
+          .attr('fill', 'none')
+          .attr('opacity', 0.6);
+      }
+
+      if (lineIndicatorData.sma50) {
+        g.append('path')
+          .datum(lineIndicatorData.sma50)
+          .attr('class', `indicator-sma50 indicator-sma50-${line.id}`)
+          .attr('d', lineGen)
+          .attr('stroke', line.color)
+          .attr('stroke-width', 1.5)
+          .attr('fill', 'none')
+          .attr('opacity', 0.6);
+      }
+
+      if (lineIndicatorData.sma200) {
+        g.append('path')
+          .datum(lineIndicatorData.sma200)
+          .attr('class', `indicator-sma200 indicator-sma200-${line.id}`)
+          .attr('d', lineGen)
+          .attr('stroke', line.color)
+          .attr('stroke-width', 1.5)
+          .attr('fill', 'none')
+          .attr('opacity', 0.6);
+      }
+
+      // Draw EMA lines (dashed)
+      if (lineIndicatorData.ema20) {
+        g.append('path')
+          .datum(lineIndicatorData.ema20)
+          .attr('class', `indicator-ema20 indicator-ema20-${line.id}`)
+          .attr('d', lineGen)
+          .attr('stroke', line.color)
+          .attr('stroke-width', 1.5)
+          .attr('stroke-dasharray', '5,3')
+          .attr('fill', 'none')
+          .attr('opacity', 0.6);
+      }
+
+      if (lineIndicatorData.ema50) {
+        g.append('path')
+          .datum(lineIndicatorData.ema50)
+          .attr('class', `indicator-ema50 indicator-ema50-${line.id}`)
+          .attr('d', lineGen)
+          .attr('stroke', line.color)
+          .attr('stroke-width', 1.5)
+          .attr('stroke-dasharray', '5,3')
+          .attr('fill', 'none')
+          .attr('opacity', 0.6);
+      }
+    });
+
     // Min/max annotations removed - use custom annotations instead
 
     // Get domain for filtering annotations and reference lines
@@ -232,7 +451,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
     // Add custom annotations (filter by visible date range)
     customAnnotations
-      .filter(annotation => annotation.date >= domainMinDate && annotation.date <= domainMaxDate)
+      .filter((annotation) => annotation.date >= domainMinDate && annotation.date <= domainMaxDate)
       .forEach((annotation) => {
         g.append('circle')
           .attr('class', `custom-annotation-dot custom-annotation-${annotation.id}`)
@@ -328,11 +547,13 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
     g.append('g')
       .attr('class', 'axis y-axis')
-      .call(d3.axisLeft(yScale).tickFormat((d) => {
-        // Format numbers without unnecessary decimals
-        const num = d as number;
-        return num % 1 === 0 ? d3.format(',')(num) : d3.format(',.2f')(num);
-      }));
+      .call(
+        d3.axisLeft(yScale).tickFormat((d) => {
+          // Format numbers without unnecessary decimals
+          const num = d as number;
+          return num % 1 === 0 ? d3.format(',')(num) : d3.format(',.2f')(num);
+        })
+      );
 
     // Add axis labels
     svg
@@ -488,6 +709,39 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     }
   };
 
+  const handleIndicatorToggle = (lineId: string, indicatorKey: keyof TechnicalIndicators) => {
+    setIndicators((prev) => ({
+      ...prev,
+      [lineId]: {
+        ...prev[lineId],
+        [indicatorKey]: !prev[lineId]?.[indicatorKey],
+      },
+    }));
+  };
+
+  const handleGlobalIndicatorToggle = (indicatorKey: keyof TechnicalIndicators) => {
+    // Check if any line has this indicator enabled
+    const anyEnabled = Object.values(indicators).some(
+      (lineIndicators) => lineIndicators[indicatorKey]
+    );
+
+    // Toggle all lines to the opposite state
+    setIndicators((prev) => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach((lineId) => {
+        updated[lineId] = {
+          ...updated[lineId],
+          [indicatorKey]: !anyEnabled,
+        };
+      });
+      return updated;
+    });
+  };
+
+  const isGlobalIndicatorEnabled = (indicatorKey: keyof TechnicalIndicators): boolean => {
+    return Object.values(indicators).some((lineIndicators) => lineIndicators[indicatorKey]);
+  };
+
   return (
     <div ref={containerRef} className={styles.chartContainer} style={{ width, height }}>
       <svg ref={svgRef} className={styles.svg} width={width} height={height} />
@@ -501,16 +755,11 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
             top: tooltip.y - 10,
           }}
         >
-          <div className={styles.tooltipDate}>
-            {d3.timeFormat('%b %d, %Y')(tooltip.date)}
-          </div>
+          <div className={styles.tooltipDate}>{d3.timeFormat('%b %d, %Y')(tooltip.date)}</div>
           {tooltip.values.map((val) => (
             <div key={val.lineId} className={styles.tooltipLine}>
               <div className={styles.tooltipLineName}>
-                <div
-                  className={styles.tooltipColorDot}
-                  style={{ backgroundColor: val.color }}
-                />
+                <div className={styles.tooltipColorDot} style={{ backgroundColor: val.color }} />
                 <span className={styles.tooltipLabel}>{val.lineName}</span>
               </div>
               <span className={styles.tooltipValue}>${val.value.toFixed(2)}</span>
@@ -521,23 +770,274 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
       {/* Legend and Date Range Selector */}
       <div className={styles.legend}>
+        {/* Global Indicators Menu */}
+
         <div className={styles.legendSection}>
-          <div className={styles.legendTitle}>Lines</div>
-          {internalLines.map((line) => (
-            <div
-              key={line.id}
-              className={`${styles.legendItem} ${
-                !line.visible ? styles.disabled : ''
-              }`}
-              onClick={() => handleLineToggle(line.id)}
-            >
-              <div
-                className={styles.legendColorBox}
-                style={{ backgroundColor: line.color }}
-              />
-              <div className={styles.legendLabel}>{line.name}</div>
-            </div>
-          ))}
+          <Group align={'flex-start'}>
+            <div className={styles.legendTitle}>Indicators</div>
+            <Menu shadow="md" width={200} position="bottom-start" closeOnItemClick={false}>
+              <Menu.Target>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  title="Toggle indicators for all lines"
+                >
+                  <IconChartLine size={16} />
+                </ActionIcon>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Label>Apply to All Lines</Menu.Label>
+
+                <Menu.Item
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGlobalIndicatorToggle('sma20');
+                  }}
+                  leftSection={
+                    <input
+                      type="checkbox"
+                      checked={isGlobalIndicatorEnabled('sma20')}
+                      onChange={() => {}}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  }
+                >
+                  SMA 20
+                </Menu.Item>
+
+                <Menu.Item
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGlobalIndicatorToggle('sma50');
+                  }}
+                  leftSection={
+                    <input
+                      type="checkbox"
+                      checked={isGlobalIndicatorEnabled('sma50')}
+                      onChange={() => {}}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  }
+                >
+                  SMA 50
+                </Menu.Item>
+
+                <Menu.Item
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGlobalIndicatorToggle('sma200');
+                  }}
+                  leftSection={
+                    <input
+                      type="checkbox"
+                      checked={isGlobalIndicatorEnabled('sma200')}
+                      onChange={() => {}}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  }
+                >
+                  SMA 200
+                </Menu.Item>
+
+                <Menu.Divider />
+
+                <Menu.Item
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGlobalIndicatorToggle('ema20');
+                  }}
+                  leftSection={
+                    <input
+                      type="checkbox"
+                      checked={isGlobalIndicatorEnabled('ema20')}
+                      onChange={() => {}}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  }
+                >
+                  EMA 20
+                </Menu.Item>
+
+                <Menu.Item
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGlobalIndicatorToggle('ema50');
+                  }}
+                  leftSection={
+                    <input
+                      type="checkbox"
+                      checked={isGlobalIndicatorEnabled('ema50')}
+                      onChange={() => {}}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  }
+                >
+                  EMA 50
+                </Menu.Item>
+
+                <Menu.Divider />
+
+                <Menu.Item
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGlobalIndicatorToggle('bollingerBands');
+                  }}
+                  leftSection={
+                    <input
+                      type="checkbox"
+                      checked={isGlobalIndicatorEnabled('bollingerBands')}
+                      onChange={() => {}}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  }
+                >
+                  Bollinger Bands
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+          {internalLines.map((line) => {
+            const lineIndicators = indicators[line.id] || {};
+            const hasActiveIndicators = Object.values(lineIndicators).some((v) => v);
+
+            return (
+              <div key={line.id} className={styles.legendItemContainer}>
+                <div
+                  className={`${styles.legendItem} ${!line.visible ? styles.disabled : ''}`}
+                  onClick={() => handleLineToggle(line.id)}
+                >
+                  <div className={styles.legendColorBox} style={{ backgroundColor: line.color }} />
+                  <div className={styles.legendLabel}>{line.name}</div>
+                </div>
+
+                <Menu shadow="md" width={200} position="right-start" closeOnItemClick={false}>
+                  <Menu.Target>
+                    <ActionIcon
+                      variant={hasActiveIndicators ? 'filled' : 'subtle'}
+                      color={hasActiveIndicators ? 'blue' : 'gray'}
+                      size="sm"
+                      className={styles.indicatorMenuButton}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <IconChartLine size={16} />
+                    </ActionIcon>
+                  </Menu.Target>
+
+                  <Menu.Dropdown>
+                    <Menu.Label>Technical Indicators</Menu.Label>
+
+                    <Menu.Item
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIndicatorToggle(line.id, 'sma20');
+                      }}
+                      leftSection={
+                        <input
+                          type="checkbox"
+                          checked={lineIndicators.sma20 || false}
+                          onChange={() => {}}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      }
+                    >
+                      SMA 20
+                    </Menu.Item>
+
+                    <Menu.Item
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIndicatorToggle(line.id, 'sma50');
+                      }}
+                      leftSection={
+                        <input
+                          type="checkbox"
+                          checked={lineIndicators.sma50 || false}
+                          onChange={() => {}}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      }
+                    >
+                      SMA 50
+                    </Menu.Item>
+
+                    <Menu.Item
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIndicatorToggle(line.id, 'sma200');
+                      }}
+                      leftSection={
+                        <input
+                          type="checkbox"
+                          checked={lineIndicators.sma200 || false}
+                          onChange={() => {}}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      }
+                    >
+                      SMA 200
+                    </Menu.Item>
+
+                    <Menu.Divider />
+
+                    <Menu.Item
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIndicatorToggle(line.id, 'ema20');
+                      }}
+                      leftSection={
+                        <input
+                          type="checkbox"
+                          checked={lineIndicators.ema20 || false}
+                          onChange={() => {}}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      }
+                    >
+                      EMA 20
+                    </Menu.Item>
+
+                    <Menu.Item
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIndicatorToggle(line.id, 'ema50');
+                      }}
+                      leftSection={
+                        <input
+                          type="checkbox"
+                          checked={lineIndicators.ema50 || false}
+                          onChange={() => {}}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      }
+                    >
+                      EMA 50
+                    </Menu.Item>
+
+                    <Menu.Divider />
+
+                    <Menu.Item
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIndicatorToggle(line.id, 'bollingerBands');
+                      }}
+                      leftSection={
+                        <input
+                          type="checkbox"
+                          checked={lineIndicators.bollingerBands || false}
+                          onChange={() => {}}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      }
+                    >
+                      Bollinger Bands
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </div>
+            );
+          })}
         </div>
 
         <div className={`${styles.legendSection} ${styles.dateRangeSection}`}>

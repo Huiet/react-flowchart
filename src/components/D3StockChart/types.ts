@@ -38,6 +38,27 @@ export interface ChartMargins {
 
 export type DateRange = '1W' | '1M' | '3M' | 'YTD' | '1Y' | '5Y' | 'ALL';
 
+export interface TechnicalIndicators {
+  sma20?: boolean;
+  sma50?: boolean;
+  sma200?: boolean;
+  ema20?: boolean;
+  ema50?: boolean;
+  bollingerBands?: boolean;
+}
+
+export interface IndicatorDataPoint {
+  date: Date;
+  value: number;
+}
+
+export interface BollingerBandsData {
+  date: Date;
+  middle: number;
+  upper: number;
+  lower: number;
+}
+
 export interface D3StockChartProps {
   lines: StockLine[];
   width?: number;
@@ -48,4 +69,5 @@ export interface D3StockChartProps {
   referenceLines?: ReferenceLine[];
   onLineToggle?: (lineId: string, visible: boolean) => void;
   defaultDateRange?: DateRange;
+  enabledIndicators?: Record<string, TechnicalIndicators>; // Changed to per-line indicators
 }

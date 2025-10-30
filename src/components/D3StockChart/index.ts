@@ -7,4 +7,7 @@ export type {
   ChartMargins,
   D3StockChartProps,
   DateRange,
+  TechnicalIndicators,
+  IndicatorDataPoint,
+  BollingerBandsData,
 } from './types';

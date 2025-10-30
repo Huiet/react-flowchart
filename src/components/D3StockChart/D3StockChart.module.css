@@ -38,14 +38,12 @@
   border-top: 1px solid #eee;
 }
 
-.legendTitle {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 8px;
-  color: #333;
+.indicatorsSection {
+  padding-top: 12px;
+  border-top: 1px solid #eee;
 }
 
-.legendItem {
+.indicatorCheckbox {
   display: flex;
   align-items: center;
   margin-bottom: 6px;
@@ -53,14 +51,74 @@
   padding: 4px;
   border-radius: 3px;
   transition: background-color 0.2s;
+  user-select: none;
+}
+
+.indicatorCheckbox:hover {
+  background-color: #f5f5f5;
+}
+
+.indicatorCheckbox input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.indicatorLabel {
+  font-size: 12px;
+  color: #666;
+  flex: 1;
+}
+
+.indicatorColorPreview {
+  width: 20px;
+  height: 2px;
+  margin-left: 8px;
+  border-radius: 1px;
+}
+
+.legendTitle {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.legendTitleWithMenu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.legendItemContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+  flex: 1;
+  min-width: 0;
 }
 
 .legendItem:hover {
   background-color: #f5f5f5;
 }
 
-.legendItem:last-child {
+.legendItemContainer:last-child {
   margin-bottom: 0;
+}
+
+.indicatorMenuButton {
+  flex-shrink: 0;
 }
 
 .legendColorBox {
