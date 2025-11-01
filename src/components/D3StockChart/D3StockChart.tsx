@@ -79,6 +79,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     initialPosY: 0,
   });
 
+  // Store the xScale so we can use it in click handlers
+  const xScaleRef = useRef<d3.ScaleTime<number, number> | null>(null);
+
   // Initialize per-line indicators
   const [indicators, setIndicators] = useState<Record<string, TechnicalIndicators>>(() => {
     if (enabledIndicators) return enabledIndicators;
@@ -279,6 +282,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .domain(d3.extent(allData, (d) => d.date) as [Date, Date])
       .range([0, innerWidth]);
 
+    // Store xScale in ref for use in click handlers
+    xScaleRef.current = xScale;
+
     const yScale = d3
       .scaleLinear()
       .domain([d3.min(allData, (d) => d.value)! * 0.95, d3.max(allData, (d) => d.value)! * 1.05])
@@ -317,7 +323,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
         .attr('class', `line line-${line.id}`)
         .attr('d', lineGenerator)
         .attr('stroke', line.color)
-        .attr('fill', 'none');
+        .attr('fill', 'none')
+        .style('pointer-events', 'none');
     });
 
     // Draw technical indicators for each line
@@ -355,7 +362,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('class', `bollinger-area bollinger-${line.id}`)
           .attr('d', area)
           .attr('fill', line.color)
-          .attr('opacity', 0.1);
+          .attr('opacity', 0.1)
+          .style('pointer-events', 'none');
 
         // Create line generators for each band
         const upperLineGen = d3
@@ -385,7 +393,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('stroke-width', 1.5)
           .attr('stroke-dasharray', '4,4')
           .attr('fill', 'none')
-          .attr('opacity', 0.5);
+          .attr('opacity', 0.5)
+          .style('pointer-events', 'none');
 
         // Lower band line
         g.append('path')
@@ -396,7 +405,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('stroke-width', 1.5)
           .attr('stroke-dasharray', '4,4')
           .attr('fill', 'none')
-          .attr('opacity', 0.5);
+          .attr('opacity', 0.5)
+          .style('pointer-events', 'none');
 
         // Middle band (SMA 20)
         g.append('path')
@@ -406,7 +416,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('stroke', line.color)
           .attr('stroke-width', 1)
           .attr('fill', 'none')
-          .attr('opacity', 0.6);
+          .attr('opacity', 0.6)
+          .style('pointer-events', 'none');
       }
 
       // Draw SMA lines
@@ -418,7 +429,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('stroke', line.color)
           .attr('stroke-width', 1.5)
           .attr('fill', 'none')
-          .attr('opacity', 0.6);
+          .attr('opacity', 0.6)
+          .style('pointer-events', 'none');
       }
 
       if (lineIndicatorData.sma50) {
@@ -429,7 +441,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('stroke', line.color)
           .attr('stroke-width', 1.5)
           .attr('fill', 'none')
-          .attr('opacity', 0.6);
+          .attr('opacity', 0.6)
+          .style('pointer-events', 'none');
       }
 
       if (lineIndicatorData.sma200) {
@@ -440,7 +453,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('stroke', line.color)
           .attr('stroke-width', 1.5)
           .attr('fill', 'none')
-          .attr('opacity', 0.6);
+          .attr('opacity', 0.6)
+          .style('pointer-events', 'none');
       }
 
       // Draw EMA lines (dashed)
@@ -453,7 +467,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('stroke-width', 1.5)
           .attr('stroke-dasharray', '5,3')
           .attr('fill', 'none')
-          .attr('opacity', 0.6);
+          .attr('opacity', 0.6)
+          .style('pointer-events', 'none');
       }
 
       if (lineIndicatorData.ema50) {
@@ -465,7 +480,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .attr('stroke-width', 1.5)
           .attr('stroke-dasharray', '5,3')
           .attr('fill', 'none')
-          .attr('opacity', 0.6);
+          .attr('opacity', 0.6)
+          .style('pointer-events', 'none');
       }
     });
 
@@ -768,11 +784,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       }
     };
 
-    // Mouse over handler - ensures crosshair appears when mouse enters
-    const handleMouseOver = (event: MouseEvent) => {
-      handleMouseMove(event);
-    };
-
     // Mouse leave handler
     const handleMouseLeave = () => {
       crosshairGroup.style('display', 'none');
@@ -780,56 +791,26 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       setTooltip(null);
     };
 
-    // Click handler to set reference point
-    const handleClick = (event: MouseEvent) => {
-      // Get mouse position relative to the SVG element
-      const [mouseX] = d3.pointer(event, svg.node());
 
-      // Convert to chart coordinates (only care about X for vertical reference line)
-      const chartX = mouseX - margins.left;
+    // Add invisible background rect to capture all mouse events
+    svg
+      .insert('rect', ':first-child')
+      .attr('class', 'chart-background')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', 'transparent')
+      .attr('pointer-events', 'all');
 
-      // Only check X bounds - allow clicks anywhere vertically (including axis area)
-      if (chartX < 0 || chartX > innerWidth) {
-        return;
-      }
-
-      // Check if clicking near existing reference line (within 5px) - if so, remove it
-      if (referencePoint) {
-        const refLineX = xScale(referencePoint.date);
-        const clickDistance = Math.abs(chartX - refLineX);
-
-        if (clickDistance <= 5) {
-          setReferencePoint(null);
-          return;
-        }
-      }
-
-      const clickedDate = xScale.invert(chartX);
-
-      // Find values at this date for all visible lines
-      const valuesAtDate = new Map<string, number>();
-      filteredLines.forEach((line) => {
-        const point = findNearestPoint(line, clickedDate);
-        if (point) {
-          valuesAtDate.set(line.id, point.value);
-        }
-      });
-
-      if (valuesAtDate.size > 0) {
-        setReferencePoint({
-          date: clickedDate,
-          values: valuesAtDate,
-        });
-      }
-    };
+    // Ensure SVG captures all pointer events
+    svg
+      .style('cursor', 'crosshair')
+      .style('pointer-events', 'all');
 
     // Attach event listeners directly to SVG
     svg
-      .style('cursor', 'crosshair')
-      .on('mouseover', handleMouseOver)
+      .on('mouseenter', handleMouseMove)
       .on('mousemove', handleMouseMove)
-      .on('mouseleave', handleMouseLeave)
-      .on('click', handleClick);
+      .on('mouseleave', handleMouseLeave);
   }, [
     filteredLines,
     width,
@@ -890,27 +871,89 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   // Legend drag handlers
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
-      if (!legendRef.current || !containerRef.current) return;
+      if (!legendRef.current || !containerRef.current || !svgRef.current) return;
 
-      // Only start dragging if clicking on the drag handle
       const target = e.target as HTMLElement;
-      const dragHandle = target.closest('[data-drag-handle]');
 
-      if (!dragHandle || !legendRef.current.contains(dragHandle as Node)) {
+      // Check if clicking on the drag handle to start legend dragging
+      const dragHandle = target.closest('[data-drag-handle]');
+      if (dragHandle && legendRef.current.contains(dragHandle as Node)) {
+        e.preventDefault();
+
+        dragStateRef.current = {
+          isDragging: true,
+          startX: e.clientX,
+          startY: e.clientY,
+          initialPosX: legendPosition.x,
+          initialPosY: legendPosition.y,
+        };
+
+        setIsDragging(true);
         return;
       }
 
-      e.preventDefault();
+      // Check if clicking on the SVG chart (not on legend) to set reference point
+      const svgElement = svgRef.current;
+      if (svgElement && (svgElement === target || svgElement.contains(target))) {
+        // Get click position relative to SVG
+        const svgRect = svgElement.getBoundingClientRect();
+        const mouseX = e.clientX - svgRect.left;
+        const chartX = mouseX - margins.left;
 
-      dragStateRef.current = {
-        isDragging: true,
-        startX: e.clientX,
-        startY: e.clientY,
-        initialPosX: legendPosition.x,
-        initialPosY: legendPosition.y,
-      };
+        // Only process if within X bounds
+        if (chartX >= 0 && chartX <= innerWidth && xScaleRef.current) {
+          // Use the same xScale that was used to draw the chart
+          const xScale = xScaleRef.current;
 
-      setIsDragging(true);
+          // Check if clicking near existing reference line (within 5px) - if so, remove it
+          if (referencePoint) {
+            const refLineX = xScale(referencePoint.date);
+            const clickDistance = Math.abs(chartX - refLineX);
+
+            if (clickDistance <= 5) {
+              setReferencePoint(null);
+              return;
+            }
+          }
+
+          const clickedDate = xScale.invert(chartX);
+
+          // Find nearest data points for all visible lines at this date
+          const valuesAtDate = new Map<string, number>();
+          filteredLines.forEach((line) => {
+            if (line.data.length === 0) return;
+
+            const bisector = d3.bisector<StockDataPoint, Date>((d) => d.date).left;
+            const index = bisector(line.data, clickedDate);
+
+            let nearestPoint: StockDataPoint | null = null;
+            if (index === 0) {
+              nearestPoint = line.data[0];
+            } else if (index >= line.data.length) {
+              nearestPoint = line.data[line.data.length - 1];
+            } else {
+              const leftPoint = line.data[index - 1];
+              const rightPoint = line.data[index];
+              nearestPoint =
+                Math.abs(clickedDate.getTime() - leftPoint.date.getTime()) <
+                Math.abs(clickedDate.getTime() - rightPoint.date.getTime())
+                  ? leftPoint
+                  : rightPoint;
+            }
+
+            if (nearestPoint) {
+              valuesAtDate.set(line.id, nearestPoint.value);
+            }
+          });
+
+          if (valuesAtDate.size > 0) {
+            setReferencePoint({
+              date: clickedDate,
+              values: valuesAtDate,
+            });
+          }
+        }
+      }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -948,7 +991,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [legendPosition]);
+  }, [legendPosition, filteredLines, margins, innerWidth, referencePoint]);
 
   return (
     <div ref={containerRef} className={styles.chartContainer} style={{ width, height }}>
