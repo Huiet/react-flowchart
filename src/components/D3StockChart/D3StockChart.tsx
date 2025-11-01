@@ -31,8 +31,8 @@ interface TooltipData {
     relativeValue?: number;
     relativePercent?: number;
   }[];
-  annotations?: string[]; // Labels of nearby annotations
-  referenceLines?: string[]; // Labels of nearby reference lines
+  annotations?: Array<{ label: string; date: Date }>; // Nearby annotations with dates
+  referenceLines?: Array<{ label: string; date: Date }>; // Nearby reference lines with dates
   x: number;
   y: number;
 }
@@ -46,22 +46,34 @@ const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
   { value: 'ALL', label: 'All' },
 ];
 
+// Default color palette for underliers
+const DEFAULT_COLORS = [
+  '#2563eb', // blue
+  '#dc2626', // red
+  '#16a34a', // green
+  '#ea580c', // orange
+  '#9333ea', // purple
+  '#0891b2', // cyan
+  '#ca8a04', // yellow
+  '#e11d48', // pink
+];
+
 export const D3StockChart: React.FC<D3StockChartProps> = ({
   lines,
+  underliers,
   width = 800,
   height = 500,
   margins = { top: 20, right: 20, bottom: 70, left: 60 },
   showMinMaxAnnotations = true,
   customAnnotations = [],
   referenceLines = [],
-  onLineToggle,
   defaultDateRange = 'ALL',
   enabledIndicators,
+  isPercentage = false,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
-  const [internalLines, setInternalLines] = useState<StockLine[]>(lines);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>(defaultDateRange);
   const [legendPosition, setLegendPosition] = useState({ x: 80, y: 20 });
@@ -84,13 +96,35 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   // Store the xScale so we can use it in click handlers
   const xScaleRef = useRef<d3.ScaleTime<number, number> | null>(null);
 
+  // Transform underliers data into StockLine format
+  const linesFromUnderliers = useMemo(() => {
+    if (!underliers) return [];
+    return underliers.map((underlier, idx) => ({
+      id: underlier.ticker,
+      name: underlier.name,
+      data: underlier.data.map(([timestamp, value]) => ({
+        date: new Date(timestamp),
+        value: value,
+      })),
+      color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length],
+      visible: true,
+    }));
+  }, [underliers]);
+
+  // Determine which data source to use and maintain internal state
+  const sourceLines = useMemo(() => {
+    return lines || linesFromUnderliers;
+  }, [lines, linesFromUnderliers]);
+
+  const [internalLines, setInternalLines] = useState<StockLine[]>(sourceLines);
+
   // Initialize per-line indicators
   const [indicators, setIndicators] = useState<Record<string, TechnicalIndicators>>(() => {
     if (enabledIndicators) return enabledIndicators;
 
     // Initialize with all indicators disabled for each line
     const initialIndicators: Record<string, TechnicalIndicators> = {};
-    lines.forEach((line) => {
+    sourceLines.forEach((line) => {
       initialIndicators[line.id] = {
         sma20: false,
         sma50: false,
@@ -103,14 +137,14 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     return initialIndicators;
   });
 
-  // Update internal state when lines prop changes
+  // Update internal state when source data changes
   useEffect(() => {
-    setInternalLines(lines);
+    setInternalLines(sourceLines);
 
     // Initialize indicators for any new lines
     setIndicators((prev) => {
       const updated = { ...prev };
-      lines.forEach((line) => {
+      sourceLines.forEach((line) => {
         if (!updated[line.id]) {
           updated[line.id] = {
             sma20: false,
@@ -124,7 +158,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       });
       return updated;
     });
-  }, [lines]);
+  }, [sourceLines]);
 
   // Calculate date range boundaries
   const getDateRangeStart = (endDate: Date, range: DateRange): Date => {
@@ -287,9 +321,18 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     // Store xScale in ref for use in click handlers
     xScaleRef.current = xScale;
 
+    // Calculate y-scale domain with better padding
+    const minValue = d3.min(allData, (d) => d.value)!;
+    const maxValue = d3.max(allData, (d) => d.value)!;
+    const range = maxValue - minValue;
+
+    // Add 10% padding at the top and bottom, with minimum 5% buffer at bottom
+    const topPadding = range * 0.1;
+    const bottomPadding = Math.max(range * 0.1, Math.abs(minValue) * 0.05);
+
     const yScale = d3
       .scaleLinear()
-      .domain([d3.min(allData, (d) => d.value)! * 0.95, d3.max(allData, (d) => d.value)! * 1.05])
+      .domain([minValue - bottomPadding, maxValue + topPadding])
       .range([innerHeight, 0]);
 
     // Add grid
@@ -623,9 +666,14 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .attr('class', 'axis y-axis')
       .call(
         d3.axisLeft(yScale).tickFormat((d) => {
-          // Format numbers without unnecessary decimals
           const num = d as number;
-          return num % 1 === 0 ? d3.format(',')(num) : d3.format(',.2f')(num);
+          if (isPercentage) {
+            // Format as percentage with 1 decimal place
+            return `${num.toFixed(1)}%`;
+          } else {
+            // Format numbers without unnecessary decimals for currency
+            return num % 1 === 0 ? d3.format(',')(num) : d3.format(',.2f')(num);
+          }
         })
       );
 
@@ -646,7 +694,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .style('text-anchor', 'middle')
       .style('font-size', '12px')
       .style('fill', '#666')
-      .text('Price');
+      .text(isPercentage ? 'Performance (%)' : 'Price');
 
     // Add crosshair lines (initially hidden)
     const crosshairGroup = g.append('g').attr('class', 'crosshair-group').style('display', 'none');
@@ -759,19 +807,19 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           });
 
           // Find nearby custom annotations (within 2 days of hovered date)
-          const nearbyAnnotations: string[] = [];
+          const nearbyAnnotations: Array<{ label: string; date: Date }> = [];
           const toleranceDays = 2;
           customAnnotations.forEach((annotation) => {
             const daysDiff = Math.abs(
               (snapPoint.date.getTime() - annotation.date.getTime()) / (1000 * 60 * 60 * 24)
             );
             if (daysDiff <= toleranceDays) {
-              nearbyAnnotations.push(annotation.label);
+              nearbyAnnotations.push({ label: annotation.label, date: annotation.date });
             }
           });
 
           // Find nearby reference lines (vertical ones within 2 days)
-          const nearbyReferenceLines: string[] = [];
+          const nearbyReferenceLines: Array<{ label: string; date: Date }> = [];
           referenceLines.forEach((refLine) => {
             if (refLine.type === 'vertical') {
               const refDate = refLine.value as Date;
@@ -779,7 +827,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                 (snapPoint.date.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24)
               );
               if (daysDiff <= toleranceDays) {
-                nearbyReferenceLines.push(refLine.label);
+                nearbyReferenceLines.push({ label: refLine.label, date: refDate });
               }
             }
           });
@@ -821,7 +869,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       setTooltip(null);
     };
 
-
     // Add invisible background rect to capture all mouse events
     svg
       .insert('rect', ':first-child')
@@ -832,9 +879,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .attr('pointer-events', 'all');
 
     // Ensure SVG captures all pointer events
-    svg
-      .style('cursor', 'crosshair')
-      .style('pointer-events', 'all');
+    svg.style('cursor', 'crosshair').style('pointer-events', 'all');
 
     // Attach event listeners directly to SVG
     svg
@@ -850,6 +895,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     customAnnotations,
     referenceLines,
     referencePoint,
+    isPercentage,
   ]);
 
   const handleLineToggle = (lineId: string) => {
@@ -857,12 +903,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       line.id === lineId ? { ...line, visible: !line.visible } : line
     );
     setInternalLines(updatedLines);
-
-    // Call the callback if provided
-    const toggledLine = updatedLines.find((line) => line.id === lineId);
-    if (onLineToggle && toggledLine) {
-      onLineToggle(lineId, toggledLine.visible);
-    }
   };
 
   const handleIndicatorToggle = (lineId: string, indicatorKey: keyof TechnicalIndicators) => {
@@ -924,7 +964,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
       // Check if clicking on the SVG chart (not on legend) to set reference point
       const svgElement = svgRef.current;
-      if (svgElement && (svgElement === target || svgElement.contains(target))) {
+      if (
+        svgElement &&
+        (svgElement === (target as unknown as SVGSVGElement) || svgElement.contains(target as Node))
+      ) {
         // Get click position relative to SVG
         const svgRect = svgElement.getBoundingClientRect();
         const mouseX = e.clientX - svgRect.left;
@@ -1032,7 +1075,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
         <div
           className={styles.tooltip}
           style={{
-            left: tooltip.x + 15,
+            // Position tooltip on the left when near the right edge
+            left: tooltip.x > width - 250 ? tooltip.x - 180 : tooltip.x + 15,
             top: tooltip.y - 10,
           }}
         >
@@ -1044,7 +1088,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                 <span className={styles.tooltipLabel}>{val.lineName}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span className={styles.tooltipValue}>${val.value.toFixed(2)}</span>
+                <span className={styles.tooltipValue}>
+                  {isPercentage ? `${val.value.toFixed(2)}%` : `$${val.value.toFixed(2)}`}
+                </span>
                 {val.relativePercent !== undefined && (
                   <span
                     className={styles.tooltipRelative}
@@ -1066,8 +1112,21 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           {tooltip.annotations && tooltip.annotations.length > 0 && (
             <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #eee' }}>
               {tooltip.annotations.map((annotation, idx) => (
-                <div key={idx} style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>
-                  📍 {annotation}
+                <div
+                  key={idx}
+                  style={{
+                    fontSize: '11px',
+                    color: '#666',
+                    marginBottom: '2px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                  }}
+                >
+                  <span>📍 {annotation.label}</span>
+                  <span style={{ color: '#666', fontSize: '10px' }}>
+                    {d3.timeFormat('%b %d')(annotation.date)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -1077,8 +1136,21 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           {tooltip.referenceLines && tooltip.referenceLines.length > 0 && (
             <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #eee' }}>
               {tooltip.referenceLines.map((refLine, idx) => (
-                <div key={idx} style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>
-                  📅 {refLine}
+                <div
+                  key={idx}
+                  style={{
+                    fontSize: '11px',
+                    color: '#666',
+                    marginBottom: '2px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                  }}
+                >
+                  <span>📅 {refLine.label}</span>
+                  <span style={{ color: '#666', fontSize: '10px' }}>
+                    {d3.timeFormat('%b %d')(refLine.date)}
+                  </span>
                 </div>
               ))}
             </div>

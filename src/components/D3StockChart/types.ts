@@ -59,15 +59,25 @@ export interface BollingerBandsData {
   lower: number;
 }
 
+export interface UnderlierData {
+  name: string;
+  ticker: string;
+  data: [number, number][]; // [timestamp, value] tuples
+  strikePrice: number;
+  currentPrice: number;
+  actualData?: [number, number][]; // Optional actual price data
+}
+
 export interface D3StockChartProps {
-  lines: StockLine[];
+  lines?: StockLine[]; // Legacy format (optional)
+  underliers?: UnderlierData[]; // New format (optional)
   width?: number;
   height?: number;
   margins?: ChartMargins;
   showMinMaxAnnotations?: boolean;
   customAnnotations?: CustomAnnotation[];
   referenceLines?: ReferenceLine[];
-  onLineToggle?: (lineId: string, visible: boolean) => void;
   defaultDateRange?: DateRange;
   enabledIndicators?: Record<string, TechnicalIndicators>; // Changed to per-line indicators
+  isPercentage?: boolean; // Whether to format values as percentages (default: false for currency)
 }

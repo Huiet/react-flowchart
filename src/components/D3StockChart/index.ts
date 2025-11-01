@@ -10,4 +10,5 @@ export type {
   TechnicalIndicators,
   IndicatorDataPoint,
   BollingerBandsData,
+  UnderlierData,
 } from './types';
