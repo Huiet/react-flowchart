@@ -5,6 +5,7 @@ import {
   IconChevronUp,
   IconGripHorizontal,
   IconMinus,
+  IconX,
 } from '@tabler/icons-react';
 import * as d3 from 'd3';
 import { ActionIcon, Group, Menu } from '@mantine/core';
@@ -27,6 +28,8 @@ interface TooltipData {
     lineName: string;
     value: number;
     color: string;
+    relativeValue?: number;
+    relativePercent?: number;
   }[];
   x: number;
   y: number;
@@ -62,6 +65,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   const [legendPosition, setLegendPosition] = useState({ x: 80, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [referencePoint, setReferencePoint] = useState<{
+    date: Date;
+    values: Map<string, number>;
+  } | null>(null);
 
   // Use refs for drag state to avoid re-renders during drag
   const dragStateRef = useRef({
@@ -529,6 +536,37 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       }
     });
 
+    // Draw reference point line if set
+    if (
+      referencePoint &&
+      referencePoint.date >= domainMinDate &&
+      referencePoint.date <= domainMaxDate
+    ) {
+      const xPos = xScale(referencePoint.date);
+      g.append('line')
+        .attr('class', 'reference-point-line')
+        .attr('x1', xPos)
+        .attr('y1', 0)
+        .attr('x2', xPos)
+        .attr('y2', innerHeight)
+        .attr('stroke', '#e74c3c')
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '8,4')
+        .style('pointer-events', 'none');
+      // Label below the button
+
+      g.append('text')
+        .attr('class', 'reference-point-label')
+        .attr('x', xPos)
+        .attr('y', 18)
+        .attr('fill', '#e74c3c')
+        .attr('font-weight', '600')
+        .attr('font-size', '11px')
+        .attr('text-anchor', 'middle')
+        .text('REF')
+        .style('pointer-events', 'none');
+    }
+
     // Calculate optimal number of X-axis ticks based on width
     const minTickSpacing = 80; // Minimum pixels between ticks
     const maxTicks = Math.floor(innerWidth / minTickSpacing);
@@ -612,16 +650,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .append('g')
       .attr('class', 'snap-points-group')
       .style('display', 'none');
-
-    // Add mouse tracking overlay
-    const mouseOverlay = svg
-      .append('rect')
-      .attr('class', 'mouse-overlay')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('fill', 'none')
-      .attr('pointer-events', 'all')
-      .style('cursor', 'crosshair');
 
     // Helper function to find nearest data point
     const findNearestPoint = (line: StockLine, targetDate: Date): StockDataPoint | null => {
@@ -714,12 +742,25 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
           setTooltip({
             date: snapPoint.date,
-            values: tooltipValues.map((v) => ({
-              lineId: v.lineId,
-              lineName: v.lineName,
-              value: v.value,
-              color: v.color,
-            })),
+            values: tooltipValues.map((v) => {
+              let relativeValue: number | undefined;
+              let relativePercent: number | undefined;
+
+              if (referencePoint && referencePoint.values.has(v.lineId)) {
+                const refValue = referencePoint.values.get(v.lineId)!;
+                relativeValue = v.value - refValue;
+                relativePercent = ((v.value - refValue) / refValue) * 100;
+              }
+
+              return {
+                lineId: v.lineId,
+                lineName: v.lineName,
+                value: v.value,
+                color: v.color,
+                relativeValue,
+                relativePercent,
+              };
+            }),
             x: mouseX,
             y: mouseY,
           });
@@ -739,10 +780,56 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       setTooltip(null);
     };
 
-    // Attach event listeners
-    mouseOverlay.on('mouseover', handleMouseOver);
-    mouseOverlay.on('mousemove', handleMouseMove);
-    mouseOverlay.on('mouseleave', handleMouseLeave);
+    // Click handler to set reference point
+    const handleClick = (event: MouseEvent) => {
+      // Get mouse position relative to the SVG element
+      const [mouseX] = d3.pointer(event, svg.node());
+
+      // Convert to chart coordinates (only care about X for vertical reference line)
+      const chartX = mouseX - margins.left;
+
+      // Only check X bounds - allow clicks anywhere vertically (including axis area)
+      if (chartX < 0 || chartX > innerWidth) {
+        return;
+      }
+
+      // Check if clicking near existing reference line (within 5px) - if so, remove it
+      if (referencePoint) {
+        const refLineX = xScale(referencePoint.date);
+        const clickDistance = Math.abs(chartX - refLineX);
+
+        if (clickDistance <= 5) {
+          setReferencePoint(null);
+          return;
+        }
+      }
+
+      const clickedDate = xScale.invert(chartX);
+
+      // Find values at this date for all visible lines
+      const valuesAtDate = new Map<string, number>();
+      filteredLines.forEach((line) => {
+        const point = findNearestPoint(line, clickedDate);
+        if (point) {
+          valuesAtDate.set(line.id, point.value);
+        }
+      });
+
+      if (valuesAtDate.size > 0) {
+        setReferencePoint({
+          date: clickedDate,
+          values: valuesAtDate,
+        });
+      }
+    };
+
+    // Attach event listeners directly to SVG
+    svg
+      .style('cursor', 'crosshair')
+      .on('mouseover', handleMouseOver)
+      .on('mousemove', handleMouseMove)
+      .on('mouseleave', handleMouseLeave)
+      .on('click', handleClick);
   }, [
     filteredLines,
     width,
@@ -751,6 +838,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     showMinMaxAnnotations,
     customAnnotations,
     referenceLines,
+    referencePoint,
   ]);
 
   const handleLineToggle = (lineId: string) => {
@@ -882,7 +970,22 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                 <div className={styles.tooltipColorDot} style={{ backgroundColor: val.color }} />
                 <span className={styles.tooltipLabel}>{val.lineName}</span>
               </div>
-              <span className={styles.tooltipValue}>${val.value.toFixed(2)}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <span className={styles.tooltipValue}>${val.value.toFixed(2)}</span>
+                {val.relativePercent !== undefined && (
+                  <span
+                    className={styles.tooltipRelative}
+                    style={{
+                      color: val.relativePercent >= 0 ? '#27ae60' : '#e74c3c',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {val.relativePercent >= 0 ? '+' : ''}
+                    {val.relativePercent.toFixed(2)}%
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -1048,6 +1151,40 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                   </Menu.Dropdown>
                 </Menu>
               </div>
+
+              {/* Reference Point Control */}
+              {referencePoint && (
+                <div
+                  className={styles.legendItemContainer}
+                  style={{ paddingTop: '8px', borderTop: '1px solid #eee' }}
+                >
+                  <div className={styles.legendItem} style={{ cursor: 'default', opacity: 0.9 }}>
+                    <svg width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+                      <line
+                        x1="0"
+                        y1="8"
+                        x2="16"
+                        y2="8"
+                        stroke="#e74c3c"
+                        strokeWidth="2"
+                        strokeDasharray="4,2"
+                      />
+                    </svg>
+                    <div className={styles.legendLabel} style={{ fontSize: '12px' }}>
+                      Ref: {d3.timeFormat('%b %d, %Y')(referencePoint.date)}
+                    </div>
+                  </div>
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    size="sm"
+                    onClick={() => setReferencePoint(null)}
+                    title="Clear reference point"
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                </div>
+              )}
 
               {/* Line items */}
               {internalLines.map((line) => {

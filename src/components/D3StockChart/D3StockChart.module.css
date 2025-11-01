@@ -350,6 +350,34 @@
   pointer-events: none;
 }
 
+.chartContainer :global(.reference-point-line) {
+  stroke-width: 2;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.chartContainer :global(.reference-point-label) {
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.chartContainer :global(.reference-point-remove) {
+  transition: transform 0.2s ease;
+}
+
+.chartContainer :global(.reference-point-remove:hover) {
+  transform: scale(1.1);
+}
+
+.chartContainer :global(.reference-point-remove circle) {
+  transition: fill 0.2s ease;
+}
+
+.chartContainer :global(.reference-point-remove:hover circle) {
+  fill: #c0392b;
+}
+
 .chartContainer :global(.zoom-overlay) {
   cursor: move;
   fill: none;
@@ -380,6 +408,7 @@
   font-size: 12px;
   z-index: 1000;
   min-width: 160px;
+  user-select: none;
 }
 
 .tooltipDate {
