@@ -31,6 +31,8 @@ interface TooltipData {
     relativeValue?: number;
     relativePercent?: number;
   }[];
+  annotations?: string[]; // Labels of nearby annotations
+  referenceLines?: string[]; // Labels of nearby reference lines
   x: number;
   y: number;
 }
@@ -756,6 +758,32 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
               .style('pointer-events', 'none');
           });
 
+          // Find nearby custom annotations (within 2 days of hovered date)
+          const nearbyAnnotations: string[] = [];
+          const toleranceDays = 2;
+          customAnnotations.forEach((annotation) => {
+            const daysDiff = Math.abs(
+              (snapPoint.date.getTime() - annotation.date.getTime()) / (1000 * 60 * 60 * 24)
+            );
+            if (daysDiff <= toleranceDays) {
+              nearbyAnnotations.push(annotation.label);
+            }
+          });
+
+          // Find nearby reference lines (vertical ones within 2 days)
+          const nearbyReferenceLines: string[] = [];
+          referenceLines.forEach((refLine) => {
+            if (refLine.type === 'vertical') {
+              const refDate = refLine.value as Date;
+              const daysDiff = Math.abs(
+                (snapPoint.date.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24)
+              );
+              if (daysDiff <= toleranceDays) {
+                nearbyReferenceLines.push(refLine.label);
+              }
+            }
+          });
+
           setTooltip({
             date: snapPoint.date,
             values: tooltipValues.map((v) => {
@@ -777,6 +805,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                 relativePercent,
               };
             }),
+            annotations: nearbyAnnotations.length > 0 ? nearbyAnnotations : undefined,
+            referenceLines: nearbyReferenceLines.length > 0 ? nearbyReferenceLines : undefined,
             x: mouseX,
             y: mouseY,
           });
@@ -1031,6 +1061,28 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
               </div>
             </div>
           ))}
+
+          {/* Show annotations if any are nearby */}
+          {tooltip.annotations && tooltip.annotations.length > 0 && (
+            <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #eee' }}>
+              {tooltip.annotations.map((annotation, idx) => (
+                <div key={idx} style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>
+                  📍 {annotation}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Show reference lines if any are nearby */}
+          {tooltip.referenceLines && tooltip.referenceLines.length > 0 && (
+            <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #eee' }}>
+              {tooltip.referenceLines.map((refLine, idx) => (
+                <div key={idx} style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>
+                  📅 {refLine}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
