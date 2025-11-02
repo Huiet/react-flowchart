@@ -1,0 +1,181 @@
+.chartContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* D3 Styles */
+.chartContainer :global(.axis) text {
+  font-size: 12px;
+  fill: #666;
+  pointer-events: none;
+}
+
+.chartContainer :global(.axis) line,
+.chartContainer :global(.axis) path {
+  stroke: #ddd;
+  shape-rendering: crispEdges;
+  pointer-events: none;
+}
+
+.chartContainer :global(.grid) line {
+  stroke: #e0e0e0;
+  stroke-opacity: 0.7;
+  shape-rendering: crispEdges;
+  pointer-events: none;
+}
+
+.chartContainer :global(.grid) path {
+  stroke-width: 0;
+  pointer-events: none;
+}
+
+.chartContainer :global(.bar) {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.chartContainer :global(.bar:hover) {
+  opacity: 0.8;
+}
+
+.chartContainer :global(.bar-label) {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #333;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.chartContainer :global(.label-connector) {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Legend */
+.legend {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  user-select: none;
+  z-index: 10;
+}
+
+@media (max-width: 600px) {
+  .legend {
+    display: none;
+  }
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.legendItem:hover {
+  background-color: #f5f5f5;
+}
+
+.legendColorBox {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legendLabel {
+  font-size: 13px;
+  color: #666;
+  user-select: none;
+}
+
+.legendItem.disabled .legendLabel {
+  opacity: 0.4;
+}
+
+.legendItem.disabled .legendColorBox {
+  opacity: 0.3;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  font-size: 12px;
+  z-index: 1000;
+  min-width: 140px;
+  user-select: none;
+}
+
+.tooltipCategory {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+.tooltipLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  gap: 12px;
+}
+
+.tooltipLine:last-child {
+  margin-bottom: 0;
+}
+
+.tooltipLineName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.tooltipColorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tooltipLabel {
+  color: #666;
+  font-size: 12px;
+}
+
+.tooltipValue {
+  font-weight: 600;
+  color: #333;
+  font-size: 12px;
+}

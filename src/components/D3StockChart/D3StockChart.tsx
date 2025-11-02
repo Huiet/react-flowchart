@@ -5,6 +5,7 @@ import {
   IconChevronUp,
   IconGripHorizontal,
   IconMinus,
+  IconRefresh,
   IconX,
 } from '@tabler/icons-react';
 import * as d3 from 'd3';
@@ -61,8 +62,8 @@ const DEFAULT_COLORS = [
 export const D3StockChart: React.FC<D3StockChartProps> = ({
   lines,
   underliers,
-  width = 800,
-  height = 500,
+  width: propWidth,
+  height: propHeight,
   margins = { top: 20, right: 20, bottom: 70, left: 60 },
   showMinMaxAnnotations = true,
   customAnnotations = [],
@@ -83,6 +84,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     date: Date;
     values: Map<string, number>;
   } | null>(null);
+  const [dimensions, setDimensions] = useState({ width: propWidth || 800, height: propHeight || 500 });
 
   // Use refs for drag state to avoid re-renders during drag
   const dragStateRef = useRef({
@@ -159,6 +161,30 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       return updated;
     });
   }, [sourceLines]);
+
+  // Handle container resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        // Only update if width/height props are not provided (responsive mode)
+        if (!propWidth || !propHeight) {
+          setDimensions({
+            width: propWidth || width,
+            height: propHeight || height,
+          });
+        }
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [propWidth, propHeight]);
 
   // Calculate date range boundaries
   const getDateRangeStart = (endDate: Date, range: DateRange): Date => {
@@ -283,6 +309,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
     return allIndicators;
   }, [filteredLines, indicators]);
+
+  const { width, height } = dimensions;
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -888,8 +916,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .on('mouseleave', handleMouseLeave);
   }, [
     filteredLines,
-    width,
-    height,
+    dimensions,
     margins,
     showMinMaxAnnotations,
     customAnnotations,
@@ -936,6 +963,28 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
   const isGlobalIndicatorEnabled = (indicatorKey: keyof TechnicalIndicators): boolean => {
     return Object.values(indicators).some((lineIndicators) => lineIndicators[indicatorKey]);
+  };
+
+  const handleReset = () => {
+    // Show all lines
+    const updatedLines = internalLines.map((line) => ({ ...line, visible: true }));
+    setInternalLines(updatedLines);
+
+    // Clear all indicators
+    setIndicators((prev) => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach((lineId) => {
+        updated[lineId] = {
+          sma20: false,
+          sma50: false,
+          sma200: false,
+          ema20: false,
+          ema50: false,
+          bollingerBands: false,
+        };
+      });
+      return updated;
+    });
   };
 
   // Legend drag handlers
@@ -1064,10 +1113,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [legendPosition, filteredLines, margins, innerWidth, referencePoint]);
+  }, [legendPosition, filteredLines, margins, width, referencePoint]);
 
   return (
-    <div ref={containerRef} className={styles.chartContainer} style={{ width, height }}>
+    <div ref={containerRef} className={styles.chartContainer}>
       <svg ref={svgRef} className={styles.svg} width={width} height={height} />
 
       {/* Tooltip */}
@@ -1173,19 +1222,34 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
             <IconGripHorizontal size={16} className={styles.gripIcon} />
             <span className={styles.legendHeaderText}>Legend</span>
           </div>
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            size="sm"
-            className={styles.minimizeButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsMinimized(!isMinimized);
-            }}
-            title={isMinimized ? 'Expand legend' : 'Minimize legend'}
-          >
-            {isMinimized ? <IconChevronDown size={14} /> : <IconMinus size={14} />}
-          </ActionIcon>
+          <Group gap={4}>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
+              className={styles.minimizeButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReset();
+              }}
+              title="Reset all (show all lines, remove all indicators)"
+            >
+              <IconRefresh size={14} />
+            </ActionIcon>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
+              className={styles.minimizeButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMinimized(!isMinimized);
+              }}
+              title={isMinimized ? 'Expand legend' : 'Minimize legend'}
+            >
+              {isMinimized ? <IconChevronDown size={14} /> : <IconMinus size={14} />}
+            </ActionIcon>
+          </Group>
         </div>
 
         {/* Legend content - only when expanded */}

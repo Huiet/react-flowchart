@@ -56,11 +56,9 @@ export const D3StockChartDemo = () => {
           Interactive performance chart showing percentage gains/losses over time
         </p>
 
-        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', height: '600px' }}>
           <D3StockChart
             underliers={underliers}
-            width={1000}
-            height={600}
             showMinMaxAnnotations={false}
             customAnnotations={customAnnotations}
             referenceLines={referenceLines}
