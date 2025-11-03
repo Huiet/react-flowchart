@@ -29,6 +29,7 @@ interface TooltipData {
     lineName: string;
     value: number;
     color: string;
+    refValue?: number;
     relativeValue?: number;
     relativePercent?: number;
   }[];
@@ -82,7 +83,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [referencePoint, setReferencePoint] = useState<{
     date: Date;
-    values: Map<string, number>;
   } | null>(null);
   const [dimensions, setDimensions] = useState({ width: propWidth || 800, height: propHeight || 500 });
 
@@ -863,13 +863,17 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           setTooltip({
             date: snapPoint.date,
             values: tooltipValues.map((v) => {
-              let relativeValue: number | undefined;
-              let relativePercent: number | undefined;
 
+
+              let refValue: number | undefined;
+              let relativePercent: number | undefined;
               if (referencePoint && referencePoint.values.has(v.lineId)) {
                 const refValue = referencePoint.values.get(v.lineId)!;
-                relativeValue = v.value - refValue;
-                relativePercent = ((v.value - refValue) / refValue) * 100;
+                if (isPercentage) {
+                  relativePercent = v.value - refValue;
+                } else {
+                  relativePercent = ((v.value - refValue) / refValue) * 100;
+                }
               }
 
               return {
@@ -877,7 +881,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                 lineName: v.lineName,
                 value: v.value,
                 color: v.color,
-                relativeValue,
+                refValue,
                 relativePercent,
               };
             }),
@@ -1040,40 +1044,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
           const clickedDate = xScale.invert(chartX);
 
-          // Find nearest data points for all visible lines at this date
-          const valuesAtDate = new Map<string, number>();
-          filteredLines.forEach((line) => {
-            if (line.data.length === 0) return;
-
-            const bisector = d3.bisector<StockDataPoint, Date>((d) => d.date).left;
-            const index = bisector(line.data, clickedDate);
-
-            let nearestPoint: StockDataPoint | null = null;
-            if (index === 0) {
-              nearestPoint = line.data[0];
-            } else if (index >= line.data.length) {
-              nearestPoint = line.data[line.data.length - 1];
-            } else {
-              const leftPoint = line.data[index - 1];
-              const rightPoint = line.data[index];
-              nearestPoint =
-                Math.abs(clickedDate.getTime() - leftPoint.date.getTime()) <
-                Math.abs(clickedDate.getTime() - rightPoint.date.getTime())
-                  ? leftPoint
-                  : rightPoint;
-            }
-
-            if (nearestPoint) {
-              valuesAtDate.set(line.id, nearestPoint.value);
-            }
+          // Set reference point to this date
+          setReferencePoint({
+            date: clickedDate,
           });
-
-          if (valuesAtDate.size > 0) {
-            setReferencePoint({
-              date: clickedDate,
-              values: valuesAtDate,
-            });
-          }
         }
       }
     };
@@ -1134,7 +1108,20 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
             <div key={val.lineId} className={styles.tooltipLine}>
               <div className={styles.tooltipLineName}>
                 <div className={styles.tooltipColorDot} style={{ backgroundColor: val.color }} />
-                <span className={styles.tooltipLabel}>{val.lineName}</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className={styles.tooltipLabel}>{val.lineName}</span>
+                  {val.refValue !== undefined && (
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        color: '#999',
+                        marginTop: '2px',
+                      }}
+                    >
+                      Ref: {isPercentage ? `${val.refValue.toFixed(2)}%` : `$${val.refValue.toFixed(2)}`}
+                    </span>
+                  )}
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                 <span className={styles.tooltipValue}>
