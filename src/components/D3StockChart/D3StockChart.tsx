@@ -929,6 +929,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     referenceLines,
     referencePoint,
     isPercentage,
+    indicatorData,
   ]);
 
   const handleLineToggle = (lineId: string) => {
@@ -991,6 +992,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       });
       return updated;
     });
+
+    // Clear reference point
+    setReferencePoint(null);
   };
 
   // Legend drag handlers

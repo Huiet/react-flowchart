@@ -68,19 +68,40 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
     d3.select(svgRef.current).selectAll('*').remove();
 
     const svg = d3.select(svgRef.current);
-    const innerWidth = width - margins.left - margins.right;
-    const innerHeight = height - margins.top - margins.bottom;
 
-    // Filter out hidden series
-    const visibleSeries = series.filter((s) => !hiddenSeries.has(s.key));
-
-    // Filter out data points where all values are 0
+    // Filter out data points where all values are 0 (needed for margin calculation)
     const filteredData = data.filter((d) => {
       return Object.values(d.values).some((value) => value > 0);
     });
 
+    // Pre-calculate if rotation is needed to determine appropriate bottom margin
+    let needsRotation = false;
+    if (filteredData.length > 0) {
+      const tempX0 = d3.scaleBand()
+        .domain(filteredData.map((d) => d.category))
+        .range([0, width - margins.left - margins.right])
+        .padding(0.2);
+
+      const bandWidth = tempX0.bandwidth();
+      const maxLabelLength = d3.max(filteredData.map(d => d.category.length)) || 0;
+      const estimatedLabelWidth = maxLabelLength * 8;
+      needsRotation = estimatedLabelWidth > bandWidth * 0.8;
+    }
+
+    // Adjust bottom margin based on rotation needs
+    const dynamicMargins = {
+      ...margins,
+      bottom: needsRotation ? margins.bottom : Math.max(40, margins.bottom * 0.4)
+    };
+
+    const innerWidth = width - dynamicMargins.left - dynamicMargins.right;
+    const innerHeight = height - dynamicMargins.top - dynamicMargins.bottom;
+
+    // Filter out hidden series
+    const visibleSeries = series.filter((s) => !hiddenSeries.has(s.key));
+
     // Create main group
-    const g = svg.append('g').attr('transform', `translate(${margins.left},${margins.top})`);
+    const g = svg.append('g').attr('transform', `translate(${dynamicMargins.left},${dynamicMargins.top})`);
 
     // Create scales
     const x0 = d3
@@ -119,16 +140,25 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
           .tickFormat(() => '')
       );
 
-    // Add X axis
-    g.append('g')
+    // Add X axis with responsive label rotation
+    const xAxis = g.append('g')
       .attr('class', 'axis x-axis')
       .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(x0))
-      .selectAll('text')
-      .attr('transform', 'rotate(-45)')
-      .style('text-anchor', 'end')
-      .attr('dx', '-0.8em')
-      .attr('dy', '0.15em');
+      .call(d3.axisBottom(x0));
+
+    // Apply rotation based on pre-calculated needsRotation
+    const xAxisTexts = xAxis.selectAll('text');
+    if (needsRotation) {
+      xAxisTexts
+        .attr('transform', 'rotate(-45)')
+        .style('text-anchor', 'end')
+        .attr('dx', '-0.8em')
+        .attr('dy', '0.15em');
+    } else {
+      xAxisTexts
+        .style('text-anchor', 'middle')
+        .attr('dy', '1em');
+    }
 
     // Add Y axis
     g.append('g')
@@ -150,9 +180,11 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
 
     // Add X axis label
     if (xAxisLabel) {
+      // Position the label closer to the axis when not rotated
+      const labelOffset = needsRotation ? 10 : Math.min(10, dynamicMargins.bottom / 4);
       svg
         .append('text')
-        .attr('transform', `translate(${width / 2},${height - 10})`)
+        .attr('transform', `translate(${width / 2},${height - labelOffset})`)
         .style('text-anchor', 'middle')
         .style('font-size', '12px')
         .style('fill', '#666')
