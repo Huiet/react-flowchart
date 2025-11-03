@@ -102,6 +102,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   // Store the xScale so we can use it in click handlers
   const xScaleRef = useRef<d3.ScaleTime<number, number> | null>(null);
 
+  // Store dynamic margins and innerWidth for click handlers
+  const chartMarginsRef = useRef({ margins, innerWidth: 0 });
+
   // Transform underliers data into StockLine format
   const linesFromUnderliers = useMemo(() => {
     if (!underliers) return [];
@@ -323,11 +326,21 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     d3.select(svgRef.current).selectAll('*').remove();
 
     const svg = d3.select(svgRef.current);
-    const innerWidth = width - margins.left - margins.right;
-    const innerHeight = height - margins.top - margins.bottom;
+
+    // Use minimal bottom margin to maximize chart space
+    const dynamicMargins = {
+      ...margins,
+      bottom: 25
+    };
+
+    const innerWidth = width - dynamicMargins.left - dynamicMargins.right;
+    const innerHeight = height - dynamicMargins.top - dynamicMargins.bottom;
+
+    // Store margins and innerWidth for click handlers
+    chartMarginsRef.current = { margins: dynamicMargins, innerWidth };
 
     // Create main group
-    const g = svg.append('g').attr('transform', `translate(${margins.left},${margins.top})`);
+    const g = svg.append('g').attr('transform', `translate(${dynamicMargins.left},${dynamicMargins.top})`);
 
     if (filteredLines.length === 0 || filteredLines.every((line) => line.data.length === 0)) {
       // Show a message when no lines are visible or no data in range
@@ -367,17 +380,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .domain([minValue - bottomPadding, maxValue + topPadding])
       .range([innerHeight, 0]);
 
-    // Add grid
-    g.append('g')
-      .attr('class', 'grid x-grid')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(
-        d3
-          .axisBottom(xScale)
-          .tickSize(innerHeight)
-          .tickFormat(() => '')
-      );
-
+    // Add grid (y-axis only)
     g.append('g')
       .attr('class', 'grid y-grid')
       .call(
@@ -661,10 +664,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     }
 
     // Calculate optimal number of X-axis ticks based on width
-    const minTickSpacing = 80; // Minimum pixels between ticks
+    const minTickSpacing = 80;
     const maxTicks = Math.floor(innerWidth / minTickSpacing);
 
-    // Determine date format based on date range
+    // Determine date format based on date range (truncate year to 2 digits)
     const daysDiff = (domainMaxDate.getTime() - domainMinDate.getTime()) / (1000 * 60 * 60 * 24);
 
     let dateFormat: (date: Date) => string;
@@ -673,26 +676,33 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     } else if (daysDiff <= 60) {
       dateFormat = d3.timeFormat('%b %d'); // "Jan 15"
     } else if (daysDiff <= 365) {
-      dateFormat = d3.timeFormat('%b %Y'); // "Jan 2024"
+      dateFormat = d3.timeFormat('%b %y'); // "Jan 25" (truncated year)
     } else {
-      dateFormat = d3.timeFormat('%Y'); // "2024"
+      dateFormat = d3.timeFormat('%Y'); // "2025"
     }
 
-    // Add axes
-    const xAxis = d3
+    // Add X axis with tick marks extending upward to labels
+    const xAxisGenerator = d3
       .axisBottom(xScale)
-      .ticks(Math.min(maxTicks, 8))
+      .ticks(maxTicks)
+      .tickSize(-10) // Negative value extends upward toward labels
       .tickFormat(dateFormat as any);
 
-    g.append('g')
+    const xAxisGroup = g.append('g')
       .attr('class', 'axis x-axis')
       .attr('transform', `translate(0,${innerHeight})`)
-      .call(xAxis)
-      .selectAll('text')
-      .attr('transform', 'rotate(-45)')
-      .style('text-anchor', 'end')
-      .attr('dx', '-0.5em')
-      .attr('dy', '0.5em');
+      .call(xAxisGenerator);
+
+    // Style tick lines to be darker and more visible
+    xAxisGroup.selectAll('.tick line')
+      .style('stroke', '#666')
+      .style('stroke-width', '1px');
+
+    // Style x-axis labels - horizontal only
+    xAxisGroup.selectAll('text')
+      .style('text-anchor', 'middle')
+      .style('font-size', '11px')
+      .attr('dy', '1em');
 
     g.append('g')
       .attr('class', 'axis y-axis')
@@ -709,15 +719,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
         })
       );
 
-    // Add axis labels
-    svg
-      .append('text')
-      .attr('transform', `translate(${width / 2},${height - 10})`)
-      .style('text-anchor', 'middle')
-      .style('font-size', '12px')
-      .style('fill', '#666')
-      .text('Date');
-
+    // Add Y axis label
     svg
       .append('text')
       .attr('transform', 'rotate(-90)')
@@ -1030,10 +1032,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
         // Get click position relative to SVG
         const svgRect = svgElement.getBoundingClientRect();
         const mouseX = e.clientX - svgRect.left;
-        const chartX = mouseX - margins.left;
+        const chartX = mouseX - chartMarginsRef.current.margins.left;
 
         // Only process if within X bounds
-        if (chartX >= 0 && chartX <= innerWidth && xScaleRef.current) {
+        if (chartX >= 0 && chartX <= chartMarginsRef.current.innerWidth && xScaleRef.current) {
           // Use the same xScale that was used to draw the chart
           const xScale = xScaleRef.current;
 
