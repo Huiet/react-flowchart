@@ -83,6 +83,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [referencePoint, setReferencePoint] = useState<{
     date: Date;
+    values: Map<string, number>;
   } | null>(null);
   const [dimensions, setDimensions] = useState({ width: propWidth || 800, height: propHeight || 500 });
 
@@ -867,8 +868,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
               let refValue: number | undefined;
               let relativePercent: number | undefined;
-              if (referencePoint && referencePoint.values.has(v.lineId)) {
-                const refValue = referencePoint.values.get(v.lineId)!;
+
+              if (referencePoint && referencePoint?.values?.has(v.lineId)) {
+                refValue = referencePoint.values.get(v.lineId)!;
                 if (isPercentage) {
                   relativePercent = v.value - refValue;
                 } else {
@@ -1044,10 +1046,40 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
           const clickedDate = xScale.invert(chartX);
 
-          // Set reference point to this date
-          setReferencePoint({
-            date: clickedDate,
+          // Find nearest data points for all visible lines at this date
+          const valuesAtDate = new Map<string, number>();
+          filteredLines.forEach((line) => {
+            if (line.data.length === 0) return;
+
+            const bisector = d3.bisector<StockDataPoint, Date>((d) => d.date).left;
+            const index = bisector(line.data, clickedDate);
+
+            let nearestPoint: StockDataPoint | null = null;
+            if (index === 0) {
+              nearestPoint = line.data[0];
+            } else if (index >= line.data.length) {
+              nearestPoint = line.data[line.data.length - 1];
+            } else {
+              const leftPoint = line.data[index - 1];
+              const rightPoint = line.data[index];
+              nearestPoint =
+                Math.abs(clickedDate.getTime() - leftPoint.date.getTime()) <
+                Math.abs(clickedDate.getTime() - rightPoint.date.getTime())
+                  ? leftPoint
+                  : rightPoint;
+            }
+
+            if (nearestPoint) {
+              valuesAtDate.set(line.id, nearestPoint.value);
+            }
           });
+
+          if (valuesAtDate.size > 0) {
+            setReferencePoint({
+              date: clickedDate,
+              values: valuesAtDate,
+            });
+          }
         }
       }
     };
@@ -1426,7 +1458,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                       <Menu.Target>
                         <ActionIcon
                           variant={hasActiveIndicators ? 'filled' : 'subtle'}
-                          color={hasActiveIndicators ? 'blue' : 'gray'}
+                          color={hasActiveIndicators ? 'blue' : 'gray.7'}
                           size="sm"
                           className={styles.indicatorMenuButton}
                           onClick={(e) => e.stopPropagation()}
