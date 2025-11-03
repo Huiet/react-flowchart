@@ -142,6 +142,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
   // Update internal state when source data changes
   useEffect(() => {
+
+    console.log('b');
     setInternalLines(sourceLines);
 
     // Initialize indicators for any new lines
@@ -165,6 +167,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
   // Handle container resize
   useEffect(() => {
+    console.log('c');
     if (!containerRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -314,6 +317,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   const { width, height } = dimensions;
 
   useEffect(() => {
+
+    console.log('d');
     if (!svgRef.current) return;
 
     // Clear previous render
@@ -995,6 +1000,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
   // Legend drag handlers
   useEffect(() => {
+    console.log('a');
     const handleMouseDown = (e: MouseEvent) => {
       if (!legendRef.current || !containerRef.current || !svgRef.current) return;
 
