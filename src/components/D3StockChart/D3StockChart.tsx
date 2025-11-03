@@ -1139,7 +1139,43 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
             top: tooltip.y - 10,
           }}
         >
-          <div className={styles.tooltipDate}>{d3.timeFormat('%b %d, %Y')(tooltip.date)}</div>
+          <div className={styles.tooltipDate}>
+            {d3.timeFormat('%b %d, %Y')(tooltip.date)}
+            {referencePoint && (() => {
+              const daysDiff = Math.round((tooltip.date.getTime() - referencePoint.date.getTime()) / (1000 * 60 * 60 * 24));
+              const absDays = Math.abs(daysDiff);
+
+              let timeLabel = '';
+              if (absDays === 0) {
+                timeLabel = 'Same as REF';
+              } else if (absDays < 7) {
+                timeLabel = `${absDays} day${absDays !== 1 ? 's' : ''}`;
+              } else if (absDays < 30) {
+                const weeks = Math.round(absDays / 7);
+                timeLabel = `${weeks} week${weeks !== 1 ? 's' : ''}`;
+              } else if (absDays < 365) {
+                const months = Math.round(absDays / 30);
+                timeLabel = `${months} month${months !== 1 ? 's' : ''}`;
+              } else {
+                const years = (absDays / 365).toFixed(1);
+                timeLabel = `${years} year${years !== '1.0' ? 's' : ''}`;
+              }
+
+              if (absDays === 0) {
+                return (
+                  <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                    {timeLabel}
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                  {timeLabel} {daysDiff > 0 ? 'after' : 'before'} REF
+                </div>
+              );
+            })()}
+          </div>
           {tooltip.values.map((val) => (
             <div key={val.lineId} className={styles.tooltipLine}>
               <div className={styles.tooltipLineName}>
