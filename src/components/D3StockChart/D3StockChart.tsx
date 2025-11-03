@@ -85,7 +85,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     date: Date;
     values: Map<string, number>;
   } | null>(null);
-  const [dimensions, setDimensions] = useState({ width: propWidth || 800, height: propHeight || 500 });
+  const [dimensions, setDimensions] = useState({
+    width: propWidth || 800,
+    height: propHeight || 500,
+  });
 
   // Use refs for drag state to avoid re-renders during drag
   const dragStateRef = useRef({
@@ -142,8 +145,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
   // Update internal state when source data changes
   useEffect(() => {
-
-    console.log('b');
     setInternalLines(sourceLines);
 
     // Initialize indicators for any new lines
@@ -167,7 +168,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
   // Handle container resize
   useEffect(() => {
-    console.log('c');
     if (!containerRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -317,8 +317,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   const { width, height } = dimensions;
 
   useEffect(() => {
-
-    console.log('d');
     if (!svgRef.current) return;
 
     // Clear previous render
@@ -869,8 +867,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           setTooltip({
             date: snapPoint.date,
             values: tooltipValues.map((v) => {
-
-
               let refValue: number | undefined;
               let relativePercent: number | undefined;
 
@@ -928,7 +924,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   }, [
     filteredLines,
     dimensions,
-    margins,
     showMinMaxAnnotations,
     customAnnotations,
     referenceLines,
@@ -1000,7 +995,6 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
   // Legend drag handlers
   useEffect(() => {
-    console.log('a');
     const handleMouseDown = (e: MouseEvent) => {
       if (!legendRef.current || !containerRef.current || !svgRef.current) return;
 
@@ -1125,7 +1119,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [legendPosition, filteredLines, margins, width, referencePoint]);
+  }, [legendPosition, filteredLines, width, referencePoint]);
 
   return (
     <div ref={containerRef} className={styles.chartContainer}>
@@ -1156,7 +1150,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                         marginTop: '2px',
                       }}
                     >
-                      Ref: {isPercentage ? `${val.refValue.toFixed(2)}%` : `$${val.refValue.toFixed(2)}`}
+                      Ref:{' '}
+                      {isPercentage ? `${val.refValue.toFixed(2)}%` : `$${val.refValue.toFixed(2)}`}
                     </span>
                   )}
                 </div>
