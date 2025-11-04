@@ -396,7 +396,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
         .line<(typeof line.data)[0]>()
         .x((d) => xScale(d.date))
         .y((d) => yScale(d.value))
-        .curve(d3.curveMonotoneX);
+        .curve(d3.curveLinear); // Linear for more rigid lines (use d3.curveMonotoneX for smooth)
 
       g.append('path')
         .datum(line.data)
@@ -416,7 +416,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
         .line<{ date: Date; value: number }>()
         .x((d) => xScale(d.date))
         .y((d) => yScale(d.value))
-        .curve(d3.curveMonotoneX);
+        .curve(d3.curveLinear); // Linear for consistency (use d3.curveMonotoneX for smooth)
 
       // Helper function to lighten/darken color based on line color
       const getIndicatorColor = (baseColor: string, type: 'sma' | 'ema' | 'bb'): string => {
@@ -435,7 +435,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .x((d) => xScale(d.date))
           .y0((d) => yScale(d.lower))
           .y1((d) => yScale(d.upper))
-          .curve(d3.curveMonotoneX);
+          .curve(d3.curveLinear); // Use d3.curveMonotoneX for smooth
 
         g.append('path')
           .datum(bbData)
@@ -450,19 +450,19 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
           .line<(typeof bbData)[0]>()
           .x((d) => xScale(d.date))
           .y((d) => yScale(d.upper))
-          .curve(d3.curveMonotoneX);
+          .curve(d3.curveLinear); // Use d3.curveMonotoneX for smooth
 
         const lowerLineGen = d3
           .line<(typeof bbData)[0]>()
           .x((d) => xScale(d.date))
           .y((d) => yScale(d.lower))
-          .curve(d3.curveMonotoneX);
+          .curve(d3.curveLinear); // Use d3.curveMonotoneX for smooth
 
         const middleLineGen = d3
           .line<(typeof bbData)[0]>()
           .x((d) => xScale(d.date))
           .y((d) => yScale(d.middle))
-          .curve(d3.curveMonotoneX);
+          .curve(d3.curveLinear); // Use d3.curveMonotoneX for smooth
 
         // Upper band line
         g.append('path')
