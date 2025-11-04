@@ -673,7 +673,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     let dateFormat: (date: Date) => string;
     if (daysDiff <= 7) {
       dateFormat = d3.timeFormat('%b %d'); // "Jan 15"
-    } else if (daysDiff <= 60) {
+    } else if (daysDiff <= 100) {
+      // For 3 months or less, show day-level detail (using 100 to account for varying month lengths)
       dateFormat = d3.timeFormat('%b %d'); // "Jan 15"
     } else if (daysDiff <= 365) {
       dateFormat = d3.timeFormat('%b %y'); // "Jan 25" (truncated year)
