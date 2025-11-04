@@ -21,6 +21,7 @@ import {
   StockLine,
   TechnicalIndicators,
 } from './types';
+import { LoadingAnimation } from './LoadingAnimation';
 import styles from './D3StockChart.module.css';
 
 interface TooltipData {
@@ -73,6 +74,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   defaultDateRange = 'ALL',
   enabledIndicators,
   isPercentage = false,
+  isLoading = false,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1181,6 +1183,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   return (
     <div ref={containerRef} className={styles.chartContainer}>
       <svg ref={svgRef} className={styles.svg} width={width} height={height} />
+
+      {/* Loading State */}
+      {isLoading && <LoadingAnimation />}
 
       {/* Tooltip */}
       {tooltip && (

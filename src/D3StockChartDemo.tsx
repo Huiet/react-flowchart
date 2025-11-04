@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { D3StockChart } from './components/D3StockChart';
 import type { UnderlierData, CustomAnnotation, ReferenceLine } from './components/D3StockChart';
 import mockUnderlierData from './components/D3StockChart/mock-underlier-data.json';
 
 export const D3StockChartDemo = () => {
+  const [isLoading, setIsLoading] = useState(false);
+
   // Cast the imported JSON to the correct type
   const underliers = mockUnderlierData as UnderlierData[];
 
@@ -56,6 +59,33 @@ export const D3StockChartDemo = () => {
           Interactive performance chart showing percentage gains/losses over time
         </p>
 
+        <button
+          onClick={() => setIsLoading(!isLoading)}
+          style={{
+            marginBottom: '20px',
+            padding: '10px 20px',
+            fontSize: '14px',
+            fontWeight: 600,
+            backgroundColor: isLoading ? '#e74c3c' : '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          }}
+        >
+          {isLoading ? 'Hide Loading State' : 'Show Loading State'}
+        </button>
+
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', height: '600px' }}>
           <D3StockChart
             underliers={underliers}
@@ -63,6 +93,7 @@ export const D3StockChartDemo = () => {
             customAnnotations={customAnnotations}
             referenceLines={referenceLines}
             isPercentage={true}
+            isLoading={isLoading}
           />
         </div>
 

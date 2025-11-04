@@ -80,4 +80,5 @@ export interface D3StockChartProps {
   defaultDateRange?: DateRange;
   enabledIndicators?: Record<string, TechnicalIndicators>; // Changed to per-line indicators
   isPercentage?: boolean; // Whether to format values as percentages (default: false for currency)
+  isLoading?: boolean; // Show loading animation
 }
