@@ -1,0 +1,473 @@
+.chartContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.legend {
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  user-select: none;
+  z-index: 10;
+  transition: box-shadow 0.2s;
+  overflow: visible;
+}
+
+.legend:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.legend.dragging {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.legend.minimized {
+  width: auto;
+  max-width: max-content;
+  min-width: auto;
+  /*padding: 8px 12px;*/
+}
+
+.dragHandle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: grab;
+  position: relative;
+  border-bottom: 1px solid #eee;
+  overflow: visible;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.01), transparent);
+}
+
+.legend.dragging .dragHandle {
+  cursor: grabbing;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.legend.minimized .dragHandle {
+  border-bottom: none;
+}
+
+.dragHandleContent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  margin-right: 24px;
+}
+
+.gripIcon {
+  color: #999;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.legend:hover .gripIcon {
+  opacity: 0.7;
+  color: #666;
+}
+
+.legend.dragging .gripIcon {
+  opacity: 0.9;
+  color: #444;
+}
+
+.legendHeaderText {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+.minimizeButton {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.minimizeButton:hover {
+  opacity: 1;
+}
+
+.legendSection {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+}
+
+.dateRangeSection {
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.indicatorsSection {
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.indicatorCheckbox {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.indicatorCheckbox:hover {
+  background-color: #f5f5f5;
+}
+
+.indicatorCheckbox input[type='checkbox'] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.indicatorLabel {
+  font-size: 12px;
+  color: #666;
+  flex: 1;
+}
+
+.indicatorColorPreview {
+  width: 20px;
+  height: 2px;
+  margin-left: 8px;
+  border-radius: 1px;
+}
+
+.legendTitle {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.legendTitleWithMenu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.legendItemContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+  flex: 1;
+  min-width: 0;
+}
+
+.legendItem:hover {
+  background-color: #f5f5f5;
+}
+
+.indicatorMenuButton {
+  flex-shrink: 0;
+}
+
+.legendColorBox {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legendLabel {
+  font-size: 13px;
+  color: #666;
+  user-select: none;
+  flex: 1;
+}
+
+.legendItem.disabled .legendLabel {
+  opacity: 0.4;
+}
+
+.legendItem.disabled .legendColorBox {
+  opacity: 0.3;
+}
+
+.dateRangeButtons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.dateRangeButton {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #666;
+  text-align: center;
+}
+
+.dateRangeButton:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.dateRangeButton.active {
+  background: #0071e3;
+  color: white;
+  border-color: #0071e3;
+}
+
+.dateRangeButton.active:hover {
+  background: #005bb5;
+  border-color: #005bb5;
+}
+
+.dateRangeButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f5f5f5;
+  color: #999;
+}
+
+.dateRangeButton:disabled:hover {
+  background: #f5f5f5;
+  border-color: #ddd;
+}
+
+/* D3 Styles */
+.chartContainer :global(.axis) text {
+  font-size: 12px;
+  fill: #666;
+  pointer-events: none;
+}
+
+.chartContainer :global(.x-axis) text {
+  text-anchor: end;
+}
+
+.chartContainer :global(.axis) line,
+.chartContainer :global(.axis) path {
+  stroke: #ddd;
+  shape-rendering: crispEdges;
+  pointer-events: none;
+}
+
+.chartContainer :global(.grid) line {
+  stroke: #e0e0e0;
+  stroke-opacity: 0.7;
+  shape-rendering: crispEdges;
+  pointer-events: none;
+}
+
+.chartContainer :global(.grid) path {
+  stroke-width: 0;
+  pointer-events: none;
+}
+
+.chartContainer :global(.line) {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chartContainer :global(.annotation-line) {
+  stroke-width: 1;
+  stroke-dasharray: 5, 5;
+  opacity: 0.6;
+}
+
+.chartContainer :global(.annotation-text) {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #333;
+}
+
+.chartContainer :global(.annotation-background) {
+  fill: white;
+  opacity: 0.9;
+}
+
+.chartContainer :global(.annotation-connector) {
+  pointer-events: none;
+}
+
+.chartContainer :global(.custom-annotation-dot) {
+  cursor: pointer;
+  transition: r 0.2s;
+  pointer-events: none;
+}
+
+.chartContainer :global(.custom-annotation-dot:hover) {
+  filter: brightness(1.2);
+}
+
+.chartContainer :global(.custom-annotation-label) {
+  font-size: 11px;
+  fill: #333;
+  pointer-events: none;
+}
+
+.chartContainer :global(.reference-line) {
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.chartContainer :global(.reference-line-label) {
+  font-size: 11px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.chartContainer :global(.reference-point-line) {
+  stroke-width: 2;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.chartContainer :global(.reference-point-label) {
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.chartContainer :global(.reference-point-remove) {
+  transition: transform 0.2s ease;
+}
+
+.chartContainer :global(.reference-point-remove:hover) {
+  transform: scale(1.1);
+}
+
+.chartContainer :global(.reference-point-remove circle) {
+  transition: fill 0.2s ease;
+}
+
+.chartContainer :global(.reference-point-remove:hover circle) {
+  fill: #c0392b;
+}
+
+.chartContainer :global(.zoom-overlay) {
+  cursor: move;
+  fill: none;
+  pointer-events: all;
+}
+
+.chartContainer :global(.crosshair) {
+  stroke: #666;
+  stroke-width: 1;
+  stroke-dasharray: 3, 3;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.chartContainer :global(.snap-points-group circle) {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: r 0.1s ease-out;
+}
+
+.tooltip {
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  font-size: 12px;
+  z-index: 5;
+  min-width: 160px;
+  user-select: none;
+}
+
+.tooltipHeader {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+.tooltipDate {
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+}
+
+.tooltipRefDate {
+  font-size: 10px;
+  color: #999;
+  display: flex;
+  width: 100%;
+  line-height: 10px;
+}
+
+.tooltipLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  gap: 12px;
+}
+
+.tooltipLine:last-child {
+  margin-bottom: 0;
+}
+
+.tooltipLineName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.tooltipColorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tooltipLabel {
+  color: #666;
+  font-size: 12px;
+}
+
+.tooltipValue {
+  font-weight: 600;
+  color: #333;
+  font-size: 12px;
+}

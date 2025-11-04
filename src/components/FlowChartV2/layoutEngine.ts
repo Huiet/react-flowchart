@@ -1,35 +1,36 @@
 import type {
+  ColumnPositions,
+  Connection,
   FlowChartData,
   FlowNode,
-  PositionedNode,
-  Connection,
   LayoutConfig,
-  ColumnPositions,
   LayoutResult,
+  NodeConnection,
+  PositionedNode,
 } from './types';
 
 const defaultConfig: LayoutConfig = {
-  nodeSpacing: 50,
-  startWidth: 110,
-  startHeight: 50,
-  decisionWidth: 180,
-  decisionHeight: 70,
-  outcomeWidth: 200,
-  outcomeHeight: 60,
+  nodeSpacing: 50, // Vertical spacing between nodes in the same flow
+  primaryWidth: 180, // Standardized width for all nodes
+  primaryHeight: 70, // Standardized height for all nodes
+  neutralWidth: 180,
+  neutralHeight: 70,
+  secondaryWidth: 180,
+  secondaryHeight: 70,
   scale: 1,
 };
 
 const COLUMN_X_POSITIONS: ColumnPositions = {
-  left: 50,      // Start nodes
-  middle: 200,   // Decision nodes
-  right: 450,    // Outcome nodes
+  1: 50, // Column 1 (default for primary)
+  2: 300, // Column 2 (default for neutral) - 50 + 180 + 70 gap
+  3: 550, // Column 3 (default for secondary) - 300 + 180 + 70 gap
 };
 
-export function calculateLayout(
+export const calculateLayout = (
   chartData: FlowChartData,
   config: Partial<LayoutConfig> = {},
   columnPositions?: Partial<ColumnPositions>
-): LayoutResult {
+): LayoutResult => {
   const cfg = { ...defaultConfig, ...config };
   const columns = { ...COLUMN_X_POSITIONS, ...columnPositions };
 
@@ -41,55 +42,115 @@ export function calculateLayout(
   let maxX = 0;
   let maxY = 0;
 
-  function getNodeDimensions(node: FlowNode) {
-    switch (node.type) {
-      case 'start':
-        return { width: cfg.startWidth * cfg.scale, height: cfg.startHeight * cfg.scale };
-      case 'decision':
-        return { width: cfg.decisionWidth * cfg.scale, height: cfg.decisionHeight * cfg.scale };
-      case 'outcome':
-        return { width: cfg.outcomeWidth * cfg.scale, height: cfg.outcomeHeight * cfg.scale };
+  /**
+   * Gets dimensions of a node in the flowchart. factors in scale
+   */
+  const getNodeDimensions = (node: FlowNode) => {
+    switch (node.variant) {
+      case 'primary':
+        return { width: cfg.primaryWidth * cfg.scale, height: cfg.primaryHeight * cfg.scale };
+      case 'neutral':
+        return { width: cfg.neutralWidth * cfg.scale, height: cfg.neutralHeight * cfg.scale };
+      case 'secondary':
+        return { width: cfg.secondaryWidth * cfg.scale, height: cfg.secondaryHeight * cfg.scale };
     }
-  }
+  };
 
-  function getNodeColumn(node: FlowNode): number {
-    switch (node.type) {
-      case 'start':
-        return columns.left * cfg.scale;
-      case 'decision':
-        return columns.middle * cfg.scale;
-      case 'outcome':
-        return columns.right * cfg.scale;
+  const getNodeColumn = (node: FlowNode): number => {
+    // Column is now required on the node
+    const columnNumber = node.column;
+    // Get x-position for this column, default to column * 200 if not defined
+    const xPosition = columns[columnNumber] ?? columnNumber * 200;
+    return xPosition * cfg.scale;
+  };
+
+  // Check if a position would cause node overlap
+  const hasCollision = (x: number, y: number, width: number, height: number): boolean => {
+    const buffer = 15 * cfg.scale; // Minimum spacing between nodes
+
+    for (const positioned of nodes) {
+      // Check if rectangles overlap with buffer
+      const noOverlapX =
+        x + width + buffer <= positioned.x || positioned.x + positioned.width + buffer <= x;
+      const noOverlapY =
+        y + height + buffer <= positioned.y || positioned.y + positioned.height + buffer <= y;
+
+      if (!noOverlapX && !noOverlapY) {
+        return true;
+      }
     }
-  }
 
-  function positionNode(node: FlowNode, x: number, y: number): PositionedNode {
+    return false;
+  };
+
+  /**
+   * Given coordinates x/y, check if another node collides with the one we are placing. Increase Y by 20 till we find an open spot.
+   * @param x - y position to place the node
+   * @param y - x position to place the node
+   * @param width - width of the node
+   * @param height - height of the node
+   */
+  const findAvailablePosition = (
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ): { x: number; y: number } => {
+    let currentY = y;
+    const maxAttempts = 50;
+    const offsetStep = 20 * cfg.scale;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      if (!hasCollision(x, currentY, width, height)) {
+        return { x, y: currentY };
+      }
+      currentY += offsetStep;
+    }
+    // If we still have collision after max attempts, just return the last position
+    return { x, y: currentY };
+  };
+
+  const positionNode = (node: FlowNode, x: number, y: number): PositionedNode => {
     // Return existing position if already placed
     if (nodeMap.has(node.id)) {
       return nodeMap.get(node.id)!;
     }
 
     const { width, height } = getNodeDimensions(node);
-    const positioned: PositionedNode = { node, x, y, width, height };
+
+    // Find a position without collisions
+    const { x: finalX, y: finalY } = findAvailablePosition(x, y, width, height);
+
+    const positioned: PositionedNode = { node, x: finalX, y: finalY, width, height };
 
     nodes.push(positioned);
     nodeMap.set(node.id, positioned);
 
-    maxX = Math.max(maxX, x + width);
-    maxY = Math.max(maxY, y + height);
+    maxX = Math.max(maxX, finalX + width);
+    maxY = Math.max(maxY, finalY + height);
 
     return positioned;
-  }
+  };
 
-  function layoutNode(
+  /**
+   * Primary function to take a node and traverse through it's connections to form a flowchart.
+   * Start with a nodeId as the primary node, a y position, and iterate through connections recursively till the flowchart is created
+   * This function creates the connections that is returned by calculateLayout
+   * @param nodeId - current node id
+   * @param y - current y position
+   * @param parentNode - previous node being added
+   * @param connection - current connection being applied from previous node
+   * @param explicitFromSide - explicit config for what direction the node connection should start from
+   * @param explicitToSide - explicit config for what direction the node connection should end on
+   */
+  const layoutNode = (
     nodeId: string | undefined,
-    x: number,
     y: number,
     parentNode?: PositionedNode,
-    connectionLabel?: 'Yes' | 'No',
+    connection?: NodeConnection,
     explicitFromSide?: 'top' | 'right' | 'bottom' | 'left',
     explicitToSide?: 'top' | 'right' | 'bottom' | 'left'
-  ) {
+  ) => {
     if (!nodeId) {
       if (parentNode) {
         console.error('Layout warning: Node ID is undefined from parent:', parentNode.node.id);
@@ -108,7 +169,8 @@ export function calculateLayout(
         connections.push({
           from: parentNode,
           to: existingNode,
-          label: connectionLabel,
+          label: connection?.label,
+          color: connection?.color,
           fromSide: explicitFromSide || 'right',
           toSide: explicitToSide || 'left',
           isActive,
@@ -117,7 +179,7 @@ export function calculateLayout(
       return;
     }
 
-    const node = chartData.nodes.find(n => n.id === nodeId);
+    const node = chartData.nodes.find((n) => n.id === nodeId);
     if (!node) {
       console.error(`Layout error: Node "${nodeId}" not found in chartData.nodes`);
       return;
@@ -129,133 +191,128 @@ export function calculateLayout(
     const positioned = positionNode(node, column, y);
 
     // Create connection from parent if exists
-    if (parentNode) {
+    if (parentNode && connection) {
       // Mark connection as active if both nodes are active
       const isActive = parentNode.node.isActive && positioned.node.isActive;
 
       connections.push({
         from: parentNode,
         to: positioned,
-        label: connectionLabel,
+        label: connection.label,
+        color: connection.color,
         fromSide: explicitFromSide || 'right',
         toSide: explicitToSide || 'left',
         isActive,
       });
     }
 
-    // Handle navigation based on node type and available paths
-    if (node.type === 'start') {
-      // Start → next node (usually decision)
-      if (node.next) {
-        const nextNode = chartData.nodes.find(n => n.id === node.next);
-        if (nextNode) {
-          // Calculate Y offset to align midpoints for horizontal arrow
-          const nextDims = getNodeDimensions(nextNode);
-          const startMidpoint = positioned.height / 2;
-          const nextMidpoint = nextDims.height / 2;
-          const alignedY = y + startMidpoint - nextMidpoint;
+    // Handle all outgoing connections from this node
+    node.connections?.forEach((conn) => {
+      const targetNode = chartData.nodes.find((n) => n.id === conn.targetId);
+      if (!targetNode) {
+        console.error(
+          `Node ${node.id}: connection references "${conn.targetId}" but node not found`
+        );
+        return;
+      }
 
-          layoutNode(node.next, columns.middle, alignedY, positioned, undefined, 'right', 'left');
+      const targetColumn = getNodeColumn(targetNode);
+      const targetDims = getNodeDimensions(targetNode);
+
+      // Determine connection sides and position
+      let targetY: number;
+      let fromSide: 'top' | 'right' | 'bottom' | 'left';
+      let toSide: 'top' | 'right' | 'bottom' | 'left';
+
+      // Check if explicit directions are provided in the connection
+      if (conn.fromSide && conn.toSide) {
+        // Use explicitly provided directions
+        fromSide = conn.fromSide;
+        toSide = conn.toSide;
+        // Position target based on toSide
+        if (toSide === 'top') {
+          targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+        } else if (toSide === 'bottom') {
+          targetY = y - targetDims.height - cfg.nodeSpacing * cfg.scale;
+        } else {
+          // Horizontal entry - try to align at same level
+          const sourceMidpoint = positioned.height / 2;
+          const targetMidpoint = targetDims.height / 2;
+          targetY = y + sourceMidpoint - targetMidpoint;
+        }
+      } else {
+        // position based connection
+        // PRIORITY: Vertical positioning first, then horizontal
+        // If nodes are on different rows, use top/bottom exits/entries
+
+        const targetIsRight = targetColumn > column;
+        const targetIsLeft = targetColumn < column;
+        const targetIsSameColumn = targetColumn === column;
+
+        // Check if target node is already positioned (for loop-backs)
+        const existingTarget = nodeMap.get(conn.targetId);
+        let targetWillBeBelow = true; // Default assumption
+        let targetWillBeSameRow = false;
+
+        if (existingTarget) {
+          // Target already exists - compare actual Y positions
+          const currentRowBottom = y + positioned.height;
+          // Check if roughly same row (within node height tolerance)
+          targetWillBeSameRow = Math.abs(y - existingTarget.y) < positioned.height;
+          targetWillBeBelow = existingTarget.y > currentRowBottom;
+        } else {
+          // Target not yet positioned - estimate based on column and layout
+          // Nodes in same column are typically stacked vertically
+          targetWillBeBelow = targetIsSameColumn || !targetIsRight;
+          targetWillBeSameRow = !targetIsSameColumn && targetIsRight;
+        }
+
+        // PRIORITY 1: Check vertical positioning (different rows)
+        if (!targetWillBeSameRow) {
+          if (targetWillBeBelow) {
+            // Target is on a row below → exit bottom, enter top
+            targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+            fromSide = 'bottom';
+            toSide = 'top';
+          } else {
+            // Target is on a row above → exit top, enter bottom
+            targetY = y - targetDims.height - cfg.nodeSpacing * cfg.scale;
+            fromSide = 'top';
+            toSide = 'bottom';
+          }
+        }
+        // PRIORITY 2: Same row - use horizontal connections
+        else if (targetIsRight) {
+          // Target is to the right on same row → exit right, enter left
+          const sourceMidpoint = positioned.height / 2;
+          const targetMidpoint = targetDims.height / 2;
+          targetY = y + sourceMidpoint - targetMidpoint;
+          fromSide = 'right';
+          toSide = 'left';
+        } else if (targetIsLeft) {
+          // Target is to the left on same row → exit left, enter right
+          const sourceMidpoint = positioned.height / 2;
+          const targetMidpoint = targetDims.height / 2;
+          targetY = y + sourceMidpoint - targetMidpoint;
+          fromSide = 'left';
+          toSide = 'right';
+        } else {
+          // Fallback: vertical connection
+          targetY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
+          fromSide = 'bottom';
+          toSide = 'top';
         }
       }
-    } else if (node.type === 'decision') {
-      const hasYes = !!node.nextYes;
-      const hasNo = !!node.nextNo;
+      layoutNode(conn.targetId, targetY, positioned, conn, fromSide, toSide);
+    });
+  };
 
-      // Get target nodes to determine their types
-      const yesNode = node.nextYes ? chartData.nodes.find(n => n.id === node.nextYes) : undefined;
-      const noNode = node.nextNo ? chartData.nodes.find(n => n.id === node.nextNo) : undefined;
-
-      if (node.nextYes && !yesNode) {
-        console.error(`Decision ${node.id}: nextYes references "${node.nextYes}" but node not found`);
-      }
-      if (node.nextNo && !noNode) {
-        console.error(`Decision ${node.id}: nextNo references "${node.nextNo}" but node not found`);
-      }
-
-      const yesY = y; // Yes path at same level
-
-      // Handle Yes path
-      if (node.nextYes && yesNode) {
-        if (yesNode.type === 'outcome') {
-          // Yes → Outcome (right column, same level)
-          // Calculate Y offset to align midpoints for horizontal arrow
-          const yesDims = getNodeDimensions(yesNode);
-          const decisionMidpoint = positioned.height / 2;
-          const outcomeMidpoint = yesDims.height / 2;
-          const alignedYesY = y + decisionMidpoint - outcomeMidpoint;
-
-          layoutNode(node.nextYes, columns.right, alignedYesY, positioned, 'Yes', 'right', 'left');
-        } else if (yesNode.type === 'decision') {
-          // Yes → Decision (middle column, same level)
-          layoutNode(node.nextYes, columns.middle, yesY, positioned, 'Yes', 'bottom', 'top');
-        } else if (yesNode.type === 'start') {
-          // Yes → Start (left column, below)
-          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          layoutNode(node.nextYes, columns.left, nextY, positioned, 'Yes', 'bottom', 'top');
-        }
-      }
-
-      // Handle No path
-      if (node.nextNo && noNode) {
-        const yesBranch = yesNode?.type === 'outcome';
-        const outcomeOffset = yesBranch ? 70 : 0;
-
-        console.log(`Decision ${node.id} No path:`, {
-          targetId: node.nextNo,
-          targetType: noNode.type,
-          currentY: y,
-          yesBranch,
-        });
-
-        if (noNode.type === 'outcome') {
-          // No → Outcome: exit RIGHT, enter LEFT (right column, below yes if needed)
-          // Calculate Y offset to align midpoints for horizontal arrow
-          const noDims = getNodeDimensions(noNode);
-          const decisionMidpoint = positioned.height / 2;
-          const outcomeMidpoint = noDims.height / 2;
-          const alignedNoY = y + outcomeOffset + decisionMidpoint - outcomeMidpoint;
-
-          layoutNode(node.nextNo, columns.right, alignedNoY, positioned, 'No', 'right', 'left');
-        } else if (noNode.type === 'decision') {
-          // No → Decision: exit BOTTOM, enter TOP (middle column, below)
-          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          layoutNode(node.nextNo, columns.middle, nextY, positioned, 'No', 'bottom', 'top');
-        } else if (noNode.type === 'start') {
-          // No → Start: exit LEFT, enter TOP (left column, below) - LOOP BACK
-          console.log(`Connecting decision ${node.id} No path to start ${node.nextNo}`);
-          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          layoutNode(node.nextNo, columns.left, nextY, positioned, 'No', 'left', 'top');
-        }
-      }
-
-      // Handle single path via 'next' if no yes/no paths
-      if (!hasYes && !hasNo && node.next) {
-        const nextNode = chartData.nodes.find(n => n.id === node.next);
-        if (nextNode) {
-          const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-          layoutNode(node.next, getNodeColumn(nextNode), nextY, positioned, undefined, 'bottom', 'top');
-        }
-      }
-    } else if (node.type === 'outcome') {
-      // Outcome → next node
-      if (node.next) {
-        const nextNode = chartData.nodes.find(n => n.id === node.next);
-        if (!nextNode) return;
-
-        const nextY = y + positioned.height + cfg.nodeSpacing * cfg.scale;
-        const targetColumn = getNodeColumn(nextNode);
-
-        layoutNode(node.next, targetColumn, nextY, positioned, undefined, 'bottom', 'top');
-      }
-    }
-  }
-
-  // Start layout from root
-  layoutNode(chartData.rootId, columns.left * cfg.scale, 50 * cfg.scale);
+  // Start layout from root - use column 1 as default starting position
+  layoutNode(chartData.rootId, 50 * cfg.scale);
 
   // Calculate final dimensions
-  const minWidth = columns.right * cfg.scale + cfg.outcomeWidth * cfg.scale + 100 * cfg.scale;
+  const minWidth =
+    (columns[3] ?? 550) * cfg.scale + cfg.secondaryWidth * cfg.scale + 100 * cfg.scale;
   const calculatedWidth = Math.max(maxX + 100 * cfg.scale, minWidth);
 
   return {
@@ -264,4 +321,4 @@ export function calculateLayout(
     width: calculatedWidth,
     height: maxY + 100 * cfg.scale,
   };
-}
+};
