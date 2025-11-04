@@ -27,4 +27,5 @@ export interface D3BarChartProps {
   valueFormatter?: (value: number) => string; // Custom value formatter
   yAxisLabel?: string; // Y-axis label
   xAxisLabel?: string; // X-axis label
+  isLoading?: boolean; // Show loading animation
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { BarDataPoint, BarSeries, D3BarChartProps } from './types';
+import { LoadingAnimation } from './LoadingAnimation';
 import styles from './D3BarChart.module.css';
 
 interface TooltipData {
@@ -26,6 +27,7 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
   },
   yAxisLabel = '',
   xAxisLabel = '',
+  isLoading = false,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -427,6 +429,9 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
   return (
     <div ref={containerRef} className={styles.chartContainer}>
       <svg ref={svgRef} className={styles.svg} width={width} height={height} />
+
+      {/* Loading State */}
+      {isLoading && <LoadingAnimation />}
 
       {/* Tooltip */}
       {tooltip && (

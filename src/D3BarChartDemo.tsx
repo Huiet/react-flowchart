@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { D3BarChart } from './components/D3BarChart';
 import type { BarDataPoint, BarSeries } from './components/D3BarChart';
 
 export const D3BarChartDemo = () => {
+  const [isLoading, setIsLoading] = useState(false);
   // Sample data similar to the image
   const data: BarDataPoint[] = [
     {
@@ -64,7 +66,25 @@ export const D3BarChartDemo = () => {
   return (
     <div style={{ padding: '40px', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <h1 style={{ marginBottom: '10px', color: '#2c3e50' }}>D3 Bar Chart Demo</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h1 style={{ margin: 0, color: '#2c3e50' }}>D3 Bar Chart Demo</h1>
+          <button
+            onClick={() => setIsLoading(!isLoading)}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: isLoading ? '#ef4444' : '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s',
+            }}
+          >
+            {isLoading ? 'Hide Loading' : 'Show Loading'}
+          </button>
+        </div>
         <p style={{ marginBottom: '30px', color: '#7f8c8d', fontSize: '14px' }}>
           Interactive grouped bar chart with hover tooltips and toggleable series
         </p>
@@ -85,6 +105,7 @@ export const D3BarChartDemo = () => {
             showLegend={true}
             yAxisLabel=""
             xAxisLabel="Date"
+            isLoading={isLoading}
           />
         </div>
 
