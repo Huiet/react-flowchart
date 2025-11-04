@@ -3,35 +3,20 @@ import styles from './LoadingAnimation.module.scss';
 
 // Animation duration constant (in ms)
 // IMPORTANT: Must match CSS animation duration in LoadingAnimation.module.scss (.loadingLine1, .loadingLine2)
-const LOADING_ANIMATION_DURATION = 3500;
-const BLANK_PERIOD_DURATION = 500; // 0.5 seconds blank period between animations
+const LOADING_ANIMATION_DURATION = 3000;
 
 export const LoadingAnimation = () => {
   // Counter to regenerate lines on each animation loop
   const [loadingCounter, setLoadingCounter] = useState(0);
-  // Track whether we're in the blank period (true) or showing animation (false)
-  const [isBlank, setIsBlank] = useState(false);
 
-  // Set up timing for animation cycle with blank period
+  // Set up timing for animation cycle - regenerate after animation completes
   useEffect(() => {
-    // Start animation immediately
-    setIsBlank(false);
-
-    const animationTimeout = setTimeout(() => {
-      // After animation completes, enter blank period
-      setIsBlank(true);
-
-      // After blank period, regenerate lines and restart
-      const blankTimeout = setTimeout(() => {
-        setLoadingCounter((prev) => prev + 1);
-        setIsBlank(false);
-      }, BLANK_PERIOD_DURATION);
-
-      return () => clearTimeout(blankTimeout);
+    const interval = setInterval(() => {
+      setLoadingCounter((prev) => prev + 1);
     }, LOADING_ANIMATION_DURATION);
 
-    return () => clearTimeout(animationTimeout);
-  }, [loadingCounter]);
+    return () => clearInterval(interval);
+  }, []);
 
   // Generate completely random loading lines
   const loadingLines = useMemo(() => {
@@ -88,25 +73,23 @@ export const LoadingAnimation = () => {
         <line className={styles.gridLine} x1="0" y1="85" x2="300" y2="85" stroke="#e5e7eb" strokeWidth="1" opacity="0.3" />
         <line className={styles.gridLine} x1="0" y1="127.5" x2="300" y2="127.5" stroke="#e5e7eb" strokeWidth="1" opacity="0.3" />
 
-        {/* Animated stock chart lines with random movements - only show when not in blank period */}
-        {!isBlank && (
-          <>
-            <path
-              className={styles.loadingLine1}
-              d={loadingLines.line1}
-              fill="none"
-              stroke={loadingLines.line1Color}
-              strokeWidth="2.5"
-            />
-            <path
-              className={styles.loadingLine2}
-              d={loadingLines.line2}
-              fill="none"
-              stroke={loadingLines.line2Color}
-              strokeWidth="2.5"
-            />
-          </>
-        )}
+        {/* Animated stock chart lines with random movements */}
+        <path
+          key={`line1-${loadingCounter}`}
+          className={styles.loadingLine1}
+          d={loadingLines.line1}
+          fill="none"
+          stroke={loadingLines.line1Color}
+          strokeWidth="2.5"
+        />
+        <path
+          key={`line2-${loadingCounter}`}
+          className={styles.loadingLine2}
+          d={loadingLines.line2}
+          fill="none"
+          stroke={loadingLines.line2Color}
+          strokeWidth="2.5"
+        />
       </svg>
       <div className={styles.loadingText}>Loading chart data...</div>
     </div>

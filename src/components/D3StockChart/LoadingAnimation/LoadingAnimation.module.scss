@@ -22,24 +22,24 @@
   font-size: 16px;
   color: #666;
   font-weight: 500;
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulse 4s ease-in forwards;
 }
 
 .loadingLine1 {
   stroke-dasharray: 1200;
   stroke-dashoffset: 1200;
-  animation: drawLine 3.5s ease-in-out forwards;
+  animation: drawLine 4s ease-in forwards;
 }
 
 .loadingLine2 {
   stroke-dasharray: 1200;
   stroke-dashoffset: 1200;
-  animation: drawLine 3.5s ease-in-out forwards;
+  animation: drawLine 4s ease-in forwards;
 }
 
 /* Grid line subtle pulse */
 .gridLine {
-  animation: gridPulse 2s ease-in-out infinite;
+  animation: gridPulse 4s ease-in forwards;
 }
 
 @keyframes drawLine {
