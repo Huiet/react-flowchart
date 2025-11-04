@@ -10,6 +10,7 @@ import {
 } from '@tabler/icons-react';
 import * as d3 from 'd3';
 import { ActionIcon, Group, Menu } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { calculateBollingerBands, calculateEMA, calculateSMA } from './indicators';
 import {
   CustomAnnotation,
@@ -85,6 +86,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     date: Date;
     values: Map<string, number>;
   } | null>(null);
+  const [isEditingRefDate, setIsEditingRefDate] = useState(false);
+  const [datePickerOpened, setDatePickerOpened] = useState(false);
   const [dimensions, setDimensions] = useState({
     width: propWidth || 800,
     height: propHeight || 500,
@@ -330,7 +333,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     // Use minimal bottom margin to maximize chart space
     const dynamicMargins = {
       ...margins,
-      bottom: 25
+      bottom: 25,
     };
 
     const innerWidth = width - dynamicMargins.left - dynamicMargins.right;
@@ -340,7 +343,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     chartMarginsRef.current = { margins: dynamicMargins, innerWidth };
 
     // Create main group
-    const g = svg.append('g').attr('transform', `translate(${dynamicMargins.left},${dynamicMargins.top})`);
+    const g = svg
+      .append('g')
+      .attr('transform', `translate(${dynamicMargins.left},${dynamicMargins.top})`);
 
     if (filteredLines.length === 0 || filteredLines.every((line) => line.data.length === 0)) {
       // Show a message when no lines are visible or no data in range
@@ -689,18 +694,18 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       .tickSize(-10) // Negative value extends upward toward labels
       .tickFormat(dateFormat as any);
 
-    const xAxisGroup = g.append('g')
+    const xAxisGroup = g
+      .append('g')
       .attr('class', 'axis x-axis')
       .attr('transform', `translate(0,${innerHeight})`)
       .call(xAxisGenerator);
 
     // Style tick lines to be darker and more visible
-    xAxisGroup.selectAll('.tick line')
-      .style('stroke', '#666')
-      .style('stroke-width', '1px');
+    xAxisGroup.selectAll('.tick line').style('stroke', '#666').style('stroke-width', '1px');
 
     // Style x-axis labels - horizontal only
-    xAxisGroup.selectAll('text')
+    xAxisGroup
+      .selectAll('text')
       .style('text-anchor', 'middle')
       .style('font-size', '11px')
       .attr('dy', '1em');
@@ -1000,6 +1005,51 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     setReferencePoint(null);
   };
 
+  const handleReferenceDateChange = (newDate: Date) => {
+    console.log('newdate', newDate);
+    // Find nearest data points for all visible lines at this date (using full data, not filtered)
+    const visibleLines = internalLines.filter((line) => line.visible);
+    const valuesAtDate = new Map<string, number>();
+    let actualDate = newDate;
+
+    visibleLines.forEach((line, idx) => {
+      if (line.data.length === 0) return;
+
+      const bisector = d3.bisector<StockDataPoint, Date>((d) => d.date).left;
+      const index = bisector(line.data, newDate);
+
+      let nearestPoint: StockDataPoint | null = null;
+      if (index === 0) {
+        nearestPoint = line.data[0];
+      } else if (index >= line.data.length) {
+        nearestPoint = line.data[line.data.length - 1];
+      } else {
+        const leftPoint = line.data[index - 1];
+        const rightPoint = line.data[index];
+        nearestPoint =
+          Math.abs(newDate.getTime() - leftPoint.date.getTime()) <
+          Math.abs(newDate.getTime() - rightPoint.date.getTime())
+            ? leftPoint
+            : rightPoint;
+      }
+
+      if (nearestPoint) {
+        valuesAtDate.set(line.id, nearestPoint.value);
+        // Use the first line's nearest date as the reference date
+        if (idx === 0) {
+          actualDate = nearestPoint.date;
+        }
+      }
+    });
+
+    if (valuesAtDate.size > 0) {
+      setReferencePoint({
+        date: actualDate,
+        values: valuesAtDate,
+      });
+    }
+  };
+
   // Legend drag handlers
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
@@ -1144,40 +1194,43 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
         >
           <div className={styles.tooltipDate}>
             {d3.timeFormat('%b %d, %Y')(tooltip.date)}
-            {referencePoint && (() => {
-              const daysDiff = Math.round((tooltip.date.getTime() - referencePoint.date.getTime()) / (1000 * 60 * 60 * 24));
-              const absDays = Math.abs(daysDiff);
+            {referencePoint &&
+              (() => {
+                const daysDiff = Math.round(
+                  (tooltip.date.getTime() - referencePoint.date.getTime()) / (1000 * 60 * 60 * 24)
+                );
+                const absDays = Math.abs(daysDiff);
 
-              let timeLabel = '';
-              if (absDays === 0) {
-                timeLabel = 'Same as REF';
-              } else if (absDays < 7) {
-                timeLabel = `${absDays} day${absDays !== 1 ? 's' : ''}`;
-              } else if (absDays < 30) {
-                const weeks = Math.round(absDays / 7);
-                timeLabel = `${weeks} week${weeks !== 1 ? 's' : ''}`;
-              } else if (absDays < 365) {
-                const months = Math.round(absDays / 30);
-                timeLabel = `${months} month${months !== 1 ? 's' : ''}`;
-              } else {
-                const years = (absDays / 365).toFixed(1);
-                timeLabel = `${years} year${years !== '1.0' ? 's' : ''}`;
-              }
+                let timeLabel = '';
+                if (absDays === 0) {
+                  timeLabel = 'Same as REF';
+                } else if (absDays < 7) {
+                  timeLabel = `${absDays} day${absDays !== 1 ? 's' : ''}`;
+                } else if (absDays < 30) {
+                  const weeks = Math.round(absDays / 7);
+                  timeLabel = `${weeks} week${weeks !== 1 ? 's' : ''}`;
+                } else if (absDays < 365) {
+                  const months = Math.round(absDays / 30);
+                  timeLabel = `${months} month${months !== 1 ? 's' : ''}`;
+                } else {
+                  const years = (absDays / 365).toFixed(1);
+                  timeLabel = `${years} year${years !== '1.0' ? 's' : ''}`;
+                }
 
-              if (absDays === 0) {
+                if (absDays === 0) {
+                  return (
+                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                      {timeLabel}
+                    </div>
+                  );
+                }
+
                 return (
                   <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                    {timeLabel}
+                    {timeLabel} {daysDiff > 0 ? 'after' : 'before'} REF
                   </div>
                 );
-              }
-
-              return (
-                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                  {timeLabel} {daysDiff > 0 ? 'after' : 'before'} REF
-                </div>
-              );
-            })()}
+              })()}
           </div>
           {tooltip.values.map((val) => (
             <div key={val.lineId} className={styles.tooltipLine}>
@@ -1452,27 +1505,67 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                   className={styles.legendItemContainer}
                   style={{ paddingTop: '8px', borderTop: '1px solid #eee' }}
                 >
-                  <div className={styles.legendItem} style={{ cursor: 'default', opacity: 0.9 }}>
-                    <svg width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
-                      <line
-                        x1="0"
-                        y1="8"
-                        x2="16"
-                        y2="8"
-                        stroke="#e74c3c"
-                        strokeWidth="2"
-                        strokeDasharray="4,2"
-                      />
-                    </svg>
-                    <div className={styles.legendLabel} style={{ fontSize: '12px' }}>
-                      Ref: {d3.timeFormat('%b %d, %Y')(referencePoint.date)}
+                  {isEditingRefDate ? (
+                    <DatePickerInput
+                      value={referencePoint.date}
+                      onChange={(date) => {
+                        if (date) {
+                          handleReferenceDateChange(new Date(date));
+                          setDatePickerOpened(false);
+                          setIsEditingRefDate(false);
+                        }
+                      }}
+                      minDate={dataDateRange?.minDate}
+                      maxDate={dataDateRange?.maxDate}
+                      size="xs"
+                      placeholder="Select date"
+                      style={{ flex: 1 }}
+                      popoverProps={{
+                        withinPortal: true,
+                        zIndex: 10000,
+                        opened: datePickerOpened,
+                        onChange: setDatePickerOpened,
+                        onClose: () => {
+                          setDatePickerOpened(false);
+                          setIsEditingRefDate(false);
+                        },
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <div
+                      className={styles.legendItem}
+                      style={{ opacity: 0.9, cursor: 'pointer' }}
+                      onClick={() => {
+                        setIsEditingRefDate(true);
+                        setDatePickerOpened(true);
+                      }}
+                    >
+                      <svg width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+                        <line
+                          x1="0"
+                          y1="8"
+                          x2="16"
+                          y2="8"
+                          stroke="#e74c3c"
+                          strokeWidth="2"
+                          strokeDasharray="4,2"
+                        />
+                      </svg>
+                      <div className={styles.legendLabel} style={{ fontSize: '12px' }}>
+                        Ref: {d3.timeFormat('%b %d, %Y')(referencePoint.date)}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <ActionIcon
                     variant="subtle"
                     color="red"
                     size="sm"
-                    onClick={() => setReferencePoint(null)}
+                    onClick={() => {
+                      setReferencePoint(null);
+                      setIsEditingRefDate(false);
+                      setDatePickerOpened(false);
+                    }}
                     title="Clear reference point"
                   >
                     <IconX size={16} />
