@@ -80,6 +80,10 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+
+  // Track tooltip item order for animations
+  const tooltipOrderRef = useRef<string[]>([]);
+  const tooltipItemsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>(defaultDateRange);
   const [legendPosition, setLegendPosition] = useState({ x: 80, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
@@ -826,7 +830,8 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
             point: nearestPoint,
           };
         })
-        .filter((v): v is NonNullable<typeof v> => v !== null);
+        .filter((v): v is NonNullable<typeof v> => v !== null)
+        .sort((a, b) => b.value - a.value); // Sort by value descending (highest first)
 
       if (tooltipValues.length > 0) {
         // Get the first line's nearest point to snap the vertical crosshair
@@ -1196,6 +1201,61 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
     };
   }, [legendPosition, filteredLines, width, referencePoint]);
 
+  // Animate tooltip item reordering
+  useEffect(() => {
+    if (!tooltip) {
+      tooltipOrderRef.current = [];
+      return;
+    }
+
+    const currentOrder = tooltip.values.map(v => v.lineId);
+    const previousOrder = tooltipOrderRef.current;
+
+    // Check if order has changed
+    const orderChanged = currentOrder.length !== previousOrder.length ||
+      currentOrder.some((id, index) => id !== previousOrder[index]);
+
+    if (orderChanged && previousOrder.length > 0 && tooltipItemsRef.current.size > 0) {
+      // Calculate position changes for each item
+      const positionMap = new Map<string, number>();
+
+      previousOrder.forEach((id, index) => {
+        positionMap.set(id, index);
+      });
+
+      // Apply transforms to animate
+      currentOrder.forEach((id, newIndex) => {
+        const element = tooltipItemsRef.current.get(id);
+        if (!element) return;
+
+        const oldIndex = positionMap.get(id);
+        if (oldIndex === undefined) return;
+
+        const indexDelta = newIndex - oldIndex;
+
+        if (indexDelta !== 0) {
+          // Get the height of one item (approximate)
+          const itemHeight = element.offsetHeight;
+          const translateY = -indexDelta * itemHeight;
+
+          // Set initial position (where it was)
+          element.style.transition = 'none';
+          element.style.transform = `translateY(${translateY}px)`;
+
+          // Force reflow
+          element.offsetHeight;
+
+          // Animate to new position (where it should be)
+          element.style.transition = 'transform 0.2s ease-out';
+          element.style.transform = 'translateY(0)';
+        }
+      });
+    }
+
+    // Update stored order
+    tooltipOrderRef.current = currentOrder;
+  }, [tooltip]);
+
   return (
     <div ref={containerRef} className={styles.chartContainer}>
       <svg ref={svgRef} className={styles.svg} width={width} height={height} />
@@ -1259,46 +1319,58 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                 })()}
             </div>
           </div>
-          {tooltip.values.map((val) => (
-            <div key={val.lineId} className={styles.tooltipLine}>
-              <div className={styles.tooltipLineName}>
-                <div className={styles.tooltipColorDot} style={{ backgroundColor: val.color }} />
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span className={styles.tooltipLabel}>{val.lineName}</span>
-                  {val.refValue !== undefined && (
+          <div className={styles.tooltipLines}>
+            {tooltip.values.map((val) => (
+              <div
+                key={val.lineId}
+                className={styles.tooltipLine}
+                ref={(el) => {
+                  if (el) {
+                    tooltipItemsRef.current.set(val.lineId, el);
+                  } else {
+                    tooltipItemsRef.current.delete(val.lineId);
+                  }
+                }}
+              >
+                <div className={styles.tooltipLineName}>
+                  <div className={styles.tooltipColorDot} style={{ backgroundColor: val.color }} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span className={styles.tooltipLabel}>{val.lineName}</span>
+                    {val.refValue !== undefined && (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          color: '#999',
+                          marginTop: '2px',
+                        }}
+                      >
+                        Ref:{' '}
+                        {isPercentage ? `${val.refValue.toFixed(2)}%` : `$${val.refValue.toFixed(2)}`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <span className={styles.tooltipValue}>
+                    {isPercentage ? `${val.value.toFixed(2)}%` : `$${val.value.toFixed(2)}`}
+                  </span>
+                  {val.relativePercent !== undefined && (
                     <span
+                      className={styles.tooltipRelative}
                       style={{
-                        fontSize: '10px',
-                        color: '#999',
-                        marginTop: '2px',
+                        color: val.relativePercent >= 0 ? '#27ae60' : '#e74c3c',
+                        fontSize: '11px',
+                        fontWeight: 600,
                       }}
                     >
-                      Ref:{' '}
-                      {isPercentage ? `${val.refValue.toFixed(2)}%` : `$${val.refValue.toFixed(2)}`}
+                      {val.relativePercent >= 0 ? '+' : ''}
+                      {val.relativePercent.toFixed(2)}%
                     </span>
                   )}
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span className={styles.tooltipValue}>
-                  {isPercentage ? `${val.value.toFixed(2)}%` : `$${val.value.toFixed(2)}`}
-                </span>
-                {val.relativePercent !== undefined && (
-                  <span
-                    className={styles.tooltipRelative}
-                    style={{
-                      color: val.relativePercent >= 0 ? '#27ae60' : '#e74c3c',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {val.relativePercent >= 0 ? '+' : ''}
-                    {val.relativePercent.toFixed(2)}%
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
           {/* Show annotations if any are nearby */}
           {tooltip.annotations && tooltip.annotations.length > 0 && (
@@ -1601,7 +1673,14 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
               )}
 
               {/* Line items */}
-              {internalLines.map((line) => {
+              <div className={styles.underliersList}>
+              {(() => {
+                // Sort lines alphabetically by name
+                const sortedLines = [...internalLines].sort((a, b) => {
+                  return a.name.localeCompare(b.name);
+                });
+
+                return sortedLines.map((line) => {
                 const lineIndicators = indicators[line.id] || {};
                 const hasActiveIndicators = Object.values(lineIndicators).some((v) => v);
 
@@ -1743,7 +1822,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                     </Menu>
                   </div>
                 );
-              })}
+              });
+              })()}
+              </div>
             </div>
 
             {/* Time Range Selector */}
