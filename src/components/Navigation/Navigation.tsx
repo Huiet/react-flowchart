@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export function Navigation() {
+  const location = useLocation();
   return (
     <nav style={{
       backgroundColor: '#1e3a5f',
@@ -17,6 +18,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '18px',
           fontWeight: 'bold',
+          padding: '8px 16px',
+          backgroundColor: location.pathname === '/' ? 'rgba(255,255,255,0.25)' : 'transparent',
+          borderRadius: '4px',
+          transition: 'background-color 0.2s',
         }}
       >
         Home
@@ -28,12 +33,20 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: location.pathname === '/flowchart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+        onMouseEnter={(e) => {
+          if (location.pathname !== '/flowchart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (location.pathname !== '/flowchart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          }
+        }}
       >
         FlowChart V1
       </Link>
@@ -44,12 +57,20 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: location.pathname === '/flowchart-v2-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+        onMouseEnter={(e) => {
+          if (location.pathname !== '/flowchart-v2-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (location.pathname !== '/flowchart-v2-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          }
+        }}
       >
         FlowChart V2
       </Link>
@@ -60,12 +81,20 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: location.pathname === '/d3-stock-chart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+        onMouseEnter={(e) => {
+          if (location.pathname !== '/d3-stock-chart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (location.pathname !== '/d3-stock-chart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          }
+        }}
       >
         D3 Stock Chart
       </Link>
@@ -76,14 +105,22 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: '#4CAF50',
+          backgroundColor: location.pathname === '/d3-bar-chart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#45a049'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4CAF50'}
+        onMouseEnter={(e) => {
+          if (location.pathname !== '/d3-bar-chart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (location.pathname !== '/d3-bar-chart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          }
+        }}
       >
-        D3 Bar Chart (NEW)
+        D3 Bar Chart
       </Link>
     </nav>
   );

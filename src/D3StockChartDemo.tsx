@@ -52,39 +52,30 @@ export const D3StockChartDemo = () => {
   return (
     <div style={{ padding: '40px', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <h1 style={{ marginBottom: '10px', color: '#2c3e50' }}>
-          D3 Stock Chart Demo - Underlier Performance
-        </h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h1 style={{ margin: 0, color: '#2c3e50' }}>
+            D3 Stock Chart Demo - Underlier Performance
+          </h1>
+          <button
+            onClick={() => setIsLoading(!isLoading)}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: isLoading ? '#ef4444' : '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s',
+            }}
+          >
+            {isLoading ? 'Hide Loading' : 'Show Loading'}
+          </button>
+        </div>
         <p style={{ marginBottom: '30px', color: '#7f8c8d', fontSize: '14px' }}>
           Interactive performance chart showing percentage gains/losses over time
         </p>
-
-        <button
-          onClick={() => setIsLoading(!isLoading)}
-          style={{
-            marginBottom: '20px',
-            padding: '10px 20px',
-            fontSize: '14px',
-            fontWeight: 600,
-            backgroundColor: isLoading ? '#e74c3c' : '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-          }}
-        >
-          {isLoading ? 'Hide Loading State' : 'Show Loading State'}
-        </button>
 
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', height: '600px' }}>
           <D3StockChart
