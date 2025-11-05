@@ -4,6 +4,7 @@ import { FlowChartDemo } from './FlowChartDemo';
 import { FlowChartV2Demo } from './FlowChartV2Demo';
 import { D3StockChartDemo } from './D3StockChartDemo';
 import { D3BarChartDemo } from './D3BarChartDemo';
+import { D3PieChartDemo } from './D3PieChartDemo';
 import { Navigation } from './components/Navigation';
 
 function Layout() {
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
       {
         path: '/d3-bar-chart-demo',
         element: <D3BarChartDemo />,
+      },
+      {
+        path: '/d3-pie-chart-demo',
+        element: <D3PieChartDemo />,
       },
     ],
   },

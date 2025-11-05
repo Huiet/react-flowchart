@@ -122,6 +122,30 @@ export function Navigation() {
       >
         D3 Bar Chart
       </Link>
+      <Link
+        to="/d3-pie-chart-demo"
+        style={{
+          color: '#ffffff',
+          textDecoration: 'none',
+          fontSize: '16px',
+          padding: '8px 16px',
+          backgroundColor: location.pathname === '/d3-pie-chart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          borderRadius: '4px',
+          transition: 'background-color 0.2s',
+        }}
+        onMouseEnter={(e) => {
+          if (location.pathname !== '/d3-pie-chart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (location.pathname !== '/d3-pie-chart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          }
+        }}
+      >
+        D3 Pie Chart
+      </Link>
     </nav>
   );
 }
