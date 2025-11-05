@@ -290,8 +290,15 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
   }, [internalLines, selectedDateRange]);
 
   // Calculate technical indicators for each visible line
+  // IMPORTANT: Calculate on FULL dataset, then filter to date range for display
   const indicatorData = useMemo(() => {
-    if (filteredLines.length === 0) return {};
+    const visibleLines = internalLines.filter((line) => line.visible);
+    if (visibleLines.length === 0) return {};
+
+    // Get the date range for filtering
+    const allDates = visibleLines.flatMap((line) => line.data.map((d) => d.date));
+    const latestDate = d3.max(allDates) || new Date();
+    const startDate = getDateRangeStart(latestDate, selectedDateRange);
 
     const allIndicators: Record<
       string,
@@ -305,22 +312,31 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       }
     > = {};
 
-    filteredLines.forEach((line) => {
+    visibleLines.forEach((line) => {
       const lineIndicators = indicators[line.id];
       if (!lineIndicators) return;
 
+      // Calculate indicators on FULL dataset
+      const fullSma20 = lineIndicators.sma20 ? calculateSMA(line.data, 20) : null;
+      const fullSma50 = lineIndicators.sma50 ? calculateSMA(line.data, 50) : null;
+      const fullSma200 = lineIndicators.sma200 ? calculateSMA(line.data, 200) : null;
+      const fullEma20 = lineIndicators.ema20 ? calculateEMA(line.data, 20) : null;
+      const fullEma50 = lineIndicators.ema50 ? calculateEMA(line.data, 50) : null;
+      const fullBollingerBands = lineIndicators.bollingerBands ? calculateBollingerBands(line.data) : null;
+
+      // Filter indicator results to match the selected date range
       allIndicators[line.id] = {
-        sma20: lineIndicators.sma20 ? calculateSMA(line.data, 20) : null,
-        sma50: lineIndicators.sma50 ? calculateSMA(line.data, 50) : null,
-        sma200: lineIndicators.sma200 ? calculateSMA(line.data, 200) : null,
-        ema20: lineIndicators.ema20 ? calculateEMA(line.data, 20) : null,
-        ema50: lineIndicators.ema50 ? calculateEMA(line.data, 50) : null,
-        bollingerBands: lineIndicators.bollingerBands ? calculateBollingerBands(line.data) : null,
+        sma20: fullSma20 ? fullSma20.filter(d => d.date >= startDate) : null,
+        sma50: fullSma50 ? fullSma50.filter(d => d.date >= startDate) : null,
+        sma200: fullSma200 ? fullSma200.filter(d => d.date >= startDate) : null,
+        ema20: fullEma20 ? fullEma20.filter(d => d.date >= startDate) : null,
+        ema50: fullEma50 ? fullEma50.filter(d => d.date >= startDate) : null,
+        bollingerBands: fullBollingerBands ? fullBollingerBands.filter(d => d.date >= startDate) : null,
       };
     });
 
     return allIndicators;
-  }, [filteredLines, indicators]);
+  }, [internalLines, indicators, selectedDateRange]);
 
   const { width, height } = dimensions;
 
