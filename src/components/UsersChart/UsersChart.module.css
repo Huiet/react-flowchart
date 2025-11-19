@@ -1,0 +1,217 @@
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Chart Section */
+.chartSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.chartTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.chartContainer {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.chartContainer svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.legendItem:hover {
+  background-color: #f5f5f5;
+}
+
+.legendItem.disabled {
+  opacity: 0.3;
+}
+
+.legendColorBox {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.legendLabel {
+  font-size: 13px;
+  color: #666;
+  user-select: none;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 1000;
+  min-width: 150px;
+}
+
+.tooltipDate {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.tooltipColor {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltipLabel {
+  font-size: 12px;
+  color: #666;
+  flex: 1;
+}
+
+.tooltipValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  text-align: right;
+}
+
+/* Metrics Section */
+.metricsSection {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 20px;
+}
+
+.metricsCounts {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 16px;
+}
+
+.metricItem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.metricLabel {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.metricValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Bars */
+.barsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.barRow:hover {
+  background-color: #f8f9fa;
+}
+
+.barRow.disabled {
+  opacity: 0.3;
+}
+
+.barLabel {
+  font-size: 13px;
+  color: #333;
+  min-width: 80px;
+  font-weight: 500;
+  user-select: none;
+}
+
+.barWrapper {
+  flex: 1;
+  height: 24px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.barFill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.barPercentage {
+  font-size: 13px;
+  color: #666;
+  min-width: 40px;
+  text-align: right;
+  font-weight: 600;
+  user-select: none;
+}

@@ -146,6 +146,30 @@ export function Navigation() {
       >
         D3 Pie Chart
       </Link>
+      <Link
+        to="/users-chart-demo"
+        style={{
+          color: '#ffffff',
+          textDecoration: 'none',
+          fontSize: '16px',
+          padding: '8px 16px',
+          backgroundColor: location.pathname === '/users-chart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          borderRadius: '4px',
+          transition: 'background-color 0.2s',
+        }}
+        onMouseEnter={(e) => {
+          if (location.pathname !== '/users-chart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (location.pathname !== '/users-chart-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          }
+        }}
+      >
+        Users Chart
+      </Link>
     </nav>
   );
 }
