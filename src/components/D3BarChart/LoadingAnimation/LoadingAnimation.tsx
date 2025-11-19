@@ -37,32 +37,34 @@ export const LoadingAnimation = () => {
 
   return (
     <div className={styles.loadingOverlay}>
-      <div className={styles.barChartContainer}>
-        {/* Grid lines */}
-        <div className={styles.gridLines}>
-          <div className={styles.gridLine} />
-          <div className={styles.gridLine} />
-          <div className={styles.gridLine} />
-          <div className={styles.gridLine} />
-        </div>
+      <div className={styles.contentWrapper}>
+        <div className={styles.barChartContainer}>
+          {/* Grid lines */}
+          <div className={styles.gridLines}>
+            <div className={styles.gridLine} />
+            <div className={styles.gridLine} />
+            <div className={styles.gridLine} />
+            <div className={styles.gridLine} />
+          </div>
 
-        {/* Animated bars */}
-        <div className={styles.barsContainer}>
-          {barData.map((bar) => (
-            <div key={`${loadingCounter}-${bar.id}`} className={styles.barWrapper}>
-              <div
-                className={styles.bar}
-                style={{
-                  height: `${bar.height}%`,
-                  backgroundColor: bar.color,
-                  animationDelay: `${bar.delay}s`,
-                }}
-              />
-            </div>
-          ))}
+          {/* Animated bars */}
+          <div className={styles.barsContainer}>
+            {barData.map((bar) => (
+              <div key={`${loadingCounter}-${bar.id}`} className={styles.barWrapper}>
+                <div
+                  className={styles.bar}
+                  style={{
+                    height: `${bar.height}%`,
+                    backgroundColor: bar.color,
+                    animationDelay: `${bar.delay}s`,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         </div>
+        <div className={styles.loadingText}>Loading chart...</div>
       </div>
-      <div className={styles.loadingText}>Loading chart data...</div>
     </div>
   );
 };

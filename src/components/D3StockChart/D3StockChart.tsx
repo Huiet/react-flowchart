@@ -1181,7 +1181,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       newY = Math.max(0, Math.min(newY, containerRect.height - legendRect.height));
 
       setLegendPosition({ x: newX, y: newY });
-    };
+    }
 
     const handleMouseUp = () => {
       if (dragStateRef.current.isDragging) {

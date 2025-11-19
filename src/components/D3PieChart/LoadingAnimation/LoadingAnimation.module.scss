@@ -1,0 +1,101 @@
+.loadingContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+
+.contentWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.spinner {
+  width: 140px;
+  height: 140px;
+  position: relative;
+}
+
+.slice {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  opacity: 0;
+  animation: fadeSlice 1.5s ease-in-out infinite;
+}
+
+.slice1 {
+  animation-delay: 0s;
+}
+
+.slice2 {
+  animation-delay: 0.25s;
+}
+
+.slice3 {
+  animation-delay: 0.5s;
+}
+
+.slice4 {
+  animation-delay: 0.75s;
+}
+
+.slice5 {
+  animation-delay: 1s;
+}
+
+.slice6 {
+  animation-delay: 1.25s;
+}
+
+.donutSlice {
+  stroke-width: 20;
+  animation: fadeSliceDonut 1.5s ease-in-out infinite !important;
+}
+
+@keyframes fadeSlice {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeSliceDonut {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.loadingText {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}

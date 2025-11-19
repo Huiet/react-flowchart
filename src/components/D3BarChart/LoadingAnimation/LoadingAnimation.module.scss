@@ -7,11 +7,18 @@
   bottom: 0;
   background: rgba(255, 255, 255, 0.95);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(2px);
+}
+
+/* Content Wrapper */
+.contentWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 /* Bar Chart Container */
@@ -19,7 +26,6 @@
   position: relative;
   width: 280px;
   height: 180px;
-  margin-bottom: 20px;
   display: flex;
   align-items: flex-end;
   padding: 20px;
@@ -90,10 +96,10 @@
 
 /* Loading Text */
 .loadingText {
-  font-size: 16px;
+  font-size: 14px;
   color: #666;
   font-weight: 500;
-  animation: pulse 3.5s ease-in-out infinite;
+  animation: pulse 2.5s ease-in-out infinite;
 }
 
 /* Animations */
