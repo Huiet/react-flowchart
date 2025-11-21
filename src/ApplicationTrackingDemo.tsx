@@ -6,36 +6,26 @@ const mockData: MetricData[] = [
     label: 'Total Accounts',
     value: 1247,
     percentage: 100,
-    color: '#374151', // gray
-    status: 'initial',
   },
   {
     label: 'Active Accounts',
     value: 1089,
     percentage: 87.3,
-    color: '#3b82f6', // blue
-    status: 'active',
   },
   {
     label: 'Discovery',
     value: 980,
     percentage: 78.6,
-    color: '#2563eb', // darker blue
-    status: 'active',
   },
   {
     label: 'Applications Started',
     value: 920,
     percentage: 73.8,
-    color: '#60a5fa', // lighter blue
-    status: 'active',
   },
   {
     label: 'Completed',
     value: 853,
     percentage: 68.4,
-    color: '#10b981', // green
-    status: 'completed',
   },
 ];
 

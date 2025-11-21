@@ -3,7 +3,6 @@ export interface MetricData {
   value: number;
   percentage: number;
   color: string;
-  status: 'initial' | 'active' | 'completed';
 }
 
 export interface ApplicationTrackingChartProps {

@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { IconChevronRight } from '@tabler/icons-react';
 import styles from './ApplicationTrackingChart.module.scss';
+import { IconChevronRight } from '@tabler/icons-react';
 import { ApplicationTrackingChartProps } from './types';
+
+// Static color palette for circles (status progression: gray -> blue shades -> green)
+const CIRCLE_COLORS = [
+  '#374151', // Gray - Initial state
+  '#3b82f6', // Blue - Active state 1
+  '#2563eb', // Darker blue - Active state 2
+  '#60a5fa', // Lighter blue - Active state 3
+  '#10b981', // Green - Completed state
+];
 
 export const ApplicationTrackingChart = ({
   data,
@@ -61,11 +70,6 @@ export const ApplicationTrackingChart = ({
 
   const strokeWidth = 4;
 
-  // Determine if metrics should wrap
-  // Account for metric item width (140px) + arrow container (60px)
-  const totalSpaceNeeded = (140 * data.length) + (60 * (data.length - 1)); // metrics + arrows
-  const shouldWrap = containerWidth > 0 && containerWidth < totalSpaceNeeded;
-
   return (
     <div className={styles.container} ref={containerRef}>
       {isLoading && (
@@ -84,35 +88,32 @@ export const ApplicationTrackingChart = ({
           ref={metricsWrapperRef}
           className={styles.metricsWrapper}
           style={{
-            justifyContent: 'center'
+            justifyContent: 'center',
           }}
         >
           {data.map((metric, index) => {
             const circleSize = getCircleSize(index);
             const radius = circleSize / 2;
+            const circleColor = CIRCLE_COLORS[index] || CIRCLE_COLORS[CIRCLE_COLORS.length - 1]; // Use index for color, fallback to last color
 
             // Determine if this item and the next are on the same line
             const currentLineTop = itemPositions[index];
             const nextLineTop = itemPositions[index + 1];
-            const isNextItemOnNewLine = nextLineTop !== undefined &&
-                                       Math.abs(nextLineTop - currentLineTop) > 5; // 5px threshold for line detection
+            const isNextItemOnNewLine =
+              nextLineTop !== undefined && Math.abs(nextLineTop - currentLineTop) > 5; // 5px threshold for line detection
             const shouldShowArrow = index < data.length - 1 && !isNextItemOnNewLine;
 
             return (
               <div key={metric.label} className={styles.metricGroup}>
                 <div className={styles.metricItem}>
                   <div className={styles.circleWrapper}>
-                    <svg
-                      width={circleSize}
-                      height={circleSize}
-                      className={styles.circle}
-                    >
+                    <svg width={circleSize} height={circleSize} className={styles.circle}>
                       <circle
                         cx={radius}
                         cy={radius}
                         r={radius - strokeWidth / 2}
                         fill="none"
-                        stroke={metric.color}
+                        stroke={circleColor}
                         strokeWidth={strokeWidth}
                         className={styles.circleStroke}
                       />
