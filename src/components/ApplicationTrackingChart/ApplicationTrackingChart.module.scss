@@ -62,13 +62,14 @@
 .metricsWrapper {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start; // Changed from center to prevent vertical misalignment
   width: 100%;
+  row-gap: 40px; // Add space between rows when wrapping
 }
 
 .metricGroup {
   display: flex;
-  align-items: center;
+  align-items: flex-start; // Changed to flex-start so arrows align with top
   flex-shrink: 0;
 }
 
@@ -77,6 +78,8 @@
   flex-direction: column;
   align-items: center;
   position: relative;
+  min-height: 200px; // Reserve space for circle + labels (120px + 12px + ~68px for labels)
+  width: 140px; // Fixed width to prevent horizontal overlap
 }
 
 .circleWrapper {
@@ -90,6 +93,8 @@
 .arrowContainer {
   display: flex;
   align-items: center;
+  justify-content: center;
+  height: 120px; // Match circleWrapper height
   margin: 0 8px;
 }
 
@@ -153,10 +158,6 @@
     padding: 20px;
   }
 
-  .metricsWrapper {
-    gap: 30px 40px !important;
-  }
-
   .header {
     margin-bottom: 20px;
   }
@@ -175,8 +176,9 @@
     padding: 15px;
   }
 
-  .metricsWrapper {
-    gap: 25px 30px !important;
+  .metricItem {
+    width: 120px;
+    min-height: 180px;
   }
 
   .labelContainer {

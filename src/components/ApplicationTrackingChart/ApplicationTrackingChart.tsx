@@ -10,7 +10,9 @@ export const ApplicationTrackingChart = ({
   isLoading = false,
 }: ApplicationTrackingChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const metricsWrapperRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [itemPositions, setItemPositions] = useState<number[]>([]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -24,6 +26,30 @@ export const ApplicationTrackingChart = ({
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
   }, []);
+
+  // Track vertical positions of metric items to detect line wrapping
+  useEffect(() => {
+    if (!metricsWrapperRef.current || containerWidth === 0) return;
+
+    const updatePositions = () => {
+      const metricItems = metricsWrapperRef.current?.querySelectorAll(`.${styles.metricItem}`);
+      if (!metricItems) return;
+
+      const positions: number[] = [];
+      metricItems.forEach((item) => {
+        const rect = item.getBoundingClientRect();
+        positions.push(rect.top);
+      });
+      setItemPositions(positions);
+    };
+
+    // Use requestAnimationFrame to ensure layout is complete
+    requestAnimationFrame(updatePositions);
+
+    // Small delay to ensure flexbox has settled
+    const timeout = setTimeout(updatePositions, 50);
+    return () => clearTimeout(timeout);
+  }, [containerWidth, data.length]);
 
   // Calculate circle size based on container width and index (progressive sizing)
   const calculateCircleSize = (index: number) => {
@@ -61,8 +87,10 @@ export const ApplicationTrackingChart = ({
   const largestCircleSize = calculateCircleSize(0);
 
   // Determine if metrics should wrap
-  const spacePerMetric = largestCircleSize + 100;
-  const shouldWrap = containerWidth < spacePerMetric * data.length && containerWidth > 0;
+  // Account for metric item width (140px) + arrow (44px) + some padding
+  const spacePerMetric = 140 + 44;
+  const totalSpaceNeeded = (140 * data.length) + (44 * (data.length - 1)); // metrics + arrows
+  const shouldWrap = containerWidth > 0 && containerWidth < totalSpaceNeeded;
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -79,15 +107,23 @@ export const ApplicationTrackingChart = ({
 
       <div className={styles.metricsContainer}>
         <div
+          ref={metricsWrapperRef}
           className={styles.metricsWrapper}
           style={{
-            justifyContent: shouldWrap ? 'flex-start' : 'center',
-            gap: shouldWrap ? '40px 60px' : '20px'
+            justifyContent: shouldWrap ? 'center' : 'center',
+            columnGap: shouldWrap ? '20px' : '0px'
           }}
         >
           {data.map((metric, index) => {
             const circleSize = calculateCircleSize(index);
             const radius = circleSize / 2;
+
+            // Determine if this item and the next are on the same line
+            const currentLineTop = itemPositions[index];
+            const nextLineTop = itemPositions[index + 1];
+            const isNextItemOnNewLine = nextLineTop !== undefined &&
+                                       Math.abs(nextLineTop - currentLineTop) > 5; // 5px threshold for line detection
+            const shouldShowArrow = index < data.length - 1 && !isNextItemOnNewLine;
 
             return (
               <div key={metric.label} className={styles.metricGroup}>
@@ -126,7 +162,7 @@ export const ApplicationTrackingChart = ({
                   </div>
                 </div>
 
-                {index < data.length - 1 && !shouldWrap && (
+                {shouldShowArrow && (
                   <div className={styles.arrowContainer}>
                     <IconChevronRight
                       size={28}
