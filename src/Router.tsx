@@ -7,6 +7,7 @@ import { D3BarChartDemo } from './D3BarChartDemo';
 import { D3PieChartDemo } from './D3PieChartDemo';
 import { UsersChartDemo } from './UsersChartDemo';
 import { StatsCardDemo } from './StatsCardDemo';
+import { ApplicationTrackingDemo } from './ApplicationTrackingDemo';
 import { Navigation } from './components/Navigation';
 
 function Layout() {
@@ -53,6 +54,10 @@ const router = createBrowserRouter([
       {
         path: '/stats-card-demo',
         element: <StatsCardDemo />,
+      },
+      {
+        path: '/application-tracking-demo',
+        element: <ApplicationTrackingDemo />,
       },
     ],
   },
