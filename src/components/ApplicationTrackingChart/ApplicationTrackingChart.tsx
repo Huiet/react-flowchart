@@ -10,12 +10,14 @@ export const ApplicationTrackingChart = ({
   isLoading = false,
 }: ApplicationTrackingChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const metricsContainerRef = useRef<HTMLDivElement>(null);
   const metricsWrapperRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [itemPositions, setItemPositions] = useState<number[]>([]);
 
+  // Observe the metricsContainer width (the container query element)
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!metricsContainerRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -23,7 +25,7 @@ export const ApplicationTrackingChart = ({
       }
     });
 
-    resizeObserver.observe(containerRef.current);
+    resizeObserver.observe(metricsContainerRef.current);
     return () => resizeObserver.disconnect();
   }, []);
 
@@ -51,45 +53,17 @@ export const ApplicationTrackingChart = ({
     return () => clearTimeout(timeout);
   }, [containerWidth, data.length]);
 
-  // Calculate circle size based on container width and index (progressive sizing)
-  const calculateCircleSize = (index: number) => {
-    if (containerWidth === 0) return 100 - (index * 8); // Default progressive sizing
-
-    // Space needed per metric (circle + arrow + padding)
-    const spacePerMetric = 180;
-    const minCircleSize = 60;
-    const maxCircleSize = 120;
-
-    let baseSize = maxCircleSize;
-
-    // If all metrics fit in one row
-    if (containerWidth >= spacePerMetric * data.length) {
-      // Scale circle size based on available width
-      const availablePerMetric = containerWidth / data.length;
-      baseSize = Math.min(availablePerMetric * 0.4, maxCircleSize);
-      baseSize = Math.max(baseSize, minCircleSize);
-    } else {
-      // If wrapping is needed, use a responsive size
-      const metricsPerRow = Math.floor(containerWidth / spacePerMetric) || 1;
-      const availablePerMetric = containerWidth / metricsPerRow;
-      baseSize = Math.min(availablePerMetric * 0.4, maxCircleSize);
-      baseSize = Math.max(baseSize, minCircleSize);
-    }
-
-    // Progressive sizing: each circle gets smaller
-    const sizeReduction = (baseSize * 0.08) * index; // 8% reduction per step
-    return Math.max(baseSize - sizeReduction, minCircleSize);
+  // Fixed circle sizes - progressively smaller left to right
+  const getCircleSize = (index: number) => {
+    const baseSizes = [120, 110, 100, 92, 84]; // Fixed sizes for each position
+    return baseSizes[index] || 84; // Default to smallest if more than 5 items
   };
 
   const strokeWidth = 4;
 
-  // Calculate largest circle size for wrapping detection
-  const largestCircleSize = calculateCircleSize(0);
-
   // Determine if metrics should wrap
-  // Account for metric item width (140px) + arrow (44px) + some padding
-  const spacePerMetric = 140 + 44;
-  const totalSpaceNeeded = (140 * data.length) + (44 * (data.length - 1)); // metrics + arrows
+  // Account for metric item width (140px) + arrow container (60px)
+  const totalSpaceNeeded = (140 * data.length) + (60 * (data.length - 1)); // metrics + arrows
   const shouldWrap = containerWidth > 0 && containerWidth < totalSpaceNeeded;
 
   return (
@@ -105,17 +79,16 @@ export const ApplicationTrackingChart = ({
         <p className={styles.subtitle}>{subtitle}</p>
       </div>
 
-      <div className={styles.metricsContainer}>
+      <div ref={metricsContainerRef} className={styles.metricsContainer}>
         <div
           ref={metricsWrapperRef}
           className={styles.metricsWrapper}
           style={{
-            justifyContent: shouldWrap ? 'center' : 'center',
-            columnGap: shouldWrap ? '20px' : '0px'
+            justifyContent: 'center'
           }}
         >
           {data.map((metric, index) => {
-            const circleSize = calculateCircleSize(index);
+            const circleSize = getCircleSize(index);
             const radius = circleSize / 2;
 
             // Determine if this item and the next are on the same line
