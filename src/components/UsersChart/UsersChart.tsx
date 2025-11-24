@@ -243,10 +243,20 @@ export const UsersChart: React.FC<UsersChartProps> = ({
           if (currentDate !== newDate) {
             lastDataPointRef.current = d;
 
-            // Update tooltip - track mouse position closely
+            // Update tooltip - position it at the data point on the chart
             const containerRect = containerRef.current?.getBoundingClientRect();
-            const mouseXAbs = containerRect ? event.clientX - containerRect.left : event.clientX;
-            const mouseYAbs = containerRect ? event.clientY - containerRect.top : event.clientY;
+            const chartContainerRect = chartContainerRef.current?.getBoundingClientRect();
+
+            // Calculate the absolute X position of the data point
+            // dataPointX is relative to the inner chart, so we need to add margins
+            const tooltipX = chartContainerRect && containerRect
+              ? (chartContainerRect.left - containerRect.left) + margins.left + dataPointX
+              : margins.left + dataPointX;
+
+            // Position tooltip at the top of the chart
+            const tooltipY = chartContainerRect && containerRect
+              ? (chartContainerRect.top - containerRect.top) + margins.top
+              : margins.top;
 
             const tooltipValues = visibleSeries.map((s) => ({
               key: s.key,
@@ -258,8 +268,8 @@ export const UsersChart: React.FC<UsersChartProps> = ({
             setTooltip({
               date: d.date,
               values: tooltipValues,
-              x: mouseXAbs,
-              y: mouseYAbs,
+              x: tooltipX,
+              y: tooltipY,
             });
 
             // Update hover data for metrics bars
@@ -385,8 +395,9 @@ export const UsersChart: React.FC<UsersChartProps> = ({
             <div
               className={styles.tooltip}
               style={{
-                left: tooltip.x > dimensions.width - 200 ? tooltip.x - 180 : tooltip.x + 15,
-                top: tooltip.y - 10,
+                left: tooltip.x,
+                top: tooltip.y,
+                transform: 'translateX(-50%)',
               }}
             >
               <div className={styles.tooltipDate}>
