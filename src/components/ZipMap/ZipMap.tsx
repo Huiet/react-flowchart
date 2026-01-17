@@ -328,13 +328,14 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .join('path')
       .attr('d', path as any)
       .attr('fill', (d: any) => (stateFipsList.includes(d.id) ? '#e8e8e8' : '#f8f8f8'))
-      .attr('stroke', 'none')
+      .attr('stroke', '#999')
+      .attr('stroke-width', 0)
       .style('cursor', 'pointer')
-      .on('mouseenter', function (_, d: any) {
-        d3.select(this).attr('fill', stateFipsList.includes(d.id) ? '#ddd' : '#f0f0f0');
+      .on('mouseenter', function () {
+        d3.select(this).attr('stroke-width', 2.5);
       })
-      .on('mouseleave', function (_, d: any) {
-        d3.select(this).attr('fill', stateFipsList.includes(d.id) ? '#e8e8e8' : '#f8f8f8');
+      .on('mouseleave', function () {
+        d3.select(this).attr('stroke-width', 0);
       })
       .on('click', function (event: MouseEvent, d: any) {
         event.stopPropagation();
