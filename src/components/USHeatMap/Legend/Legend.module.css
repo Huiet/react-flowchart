@@ -1,0 +1,24 @@
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch {
+  width: 20px;
+  height: 14px;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+}
+
+.label {
+  font-size: 11px;
+  color: #666;
+}
