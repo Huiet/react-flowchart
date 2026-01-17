@@ -242,6 +242,30 @@ export function Navigation() {
       >
         US Zip Code Map
       </Link>
+      <Link
+        to="/zip-map-canvas-demo"
+        style={{
+          color: '#ffffff',
+          textDecoration: 'none',
+          fontSize: '16px',
+          padding: '8px 16px',
+          backgroundColor: location.pathname === '/zip-map-canvas-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          borderRadius: '4px',
+          transition: 'background-color 0.2s',
+        }}
+        onMouseEnter={(e) => {
+          if (location.pathname !== '/zip-map-canvas-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (location.pathname !== '/zip-map-canvas-demo') {
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          }
+        }}
+      >
+        US Zip Code Map (Canvas)
+      </Link>
     </nav>
   );
 }

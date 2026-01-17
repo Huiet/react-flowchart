@@ -175,6 +175,18 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     return all;
   }, [zctaByState]);
 
+  // Memoize filtered features for zips with data
+  const dataZctaFeatures = useMemo(() => 
+    allZctaFeatures.filter((d: any) => dataMap.has(d.properties.zipCode)),
+    [allZctaFeatures, dataMap]
+  );
+
+  // Memoize projection
+  const projection = useMemo(() => 
+    d3.geoAlbersUsa().scale(1300).translate([width / 2, height / 2]),
+    [width, height]
+  );
+
   const zoomIn = () => {
     if (!svgRef.current || !zoomRef.current) return;
     d3.select(svgRef.current)
@@ -203,10 +215,6 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
   const zoomToState = (stateFeature: any, fips: string) => {
     if (!svgRef.current || !zoomRef.current || !gRef.current) return;
 
-    const projection = d3
-      .geoAlbersUsa()
-      .scale(1300)
-      .translate([width / 2, height / 2]);
     const path = d3.geoPath(projection);
 
     if (activeState === fips) {
@@ -268,32 +276,32 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
   };
 
   // Highlight zip on map when hovered from table
+  const prevHoveredZip = useRef<string | null>(null);
   useEffect(() => {
     if (!gRef.current) return;
 
     const g = gRef.current;
 
-    // Reset all transforms first
-    g.select('.zcta').selectAll('path').attr('transform', null).attr('opacity', 0.9);
-
-    if (hoveredZip) {
-      const zipPath = g
-        .select('.zcta')
+    // Reset previous hovered zip
+    if (prevHoveredZip.current && prevHoveredZip.current !== hoveredZip) {
+      const prevZip = prevHoveredZip.current;
+      g.select('.zcta')
         .selectAll('path')
-        .filter((d: any) => d.properties.zipCode === hoveredZip);
-
-      const node = zipPath.node() as SVGPathElement;
-      if (node) {
-        const bounds = node.getBBox();
-        const cx = bounds.x + bounds.width / 2;
-        const cy = bounds.y + bounds.height / 2;
-        zipPath
-          .attr('transform', `translate(${cx}, ${cy}) scale(1.5) translate(${-cx}, ${-cy})`)
-          .attr('opacity', 1)
-          .raise();
-      }
+        .filter((d: any) => d.properties.zipCode === prevZip)
+        .attr('fill', (d: any) => colorScale.scale(dataMap.get(d.properties.zipCode)!));
     }
-  }, [hoveredZip]);
+
+    // Highlight new hovered zip
+    if (hoveredZip) {
+      g.select('.zcta')
+        .selectAll('path')
+        .filter((d: any) => d.properties.zipCode === hoveredZip)
+        .attr('fill', '#f57c00')
+        .raise();
+    }
+
+    prevHoveredZip.current = hoveredZip;
+  }, [hoveredZip, colorScale, dataMap]);
 
   useEffect(() => {
     if (!svgRef.current || !usTopology) return;
@@ -304,10 +312,6 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     const g = svg.append('g');
     gRef.current = g;
 
-    const projection = d3
-      .geoAlbersUsa()
-      .scale(1300)
-      .translate([width / 2, height / 2]);
     const path = d3.geoPath(projection);
 
     const states = topojson.feature(usTopology, usTopology.objects.states) as any;
@@ -360,29 +364,39 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .attr('stroke-width', 1)
       .attr('pointer-events', 'none');
 
-    // ZCTA zip codes (render on top)
+    // Empty zip borders - single combined path for performance
+    if (showEmptyZips) {
+      const emptyZipPathData = allZctaFeatures
+        .filter((d: any) => !dataMap.has(d.properties.zipCode))
+        .map((d: any) => path(d))
+        .filter(Boolean)
+        .join(' ');
+      
+      g.append('path')
+        .attr('class', 'empty-zips')
+        .attr('d', emptyZipPathData)
+        .attr('fill', 'none')
+        .attr('stroke', '#ccc')
+        .attr('stroke-width', 0.25)
+        .attr('pointer-events', 'none');
+    }
+
+    // ZCTA zip codes with data (render on top)
     g.append('g')
       .attr('class', 'zcta')
       .selectAll('path')
-      .data(allZctaFeatures)
+      .data(dataZctaFeatures)
       .join('path')
       .attr('d', path as any)
-      .attr('fill', (d: any) => {
-        const val = dataMap.get(d.properties.zipCode);
-        return val !== undefined ? colorScale.scale(val) : 'transparent';
-      })
-      .attr('stroke', (d: any) => {
-        const hasData = dataMap.has(d.properties.zipCode);
-        return hasData ? 'none' : (showEmptyZips ? '#ccc' : 'none');
-      })
-      .attr('stroke-width', 0.25)
+      .attr('fill', (d: any) => colorScale.scale(dataMap.get(d.properties.zipCode)!))
+      .attr('stroke', 'none')
       .attr('opacity', 0.9)
       .style('pointer-events', 'none');
 
     g.append('g')
       .attr('class', 'zcta-overlay')
       .selectAll('path')
-      .data(allZctaFeatures.filter((d: any) => dataMap.has(d.properties.zipCode)))
+      .data(dataZctaFeatures)
       .join('path')
       .attr('d', path as any)
       .attr('fill', 'transparent')
@@ -424,7 +438,7 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     svg.call(zoom);
     svg.on('dblclick.zoom', null);
     svg.on('dblclick', () => resetZoom());
-  }, [usTopology, allZctaFeatures, dataMap, colorScale, width, height, stateFipsList, showEmptyZips]);
+  }, [usTopology, allZctaFeatures, dataZctaFeatures, dataMap, colorScale, projection, width, height, stateFipsList, showEmptyZips]);
 
   const isZoomed = zoomLevel > 1.1;
   const panelWidth = 280;

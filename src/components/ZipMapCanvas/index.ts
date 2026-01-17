@@ -1,0 +1,1 @@
+export { ZipMapCanvas } from './ZipMapCanvas';

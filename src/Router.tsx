@@ -9,6 +9,7 @@ import { UsersChartDemo } from './UsersChartDemo';
 import { StatsCardDemo } from './StatsCardDemo';
 import { ApplicationTrackingDemo } from './ApplicationTrackingDemo';
 import { ZipMapDemo } from './ZipMapDemo';
+import { ZipMapCanvasDemo } from './ZipMapCanvasDemo';
 import { Navigation } from './components/Navigation';
 
 function Layout() {
@@ -63,6 +64,10 @@ const router = createBrowserRouter([
       {
         path: '/zip-map-demo',
         element: <ZipMapDemo />,
+      },
+      {
+        path: '/zip-map-canvas-demo',
+        element: <ZipMapCanvasDemo />,
       },
     ],
   },
