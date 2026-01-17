@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { ZipMap } from './components/ZipMap/ZipMap';
+import { ZipMapDocumentation } from './components/ZipMap/Documentation';
 import { ZipDataPoint } from './components/ZipMap/types';
 
 // Real zip codes from the TopoJSON files
@@ -59,47 +60,23 @@ function generateData(zips: string[], baseValue: number, variance: number): ZipD
 }
 
 export function ZipMapDemo() {
-  const [states, setStates] = useState({ CA: true, NY: true, TX: true });
-
-  // Generate data with different ranges per state for visual variety
-  const mockData = useMemo(() => ({
-    CA: generateData(REAL_ZIPS.CA, 2000, 8000),
-    NY: generateData(REAL_ZIPS.NY, 1500, 6000),
-    TX: generateData(REAL_ZIPS.TX, 3000, 7000),
-  }), []);
-
-  const data = useMemo(() => {
-    const result: ZipDataPoint[] = [];
-    if (states.CA) result.push(...mockData.CA);
-    if (states.NY) result.push(...mockData.NY);
-    if (states.TX) result.push(...mockData.TX);
-    return result;
-  }, [states, mockData]);
-
-  const toggle = (s: 'CA' | 'NY' | 'TX') => setStates(p => ({ ...p, [s]: !p[s] }));
+  const data = useMemo(() => [
+    ...generateData(REAL_ZIPS.CA, 2000, 8000),
+    ...generateData(REAL_ZIPS.NY, 1500, 6000),
+    ...generateData(REAL_ZIPS.TX, 3000, 7000),
+  ], []);
 
   return (
     <div style={{ padding: 20 }}>
-      <h1 style={{ marginBottom: 8 }}>US Zip Code Map</h1>
-      
-      <div style={{ marginBottom: 16, display: 'flex', gap: 20, alignItems: 'center' }}>
-        {(['CA', 'NY', 'TX'] as const).map(s => (
-          <label key={s} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-            <input type="checkbox" checked={states[s]} onChange={() => toggle(s)} />
-            <span>{s === 'CA' ? 'California' : s === 'NY' ? 'New York' : 'Texas'}</span>
-            <span style={{ color: '#888', fontSize: 13 }}>({REAL_ZIPS[s].length})</span>
-          </label>
-        ))}
-        <span style={{ marginLeft: 'auto', color: '#666', fontSize: 14 }}>
-          Showing <strong>{data.length}</strong> zip codes
-        </span>
-      </div>
+      <h1 style={{ marginBottom: 16 }}>US Zip Code Map</h1>
 
       <ZipMap data={data} width={1000} height={650} />
 
       <div style={{ marginTop: 16, padding: 12, background: '#f5f5f5', borderRadius: 6, fontSize: 13, color: '#555' }}>
         <strong>Tips:</strong> Click a state to zoom in • Click again to reset • Scroll to zoom • Drag to pan • Hover zip codes for details
       </div>
+
+      <ZipMapDocumentation />
     </div>
   );
 }
