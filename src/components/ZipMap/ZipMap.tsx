@@ -53,6 +53,37 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .sort((a, b) => b.value - a.value);
   }, [activeState, data]);
 
+  // Get state summaries when no state is selected
+  const stateSummaries = useMemo(() => {
+    const summaries = new Map<string, { fips: string; name: string; count: number; total: number }>();
+    data.forEach(d => {
+      const fips = getStateFipsFromZip(d.zipCode);
+      if (!fips) return;
+      const existing = summaries.get(fips);
+      if (existing) {
+        existing.count++;
+        existing.total += d.value;
+      } else {
+        summaries.set(fips, {
+          fips,
+          name: FIPS_TO_NAME[fips] || fips,
+          count: 1,
+          total: d.value,
+        });
+      }
+    });
+    return Array.from(summaries.values()).sort((a, b) => b.total - a.total);
+  }, [data]);
+
+  // Color scale for state totals
+  const stateColorScale = useMemo(() => {
+    if (stateSummaries.length === 0) return { scale: () => '#ddd' };
+    const totals = stateSummaries.map(s => s.total);
+    const min = Math.min(...totals);
+    const max = Math.max(...totals);
+    return { scale: d3.scaleSequential(d3.interpolateBlues).domain([min, max]) };
+  }, [stateSummaries]);
+
   useEffect(() => {
     fetch(US_STATES_URL).then(r => r.json()).then(setUsTopology);
   }, []);
@@ -134,6 +165,16 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .transition()
       .duration(750)
       .call(zoomRef.current.transform as any, d3.zoomIdentity.translate(tx, ty).scale(scale));
+  };
+
+  // Zoom to state by FIPS (for clicking from panel)
+  const zoomToStateByFips = (fips: string) => {
+    if (!usTopology) return;
+    const states = topojson.feature(usTopology, usTopology.objects.states) as any;
+    const stateFeature = states.features.find((s: any) => s.id === fips);
+    if (stateFeature) {
+      zoomToState(stateFeature, fips);
+    }
   };
 
   // Zoom to a specific zip code
@@ -379,115 +420,181 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
             <div style={{ color: '#ccc' }}>Value: <span style={{ color: '#fff' }}>{tooltip.value.toLocaleString()}</span></div>
           </div>
         )}
+      </div>
 
+      {/* Side panel - shows states list or zip codes */}
+      <div style={{
+        width: panelWidth,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        maxHeight: height + 60,
+      }}>
         {/* Legend */}
         <div style={{ 
-          marginTop: 16, 
           display: 'flex', 
           alignItems: 'center', 
-          gap: 12,
+          gap: 10,
           padding: '12px 16px',
           background: '#fff',
           borderRadius: 8,
           border: '1px solid #eee',
-          width: 'fit-content',
         }}>
           <span style={{ fontSize: 13, color: '#666' }}>Low</span>
-          <span style={{ fontSize: 14, fontWeight: 500 }}>{colorScale.min.toLocaleString()}</span>
           <div style={{
-            width: 180,
+            flex: 1,
             height: 14,
             background: `linear-gradient(to right, ${d3.interpolateBlues(0)}, ${d3.interpolateBlues(0.25)}, ${d3.interpolateBlues(0.5)}, ${d3.interpolateBlues(0.75)}, ${d3.interpolateBlues(1)})`,
             borderRadius: 3,
             border: '1px solid #ddd',
           }} />
-          <span style={{ fontSize: 14, fontWeight: 500 }}>{colorScale.max.toLocaleString()}</span>
           <span style={{ fontSize: 13, color: '#666' }}>High</span>
         </div>
-      </div>
 
-      {/* Side panel - shows when state is selected */}
-      {activeState && (
+        {/* Table panel */}
         <div style={{
-          width: panelWidth,
+          flex: 1,
           background: '#fff',
           border: '1px solid #ddd',
           borderRadius: 8,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          maxHeight: height,
         }}>
-          {/* Header */}
-          <div style={{
-            padding: '16px',
-            borderBottom: '1px solid #eee',
-            background: '#f8f8f8',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>{FIPS_TO_NAME[activeState] || activeState}</h3>
-              <button
-                onClick={resetZoom}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: 18,
-                  cursor: 'pointer',
-                  color: '#666',
-                  padding: '4px 8px',
-                }}
-              >×</button>
+        {activeState ? (
+          <>
+            {/* State header */}
+            <div style={{
+              padding: '16px',
+              borderBottom: '1px solid #eee',
+              background: '#f8f8f8',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: 16 }}>{FIPS_TO_NAME[activeState] || activeState}</h3>
+                <button
+                  onClick={resetZoom}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: 18,
+                    cursor: 'pointer',
+                    color: '#666',
+                    padding: '4px 8px',
+                  }}
+                >×</button>
+              </div>
+              <div style={{ fontSize: 13, color: '#666', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <span>{activeStateZips.length} zip codes</span>
+                <span>Total: <strong>{activeStateZips.reduce((sum, z) => sum + z.value, 0).toLocaleString()}</strong></span>
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
-              {activeStateZips.length} zip codes • Total: <strong>{activeStateZips.reduce((sum, z) => sum + z.value, 0).toLocaleString()}</strong>
-            </div>
-          </div>
 
-          {/* Table header */}
-          <div style={{ background: '#f8f8f8', borderBottom: '1px solid #eee' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Zip Code</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Value</th>
-                </tr>
-              </thead>
-            </table>
-          </div>
-
-          {/* Table body */}
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <tbody>
-                {activeStateZips.map((item, i) => (
-                  <tr
-                    key={item.zipCode}
-                    onMouseEnter={() => setHoveredZip(item.zipCode)}
-                    onMouseLeave={() => setHoveredZip(null)}
-                    onClick={() => zoomToZip(item.zipCode)}
-                    style={{
-                      background: hoveredZip === item.zipCode ? '#f0f7ff' : (i % 2 === 0 ? '#fff' : '#fafafa'),
-                      cursor: 'pointer',
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    <td style={{
-                      padding: '10px 12px',
-                      borderLeft: `10px solid ${colorScale.scale(item.value)}`,
-                      fontFamily: 'monospace',
-                    }}>
-                      {item.zipCode}
-                    </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}>
-                      {item.value.toLocaleString()}
-                    </td>
+            {/* Table header */}
+            <div style={{ background: '#f8f8f8', borderBottom: '1px solid #eee' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: '10px 12px', textAlign: 'left' }}>Zip Code</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Value</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+              </table>
+            </div>
+
+            {/* Table body */}
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <tbody>
+                  {activeStateZips.map((item, i) => (
+                    <tr
+                      key={item.zipCode}
+                      onMouseEnter={() => setHoveredZip(item.zipCode)}
+                      onMouseLeave={() => setHoveredZip(null)}
+                      onClick={() => zoomToZip(item.zipCode)}
+                      style={{
+                        background: hoveredZip === item.zipCode ? '#f0f7ff' : (i % 2 === 0 ? '#fff' : '#fafafa'),
+                        cursor: 'pointer',
+                        transition: 'background 0.15s',
+                      }}
+                    >
+                      <td style={{
+                        padding: '10px 12px',
+                        borderLeft: `10px solid ${colorScale.scale(item.value)}`,
+                        fontFamily: 'monospace',
+                      }}>
+                        {item.zipCode}
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}>
+                        {item.value.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* States list header */}
+            <div style={{
+              padding: '16px',
+              borderBottom: '1px solid #eee',
+              background: '#f8f8f8',
+            }}>
+              <h3 style={{ margin: 0, fontSize: 16 }}>States with Data</h3>
+              <div style={{ fontSize: 13, color: '#666', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <span>{stateSummaries.length} states</span>
+                <span>Total: <strong>{data.reduce((sum, d) => sum + d.value, 0).toLocaleString()}</strong></span>
+              </div>
+            </div>
+
+            {/* States table header */}
+            <div style={{ background: '#f8f8f8', borderBottom: '1px solid #eee' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: '10px 12px', textAlign: 'left' }}>State</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+
+            {/* States table body */}
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <tbody>
+                  {stateSummaries.map((state, i) => (
+                    <tr
+                      key={state.fips}
+                      onClick={() => zoomToStateByFips(state.fips)}
+                      style={{
+                        background: i % 2 === 0 ? '#fff' : '#fafafa',
+                        cursor: 'pointer',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f0f7ff'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = i % 2 === 0 ? '#fff' : '#fafafa'}
+                    >
+                      <td style={{
+                        padding: '10px 12px',
+                        borderLeft: `10px solid ${stateColorScale.scale(state.total)}`,
+                      }}>
+                        <div>{state.name}</div>
+                        <div style={{ fontSize: 11, color: '#888' }}>{state.count} zip codes</div>
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}>
+                        {state.total.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

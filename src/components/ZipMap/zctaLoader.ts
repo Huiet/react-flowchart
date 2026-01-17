@@ -4,7 +4,7 @@ const STATE_OBJECT_NAMES: Record<string, string> = {
   '02': 'ak_alaska_zip_codes_geo.min',
   '04': 'az_arizona_zip_codes_geo.min',
   '05': 'ar_arkansas_zip_codes_geo.min',
-  '06': 'ca_california_zip_codes_geo.min',
+  '06': 'zcta_simplified',  // CA file has different object name
   '08': 'co_colorado_zip_codes_geo.min',
   '09': 'ct_connecticut_zip_codes_geo.min',
   '10': 'de_delaware_zip_codes_geo.min',
