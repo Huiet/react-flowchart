@@ -78,6 +78,7 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
   const [activeState, setActiveState] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredZip, setHoveredZip] = useState<string | null>(null);
+  const [showEmptyZips, setShowEmptyZips] = useState(false);
 
   const dataMap = useMemo(() => new Map(data.map((d) => [d.zipCode, d.value])), [data]);
   const colorScale = useMemo(() => createColorScale(data.map((d) => d.value)), [data]);
@@ -370,7 +371,11 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
         const val = dataMap.get(d.properties.zipCode);
         return val !== undefined ? colorScale.scale(val) : 'transparent';
       })
-      .attr('stroke', 'none')
+      .attr('stroke', (d: any) => {
+        const hasData = dataMap.has(d.properties.zipCode);
+        return hasData ? 'none' : (showEmptyZips ? '#ccc' : 'none');
+      })
+      .attr('stroke-width', 0.25)
       .attr('opacity', 0.9)
       .style('pointer-events', 'none');
 
@@ -419,7 +424,7 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     svg.call(zoom);
     svg.on('dblclick.zoom', null);
     svg.on('dblclick', () => resetZoom());
-  }, [usTopology, allZctaFeatures, dataMap, colorScale, width, height, stateFipsList]);
+  }, [usTopology, allZctaFeatures, dataMap, colorScale, width, height, stateFipsList, showEmptyZips]);
 
   const isZoomed = zoomLevel > 1.1;
   const panelWidth = 280;
@@ -553,6 +558,29 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
           />
           <span style={{ fontSize: 13, color: '#666' }}>High</span>
         </div>
+
+        {/* Show empty zips toggle */}
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px',
+            background: '#fff',
+            borderRadius: 8,
+            border: '1px solid #eee',
+            cursor: 'pointer',
+            fontSize: 13,
+            color: '#666',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showEmptyZips}
+            onChange={(e) => setShowEmptyZips(e.target.checked)}
+          />
+          Show empty zip code borders
+        </label>
 
         {/* Table panel */}
         <div
