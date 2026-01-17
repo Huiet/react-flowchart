@@ -9,17 +9,11 @@ export const STATE_FIPS: Record<string, string> = {
   WV: '54', WI: '55', WY: '56', PR: '72',
 };
 
-export const FIPS_TO_STATE: Record<string, string> = Object.fromEntries(
-  Object.entries(STATE_FIPS).map(([k, v]) => [v, k])
-);
-
-// Zip code prefix to state mapping (first 3 digits)
-// This is a simplified mapping - real implementation would be more comprehensive
+// Zip code prefix to state mapping
 const ZIP_PREFIX_TO_STATE: Record<string, string> = {
   // Northeast
   '010': 'MA', '011': 'MA', '012': 'MA', '013': 'MA', '014': 'MA', '015': 'MA', '016': 'MA', '017': 'MA', '018': 'MA', '019': 'MA',
-  '020': 'MA', '021': 'MA', '022': 'MA', '023': 'MA', '024': 'MA',
-  '025': 'MA', '026': 'MA', '027': 'MA',
+  '020': 'MA', '021': 'MA', '022': 'MA', '023': 'MA', '024': 'MA', '025': 'MA', '026': 'MA', '027': 'MA',
   '028': 'RI', '029': 'RI',
   '030': 'NH', '031': 'NH', '032': 'NH', '033': 'NH', '034': 'NH', '035': 'NH', '036': 'NH', '037': 'NH', '038': 'NH',
   '039': 'ME', '040': 'ME', '041': 'ME', '042': 'ME', '043': 'ME', '044': 'ME', '045': 'ME', '046': 'ME', '047': 'ME', '048': 'ME', '049': 'ME',
@@ -59,35 +53,6 @@ const ZIP_PREFIX_TO_STATE: Record<string, string> = {
   '340': 'FL', '341': 'FL', '342': 'FL', '344': 'FL', '346': 'FL', '347': 'FL', '349': 'FL',
 };
 
-/**
- * Get unique state codes from zip code data
- */
-export function getStatesFromZipData(zipCodes: string[]): string[] {
-  const states = new Set<string>();
-  
-  for (const zip of zipCodes) {
-    const prefix = zip.slice(0, 3);
-    const state = ZIP_PREFIX_TO_STATE[prefix];
-    if (state) {
-      states.add(state);
-    }
-  }
-  
-  return Array.from(states);
-}
-
-/**
- * Get state FIPS codes from zip code data
- */
-export function getStateFipsFromZipData(zipCodes: string[]): string[] {
-  const states = getStatesFromZipData(zipCodes);
-  return states.map(s => STATE_FIPS[s]).filter(Boolean);
-}
-
-
-/**
- * Get state FIPS from a single zip code
- */
 export function getStateFipsFromZip(zipCode: string): string | null {
   const prefix = zipCode.slice(0, 3);
   const state = ZIP_PREFIX_TO_STATE[prefix];

@@ -219,30 +219,6 @@ export function Navigation() {
         App Tracking
       </Link>
       <Link
-        to="/us-heat-map-demo"
-        style={{
-          color: '#ffffff',
-          textDecoration: 'none',
-          fontSize: '16px',
-          padding: '8px 16px',
-          backgroundColor: location.pathname === '/us-heat-map-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
-          borderRadius: '4px',
-          transition: 'background-color 0.2s',
-        }}
-        onMouseEnter={(e) => {
-          if (location.pathname !== '/us-heat-map-demo') {
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (location.pathname !== '/us-heat-map-demo') {
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
-          }
-        }}
-      >
-        US Heat Map
-      </Link>
-      <Link
         to="/zip-map-demo"
         style={{
           color: '#ffffff',

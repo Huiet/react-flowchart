@@ -1,6 +1,4 @@
-import { ZipDataPoint } from './types';
-
-// State FIPS to object name mapping (from OpenDataDE naming convention)
+// State FIPS to TopoJSON object name mapping
 const STATE_OBJECT_NAMES: Record<string, string> = {
   '01': 'al_alabama_zip_codes_geo.min',
   '02': 'ak_alaska_zip_codes_geo.min',
@@ -68,29 +66,4 @@ export async function fetchStateZCTA(stateFips: string): Promise<any> {
   } catch {
     return null;
   }
-}
-
-export async function fetchStatesZCTA(stateFipsList: string[]): Promise<any[]> {
-  const results = await Promise.all(stateFipsList.map(fetchStateZCTA));
-  return results.filter(Boolean);
-}
-
-// Sample data generators
-export function generateCAData(): ZipDataPoint[] {
-  const zips = ['90001','90002','90003','90210','94102','94103','94110','94114'];
-  return zips.map(zip => ({ zipCode: zip, value: Math.floor(Math.random() * 10000) + 500 }));
-}
-
-export function generateNYData(): ZipDataPoint[] {
-  const zips = ['10001','10002','10003','10011','10012','11201','11211','11215'];
-  return zips.map(zip => ({ zipCode: zip, value: Math.floor(Math.random() * 15000) + 1000 }));
-}
-
-export function generateTXData(): ZipDataPoint[] {
-  const zips = ['75001','75201','77001','77002','77003','77019','78201','78701'];
-  return zips.map(zip => ({ zipCode: zip, value: Math.floor(Math.random() * 8000) + 200 }));
-}
-
-export function generateMultiStateData(): ZipDataPoint[] {
-  return [...generateCAData(), ...generateNYData(), ...generateTXData()];
 }

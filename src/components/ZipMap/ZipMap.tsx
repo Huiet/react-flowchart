@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { ZipMapProps } from './types';
-import { getStateFipsFromZip } from '../USHeatMap/stateUtils';
-import { fetchStateZCTA, getObjectName } from '../USHeatMap/zctaLoader';
+import { getStateFipsFromZip } from './stateUtils';
+import { fetchStateZCTA, getObjectName } from './zctaLoader';
 import { createColorScale } from './colorScale';
 
 const US_STATES_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json';

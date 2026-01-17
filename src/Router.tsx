@@ -8,7 +8,6 @@ import { D3PieChartDemo } from './D3PieChartDemo';
 import { UsersChartDemo } from './UsersChartDemo';
 import { StatsCardDemo } from './StatsCardDemo';
 import { ApplicationTrackingDemo } from './ApplicationTrackingDemo';
-import { USHeatMapDemo } from './USHeatMapDemo';
 import { ZipMapDemo } from './ZipMapDemo';
 import { Navigation } from './components/Navigation';
 
@@ -60,10 +59,6 @@ const router = createBrowserRouter([
       {
         path: '/application-tracking-demo',
         element: <ApplicationTrackingDemo />,
-      },
-      {
-        path: '/us-heat-map-demo',
-        element: <USHeatMapDemo />,
       },
       {
         path: '/zip-map-demo',
