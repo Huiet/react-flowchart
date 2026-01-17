@@ -439,19 +439,25 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
               >×</button>
             </div>
             <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
-              {activeStateZips.length} zip codes
+              {activeStateZips.length} zip codes • Total: <strong>{activeStateZips.reduce((sum, z) => sum + z.value, 0).toLocaleString()}</strong>
             </div>
           </div>
 
-          {/* Table */}
-          <div style={{ flex: 1, overflow: 'auto' }}>
+          {/* Table header */}
+          <div style={{ background: '#f8f8f8', borderBottom: '1px solid #eee' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8f8f8', position: 'sticky', top: 0 }}>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Zip Code</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: '1px solid #eee' }}>Value</th>
+                <tr>
+                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Zip Code</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Value</th>
                 </tr>
               </thead>
+            </table>
+          </div>
+
+          {/* Table body */}
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <tbody>
                 {activeStateZips.map((item, i) => (
                   <tr
