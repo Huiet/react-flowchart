@@ -228,6 +228,16 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .attr('stroke-width', 1)
       .attr('pointer-events', 'none');
 
+    // Nation outline (outer border)
+    const nationOutline = topojson.mesh(usTopology, usTopology.objects.states, (a: any, b: any) => a === b);
+    g.append('path')
+      .datum(nationOutline)
+      .attr('d', path as any)
+      .attr('fill', 'none')
+      .attr('stroke', '#333')
+      .attr('stroke-width', 1.5)
+      .attr('pointer-events', 'none');
+
     // Zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 25])
