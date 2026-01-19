@@ -70,6 +70,9 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   const [geometries, setGeometries] = useState<any>(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [showFiveDigit, setShowFiveDigit] = useState(false);
+  const [isDraggingState, setIsDraggingState] = useState(false);
+  const animationRef = useRef<number | null>(null);
 
   // Calculate initial center position
   useEffect(() => {
@@ -95,6 +98,25 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   const isDragging = useRef(false);
   const dragDistance = useRef(0);
   const lastMouse = useRef({ x: 0, y: 0 });
+
+  // Animate transform changes
+  const animateTo = (target: { x: number; y: number; scale: number }, duration = 400) => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    const start = { ...transform };
+    const startTime = performance.now();
+    const animate = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      setTransform({
+        x: start.x + (target.x - start.x) * ease,
+        y: start.y + (target.y - start.y) * ease,
+        scale: start.scale + (target.scale - start.scale) * ease,
+      });
+      setZoomLevel(start.scale + (target.scale - start.scale) * ease);
+      if (t < 1) animationRef.current = requestAnimationFrame(animate);
+    };
+    animationRef.current = requestAnimationFrame(animate);
+  };
 
   // Get zip codes for active state
   const activeStateZips = useMemo(() => {
@@ -219,29 +241,26 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   useEffect(() => {
     if (!geometries || !rendererRef.current || !usTopology) return;
 
-    // Use 3-digit merged areas when no state selected, 5-digit when state is selected
-    const useHighDetail = activeState !== null;
-    let buffers = useHighDetail ? geometries.fiveDigitBuffers : geometries.threeDigitFullBuffers;
+    // Build combined buffers: 3-digit for all states, plus detail for active state
+    const buffers = new Map<string, any>();
 
-    // Filter to active state if one is selected
-    if (activeState) {
-      const filtered = new Map<string, any>();
-      if (useHighDetail) {
-        // Show only 5-digit zips in active state
-        activeStateZips.forEach((zip) => {
-          if (geometries.fiveDigitBuffers.has(zip.zipCode)) {
-            filtered.set(zip.zipCode, geometries.fiveDigitBuffers.get(zip.zipCode));
-          }
-        });
-      } else {
-        // Show only 3-digit areas in active state
-        activeState3Digit.forEach((area) => {
-          if (geometries.threeDigitBuffers.has(area.prefix)) {
-            filtered.set(area.prefix, geometries.threeDigitBuffers.get(area.prefix));
-          }
-        });
+    // Add all 3-digit areas first
+    geometries.threeDigitFullBuffers.forEach((value: any, key: string) => {
+      // Only skip active state's 3-digit areas if showing 5-digit detail
+      if (activeState && showFiveDigit) {
+        const belongsToActiveState = activeState3Digit.some((a) => a.prefix === key);
+        if (belongsToActiveState) return;
       }
-      buffers = filtered;
+      buffers.set(key, value);
+    });
+
+    // Add active state 5-digit detail if toggled on
+    if (activeState && showFiveDigit) {
+      activeStateZips.forEach((zip) => {
+        if (geometries.fiveDigitBuffers.has(zip.zipCode)) {
+          buffers.set(zip.zipCode, geometries.fiveDigitBuffers.get(zip.zipCode));
+        }
+      });
     }
 
     // Get state borders
@@ -364,11 +383,15 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     showStateColors,
     stateSummaries,
     stateColorScale,
+    showFiveDigit,
+    activeStateZips,
+    activeState3Digit,
   ]);
 
   // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true;
+    setIsDraggingState(true);
     dragDistance.current = 0;
     lastMouse.current = { x: e.clientX, y: e.clientY };
   };
@@ -454,19 +477,18 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
           if (stateSummary) {
             setActiveState(fips);
 
-            // Zoom to state
+            // Zoom to state with animation
             const dx = x1 - x0;
             const dy = y1 - y0;
             const x = (x0 + x1) / 2;
             const y = (y0 + y1) / 2;
             const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
 
-            setTransform({
+            animateTo({
               x: width / 2 - x * scale,
               y: height / 2 - y * scale,
               scale,
             });
-            setZoomLevel(scale);
             break;
           }
         }
@@ -474,10 +496,12 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     }
 
     isDragging.current = false;
+    setIsDraggingState(false);
   };
 
   const handleMouseLeave = () => {
     isDragging.current = false;
+    setIsDraggingState(false);
     setTooltip(null);
     setHoveredZip(null);
   };
@@ -532,7 +556,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
             border: '1px solid #ddd',
             borderRadius: 8,
             background: '#fafafa',
-            cursor: isDragging.current ? 'grabbing' : zoomLevel > 1.1 ? 'grab' : 'default',
+            cursor: isDraggingState ? 'grabbing' : 'grab',
           }}
         />
         {!isReady && (
@@ -631,15 +655,38 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                 const projectionCenterY = 300;
                 const initialX = width / 2 - projectionCenterX;
                 const initialY = height / 2 - projectionCenterY;
-                setTransform({ x: initialX, y: initialY, scale: 1 });
-                setZoomLevel(1);
+                animateTo({ x: initialX, y: initialY, scale: 1 });
                 setActiveState(null);
               }}
-              disabled={zoomLevel <= 1.1 && !activeState}
+              disabled={(() => {
+                const initialX = width / 2 - 480;
+                const initialY = height / 2 - 300;
+                const isAtInitial =
+                  Math.abs(transform.x - initialX) < 1 &&
+                  Math.abs(transform.y - initialY) < 1 &&
+                  transform.scale <= 1.01;
+                return isAtInitial && !activeState;
+              })()}
               style={{
                 ...btnStyle,
-                color: zoomLevel > 1.1 || activeState ? '#333' : '#aaa',
-                background: zoomLevel > 1.1 || activeState ? '#fff' : '#f5f5f5',
+                color: (() => {
+                  const initialX = width / 2 - 480;
+                  const initialY = height / 2 - 300;
+                  const isAtInitial =
+                    Math.abs(transform.x - initialX) < 1 &&
+                    Math.abs(transform.y - initialY) < 1 &&
+                    transform.scale <= 1.01;
+                  return !isAtInitial || activeState ? '#333' : '#aaa';
+                })(),
+                background: (() => {
+                  const initialX = width / 2 - 480;
+                  const initialY = height / 2 - 300;
+                  const isAtInitial =
+                    Math.abs(transform.x - initialX) < 1 &&
+                    Math.abs(transform.y - initialY) < 1 &&
+                    transform.scale <= 1.01;
+                  return !isAtInitial || activeState ? '#fff' : '#f5f5f5';
+                })(),
               }}
               title="Reset View"
             >
@@ -796,32 +843,6 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                   padding: '16px',
                   borderBottom: '1px solid #eee',
                   background: '#f8f8f8',
-                  cursor: 'pointer',
-                }}
-                onClick={() => {
-                  // Zoom back to state level
-                  if (usTopology && activeState) {
-                    const states = topojson.feature(usTopology, usTopology.objects.states) as any;
-                    const stateFeature = states.features.find((s: any) => s.id === activeState);
-                    if (stateFeature) {
-                      const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
-                      const path = d3.geoPath(projection);
-                      const bounds = path.bounds(stateFeature);
-                      const [[x0, y0], [x1, y1]] = bounds;
-                      const dx = x1 - x0;
-                      const dy = y1 - y0;
-                      const x = (x0 + x1) / 2;
-                      const y = (y0 + y1) / 2;
-                      const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
-
-                      setTransform({
-                        x: width / 2 - x * scale,
-                        y: height / 2 - y * scale,
-                        scale,
-                      });
-                      setZoomLevel(scale);
-                    }
-                  }
                 }}
               >
                 <div
@@ -831,7 +852,15 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                     {FIPS_TO_NAME[activeState] || activeState}
                   </h3>
                   <button
-                    onClick={() => setActiveState(null)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const projectionCenterX = 480;
+                      const projectionCenterY = 300;
+                      const initialX = width / 2 - projectionCenterX;
+                      const initialY = height / 2 - projectionCenterY;
+                      animateTo({ x: initialX, y: initialY, scale: 1 });
+                      setActiveState(null);
+                    }}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -845,9 +874,42 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                   </button>
                 </div>
                 <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
-                  {zoomLevel >= 4
+                  {showFiveDigit
                     ? `${activeStateZips.length} zip codes`
                     : `${activeState3Digit.length} 3-digit areas`}
+                </div>
+                {/* 3-digit vs 5-digit toggle */}
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button
+                    onClick={() => setShowFiveDigit(false)}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: 4,
+                      background: !showFiveDigit ? '#e3f2fd' : '#fff',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: !showFiveDigit ? 600 : 400,
+                    }}
+                  >
+                    3-digit
+                  </button>
+                  <button
+                    onClick={() => setShowFiveDigit(true)}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: 4,
+                      background: showFiveDigit ? '#e3f2fd' : '#fff',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: showFiveDigit ? 600 : 400,
+                    }}
+                  >
+                    5-digit
+                  </button>
                 </div>
               </div>
 
@@ -863,7 +925,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                           borderBottom: '1px solid #eee',
                         }}
                       >
-                        {zoomLevel >= 4 ? 'Zip Code' : '3-Digit'}
+                        {showFiveDigit ? 'Zip Code' : '3-Digit'}
                       </th>
                       <th
                         style={{
@@ -877,7 +939,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                     </tr>
                   </thead>
                   <tbody>
-                    {zoomLevel >= 4
+                    {showFiveDigit
                       ? activeStateZips.map((item, i) => (
                           <tr
                             key={item.zipCode}
@@ -900,12 +962,11 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                                 const y = (y0 + y1) / 2;
                                 const scale = Math.min(15, 0.2 / Math.max(dx / width, dy / height));
 
-                                setTransform({
+                                animateTo({
                                   x: width / 2 - x * scale,
                                   y: height / 2 - y * scale,
                                   scale,
                                 });
-                                setZoomLevel(scale);
                               }
                             }}
                             style={{
@@ -923,7 +984,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                               style={{
                                 padding: '10px 12px',
                                 fontFamily: 'monospace',
-                                borderLeft: `10px solid ${zipColorScale(item.value)}`,
+                                borderLeft: `10px solid ${hoveredZip === item.zipCode ? '#f57c00' : zipColorScale(item.value)}`,
                               }}
                             >
                               {item.zipCode}
@@ -955,29 +1016,31 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                                 const y = (y0 + y1) / 2;
                                 const scale = Math.min(12, 0.5 / Math.max(dx / width, dy / height));
 
-                                setTransform({
+                                animateTo({
                                   x: width / 2 - x * scale,
                                   y: height / 2 - y * scale,
                                   scale,
                                 });
-                                setZoomLevel(scale);
                               }
                             }}
                             style={{
-                              background: i % 2 === 0 ? '#fff' : '#fafafa',
+                              background:
+                                hoveredZip === item.prefix
+                                  ? '#f0f7ff'
+                                  : i % 2 === 0
+                                    ? '#fff'
+                                    : '#fafafa',
                               cursor: 'pointer',
                               transition: 'background 0.15s',
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f7ff')}
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.background = i % 2 === 0 ? '#fff' : '#fafafa')
-                            }
+                            onMouseEnter={() => setHoveredZip(item.prefix)}
+                            onMouseLeave={() => setHoveredZip(null)}
                           >
                             <td
                               style={{
                                 padding: '10px 12px',
                                 fontFamily: 'monospace',
-                                borderLeft: `10px solid ${threeDigitColorScale(item.total)}`,
+                                borderLeft: `10px solid ${hoveredZip === item.prefix ? '#f57c00' : threeDigitColorScale(item.total)}`,
                               }}
                             >
                               <div>{item.prefix}xx</div>
@@ -1067,12 +1130,11 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                               const y = (y0 + y1) / 2;
                               const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
 
-                              setTransform({
+                              animateTo({
                                 x: width / 2 - x * scale,
                                 y: height / 2 - y * scale,
                                 scale,
                               });
-                              setZoomLevel(scale);
                             }
                           }
                         }}

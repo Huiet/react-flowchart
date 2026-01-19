@@ -1,6 +1,6 @@
+import classes from './CardValue.module.scss';
 import { Text } from '@mantine/core';
 import { CardValueProps } from '../types';
-import classes from './CardValue.module.scss';
 
 export function CardValue({ children, className }: CardValueProps) {
   return (

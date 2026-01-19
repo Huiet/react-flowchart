@@ -1,12 +1,9 @@
-import { StockDataPoint, IndicatorDataPoint, BollingerBandsData } from './types';
+import { BollingerBandsData, IndicatorDataPoint, StockDataPoint } from './types';
 
 /**
  * Calculate Simple Moving Average (SMA)
  */
-export function calculateSMA(
-  data: StockDataPoint[],
-  period: number
-): IndicatorDataPoint[] {
+export function calculateSMA(data: StockDataPoint[], period: number): IndicatorDataPoint[] {
   const result: IndicatorDataPoint[] = [];
 
   for (let i = period - 1; i < data.length; i++) {
@@ -26,10 +23,7 @@ export function calculateSMA(
 /**
  * Calculate Exponential Moving Average (EMA)
  */
-export function calculateEMA(
-  data: StockDataPoint[],
-  period: number
-): IndicatorDataPoint[] {
+export function calculateEMA(data: StockDataPoint[], period: number): IndicatorDataPoint[] {
   const result: IndicatorDataPoint[] = [];
   const multiplier = 2 / (period + 1);
 

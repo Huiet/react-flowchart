@@ -47,13 +47,7 @@ const flowData: FlowNode = {
 };
 
 function App() {
-  return (
-    <FlowChart
-      data={flowData}
-      title="My Process Flow"
-      subtitle="Version 1.0"
-    />
-  );
+  return <FlowChart data={flowData} title="My Process Flow" subtitle="Version 1.0" />;
 }
 ```
 
@@ -62,6 +56,7 @@ function App() {
 ### FlowNode Types
 
 #### PeriodNode
+
 Represents a time period or process stage.
 
 ```typescript
@@ -74,6 +69,7 @@ Represents a time period or process stage.
 ```
 
 #### DecisionNode
+
 Represents a yes/no decision point.
 
 ```typescript
@@ -88,6 +84,7 @@ Represents a yes/no decision point.
 ```
 
 #### OutcomeNode
+
 Represents a result or outcome.
 
 ```typescript
@@ -123,9 +120,9 @@ const getNodeStyle = () => {
   switch (node.type) {
     case 'period':
       return {
-        fill: '#1e3a5f',      // Background color
-        stroke: '#1e3a5f',    // Border color
-        textColor: '#ffffff',  // Text color
+        fill: '#1e3a5f', // Background color
+        stroke: '#1e3a5f', // Border color
+        textColor: '#ffffff', // Text color
       };
     // ... other types
   }
@@ -138,15 +135,15 @@ Modify spacing and dimensions in `layoutEngine.ts`:
 
 ```typescript
 const defaultConfig = {
-  nodeSpacing: 80,        // Vertical space between nodes
-  levelSpacing: 150,      // Horizontal space for branches
+  nodeSpacing: 80, // Vertical space between nodes
+  levelSpacing: 150, // Horizontal space for branches
   periodWidth: 120,
   periodHeight: 60,
   decisionWidth: 200,
   decisionHeight: 80,
   outcomeWidth: 220,
   outcomeHeight: 70,
-  branchSpacing: 250,     // Space for yes/no branches
+  branchSpacing: 250, // Space for yes/no branches
 };
 ```
 
@@ -184,12 +181,12 @@ Use `\n` in label or question strings to create line breaks:
 
 ### FlowChart
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| data | FlowNode | Yes | The root node of your flowchart |
-| title | string | No | Header title |
-| subtitle | string | No | Header subtitle (right-aligned) |
-| className | string | No | Additional CSS classes |
+| Prop      | Type     | Required | Description                     |
+| --------- | -------- | -------- | ------------------------------- |
+| data      | FlowNode | Yes      | The root node of your flowchart |
+| title     | string   | No       | Header title                    |
+| subtitle  | string   | No       | Header subtitle (right-aligned) |
+| className | string   | No       | Additional CSS classes          |
 
 ## Browser Support
 

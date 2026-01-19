@@ -1,6 +1,6 @@
-import { TessellatedGeometry, tessellateGeometry } from './tessellator';
-import { initShaderProgram } from './shaders';
 import * as d3 from 'd3';
+import { initShaderProgram } from './shaders';
+import { TessellatedGeometry, tessellateGeometry } from './tessellator';
 
 export class WebGLRenderer {
   private gl: WebGLRenderingContext;
@@ -34,7 +34,15 @@ export class WebGLRenderer {
     this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
   }
 
-  render(geometries: Map<string, TessellatedGeometry>, transform: { x: number; y: number; scale: number }, stateBorders?: any, nationBorders?: any, zipBorders?: number[] | null, hoveredZip?: string | null, stateGeometries?: Map<string, any> | null) {
+  render(
+    geometries: Map<string, TessellatedGeometry>,
+    transform: { x: number; y: number; scale: number },
+    stateBorders?: any,
+    nationBorders?: any,
+    zipBorders?: number[] | null,
+    hoveredZip?: string | null,
+    stateGeometries?: Map<string, any> | null
+  ) {
     if (!this.program) return;
 
     const gl = this.gl;
@@ -146,7 +154,7 @@ export class WebGLRenderer {
   private extractBorderVertices(geometry: any): number[] {
     const vertices: number[] = [];
     const path = d3.geoPath(this.projection);
-    
+
     if (geometry.type === 'MultiLineString') {
       geometry.coordinates.forEach((line: number[][]) => {
         for (let i = 0; i < line.length - 1; i++) {
@@ -158,7 +166,7 @@ export class WebGLRenderer {
         }
       });
     }
-    
+
     return vertices;
   }
 
@@ -166,14 +174,10 @@ export class WebGLRenderer {
     // Convert from pixel coordinates to clip space (-1 to 1)
     const scaleX = (2 / this.width) * transform.scale;
     const scaleY = (-2 / this.height) * transform.scale;
-    
+
     const translateX = (transform.x / this.width) * 2 - 1;
     const translateY = -((transform.y / this.height) * 2 - 1);
 
-    return new Float32Array([
-      scaleX, 0, 0,
-      0, scaleY, 0,
-      translateX, translateY, 1,
-    ]);
+    return new Float32Array([scaleX, 0, 0, 0, scaleY, 0, translateX, translateY, 1]);
   }
 }

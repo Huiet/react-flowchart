@@ -200,12 +200,12 @@ export const UsersChartDemo = () => {
               How Hover Interaction Works
             </h3>
             <p style={{ color: '#666', lineHeight: '1.8', margin: 0 }}>
-              When you move your mouse over the area chart, the component uses D3's bisector to
-              find the nearest data point at that X position. The bars below automatically update to
-              show the exact values and percentages at that specific date. When you're not hovering,
-              the bars display the latest data point (December in this demo). This creates a
-              seamless, interactive experience where the entire component responds to your
-              exploration of the data.
+              When you move your mouse over the area chart, the component uses D3's bisector to find
+              the nearest data point at that X position. The bars below automatically update to show
+              the exact values and percentages at that specific date. When you're not hovering, the
+              bars display the latest data point (December in this demo). This creates a seamless,
+              interactive experience where the entire component responds to your exploration of the
+              data.
             </p>
           </div>
         </div>

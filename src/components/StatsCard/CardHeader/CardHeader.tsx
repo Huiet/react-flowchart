@@ -1,7 +1,7 @@
+import classes from './CardHeader.module.scss';
 import { Group } from '@mantine/core';
 import { CardLabel } from '../CardLabel/CardLabel';
 import { CardHeaderProps } from '../types';
-import classes from './CardHeader.module.scss';
 
 export function CardHeader({ label, icon, className }: CardHeaderProps) {
   return (

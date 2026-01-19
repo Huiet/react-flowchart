@@ -1,13 +1,13 @@
-import { Group, Text } from '@mantine/core';
-import {
-  IconTrendingUp,
-  IconTrendingDown,
-  IconMinus,
-  IconArrowUp,
-  IconArrowDown,
-} from '@tabler/icons-react';
-import { TrendIndicatorProps, TrendType } from '../types';
 import classes from './TrendIndicator.module.scss';
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconMinus,
+  IconTrendingDown,
+  IconTrendingUp,
+} from '@tabler/icons-react';
+import { Group, Text } from '@mantine/core';
+import { TrendIndicatorProps, TrendType } from '../types';
 
 function getTrendConfig(type?: TrendType) {
   switch (type) {

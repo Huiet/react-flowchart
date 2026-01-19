@@ -52,11 +52,7 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height }) => {
           fontFamily="Arial, sans-serif"
         >
           {lines.map((line, i) => (
-            <tspan
-              key={i}
-              x={x + width / 2}
-              y={startY + i * lineHeight}
-            >
+            <tspan key={i} x={x + width / 2} y={startY + i * lineHeight}>
               {line}
             </tspan>
           ))}
@@ -80,11 +76,7 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height }) => {
         fontFamily="Arial, sans-serif"
       >
         {lines.map((line, i) => (
-          <tspan
-            key={i}
-            x={x + width / 2}
-            y={startY + i * lineHeight}
-          >
+          <tspan key={i} x={x + width / 2} y={startY + i * lineHeight}>
             {line}
           </tspan>
         ))}

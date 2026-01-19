@@ -66,7 +66,14 @@ export const D3BarChartDemo = () => {
   return (
     <div style={{ padding: '40px', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '10px',
+          }}
+        >
           <h1 style={{ margin: 0, color: '#2c3e50' }}>D3 Bar Chart Demo</h1>
           <button
             onClick={() => setIsLoading(!isLoading)}
@@ -139,7 +146,8 @@ export const D3BarChartDemo = () => {
               <strong>Custom Formatting:</strong> Smart value formatting (e.g., 50MM for millions)
             </li>
             <li>
-              <strong>Clean Styling:</strong> Professional appearance with grid lines and proper spacing
+              <strong>Clean Styling:</strong> Professional appearance with grid lines and proper
+              spacing
             </li>
           </ul>
         </div>

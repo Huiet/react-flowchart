@@ -1,5 +1,5 @@
-import earcut from 'earcut';
 import * as d3 from 'd3';
+import earcut from 'earcut';
 
 export interface TessellatedGeometry {
   vertices: Float32Array;

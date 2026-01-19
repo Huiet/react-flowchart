@@ -8,7 +8,15 @@ export function HomePage() {
     <>
       <Welcome />
       <ColorSchemeToggle />
-      <div style={{ marginTop: '20px', textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+      <div
+        style={{
+          marginTop: '20px',
+          textAlign: 'center',
+          display: 'flex',
+          gap: '10px',
+          justifyContent: 'center',
+        }}
+      >
         <Link to="/flowchart-demo">
           <Button size="lg" variant="filled">
             FlowChart Demo (V1)

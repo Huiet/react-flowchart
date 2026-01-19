@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { D3StockChart } from './components/D3StockChart';
-import type { UnderlierData, CustomAnnotation, ReferenceLine } from './components/D3StockChart';
+import type { CustomAnnotation, ReferenceLine, UnderlierData } from './components/D3StockChart';
 import mockUnderlierData from './components/D3StockChart/mock-underlier-data.json';
 
 export const D3StockChartDemo = () => {
@@ -52,7 +52,14 @@ export const D3StockChartDemo = () => {
   return (
     <div style={{ padding: '40px', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '10px',
+          }}
+        >
           <h1 style={{ margin: 0, color: '#2c3e50' }}>
             D3 Stock Chart Demo - Underlier Performance
           </h1>
@@ -77,7 +84,15 @@ export const D3StockChartDemo = () => {
           Interactive performance chart showing percentage gains/losses over time
         </p>
 
-        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', height: '600px' }}>
+        <div
+          style={{
+            backgroundColor: 'white',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            height: '600px',
+          }}
+        >
           <D3StockChart
             underliers={underliers}
             showMinMaxAnnotations={false}
@@ -88,18 +103,24 @@ export const D3StockChartDemo = () => {
           />
         </div>
 
-        <div style={{ marginTop: '30px', padding: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ marginBottom: '15px', color: '#2c3e50', fontSize: '18px' }}>
-            Features
-          </h2>
+        <div
+          style={{
+            marginTop: '30px',
+            padding: '20px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
+          <h2 style={{ marginBottom: '15px', color: '#2c3e50', fontSize: '18px' }}>Features</h2>
           <ul style={{ color: '#555', lineHeight: '1.8' }}>
             <li>
-              <strong>Interactive Tooltip:</strong> Hover over the chart to see percentage values for
-              all underliers at that point, with crosshair guides
+              <strong>Interactive Tooltip:</strong> Hover over the chart to see percentage values
+              for all underliers at that point, with crosshair guides
             </li>
             <li>
-              <strong>Date Range Selector:</strong> Choose from 1M, 3M, YTD, 1Y, 5Y, or
-              All to view different time periods (buttons automatically disabled when not enough data)
+              <strong>Date Range Selector:</strong> Choose from 1M, 3M, YTD, 1Y, 5Y, or All to view
+              different time periods (buttons automatically disabled when not enough data)
             </li>
             <li>
               <strong>Custom Annotations:</strong> Colored dots with labels mark specific events.
@@ -110,35 +131,49 @@ export const D3StockChartDemo = () => {
               different performance lines
             </li>
             <li>
-              <strong>Technical Indicators:</strong> Add SMA, EMA, and Bollinger Bands per line
-              or globally via the indicator menu
+              <strong>Technical Indicators:</strong> Add SMA, EMA, and Bollinger Bands per line or
+              globally via the indicator menu
             </li>
             <li>
               <strong>Reference Point:</strong> Click anywhere on the chart to set a reference point
               and see relative performance from that date
             </li>
             <li>
-              <strong>Reference Lines:</strong> Horizontal lines show target levels,
-              vertical lines mark important dates (shown in tooltip when hovering nearby)
+              <strong>Reference Lines:</strong> Horizontal lines show target levels, vertical lines
+              mark important dates (shown in tooltip when hovering nearby)
             </li>
             <li>
-              <strong>Draggable Legend:</strong> Drag the legend by its handle to reposition it anywhere on the chart
+              <strong>Draggable Legend:</strong> Drag the legend by its handle to reposition it
+              anywhere on the chart
             </li>
           </ul>
         </div>
 
-        <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#fff3cd', borderRadius: '8px', border: '1px solid #ffc107' }}>
-          <h3 style={{ marginTop: 0, color: '#856404', fontSize: '16px' }}>
-            💡 Try This
-          </h3>
+        <div
+          style={{
+            marginTop: '20px',
+            padding: '20px',
+            backgroundColor: '#fff3cd',
+            borderRadius: '8px',
+            border: '1px solid #ffc107',
+          }}
+        >
+          <h3 style={{ marginTop: 0, color: '#856404', fontSize: '16px' }}>💡 Try This</h3>
           <ul style={{ color: '#856404', lineHeight: '1.8', marginBottom: 0 }}>
             <li>Hover over the chart to see crosshairs and a tooltip with percentage values</li>
-            <li>Click anywhere on the chart to set a reference point and see relative gains/losses</li>
+            <li>
+              Click anywhere on the chart to set a reference point and see relative gains/losses
+            </li>
             <li>Click date range buttons (1M, 3M, YTD, etc.) to change the time period</li>
             <li>Click on underlier names in the legend to toggle visibility</li>
-            <li>Click the indicator icon to add technical indicators like SMA or Bollinger Bands</li>
+            <li>
+              Click the indicator icon to add technical indicators like SMA or Bollinger Bands
+            </li>
             <li>Drag the legend by its handle to move it around the chart</li>
-            <li>Hover near the "Product Launch" annotation or "Q1 End" vertical line to see them in the tooltip</li>
+            <li>
+              Hover near the "Product Launch" annotation or "Q1 End" vertical line to see them in
+              the tooltip
+            </li>
           </ul>
         </div>
       </div>

@@ -1,24 +1,27 @@
-import { Code, Title, Text, Stack, Paper, Divider, List, Anchor } from '@mantine/core';
+import { Anchor, Code, Divider, List, Paper, Stack, Text, Title } from '@mantine/core';
 
 export function ZipMapDocumentation() {
   return (
     <Paper p="xl" mt="xl" withBorder>
       <Stack gap="lg">
         <Title order={2}>ZipMap Component Documentation</Title>
-        
+
         <Divider label="Architecture Overview" labelPosition="left" />
-        
+
         <Stack gap="sm">
           <Title order={4}>Data Flow</Title>
           <Text size="sm">
-            The ZipMap component renders a choropleth map of US zip codes with values. Data flows through several layers:
+            The ZipMap component renders a choropleth map of US zip codes with values. Data flows
+            through several layers:
           </Text>
           <List size="sm" spacing="xs">
             <List.Item>
-              <strong>Input Data:</strong> Array of <Code>{`{ zipCode: string, value: number }`}</Code> objects
+              <strong>Input Data:</strong> Array of{' '}
+              <Code>{`{ zipCode: string, value: number }`}</Code> objects
             </List.Item>
             <List.Item>
-              <strong>State Detection:</strong> Zip codes are mapped to state FIPS codes using prefix lookup
+              <strong>State Detection:</strong> Zip codes are mapped to state FIPS codes using
+              prefix lookup
             </List.Item>
             <List.Item>
               <strong>ZCTA Loading:</strong> TopoJSON files are fetched only for states with data
@@ -33,12 +36,8 @@ export function ZipMapDocumentation() {
 
         <Stack gap="sm">
           <Title order={4}>US States Base Map</Title>
-          <Text size="sm">
-            State boundaries are loaded from the US Atlas TopoJSON CDN:
-          </Text>
-          <Code block>
-{`https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json`}
-          </Code>
+          <Text size="sm">State boundaries are loaded from the US Atlas TopoJSON CDN:</Text>
+          <Code block>{`https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json`}</Code>
           <Text size="sm" c="dimmed">
             This is an unprojected TopoJSON file (~900KB) containing all US state boundaries.
           </Text>
@@ -54,7 +53,7 @@ export function ZipMapDocumentation() {
             and converted using mapshaper with 10% simplification.
           </Text>
           <Code block>
-{`S3 Bucket: state-zipcode-geo-data
+            {`S3 Bucket: state-zipcode-geo-data
 Region: us-east-1
 Path: /zcta/{fips}.topojson
 
@@ -67,8 +66,9 @@ Total: 51 files (50 states + DC), ~36MB combined
 Property for zip code: ZCTA5CE10`}
           </Code>
           <Text size="sm">
-            For local development, files are synced to <Code>/public/zcta/</Code> since the S3 bucket 
-            isn't publicly accessible due to account restrictions. The component fetches from <Code>/zcta/{'{fips}'}.topojson</Code>.
+            For local development, files are synced to <Code>/public/zcta/</Code> since the S3
+            bucket isn't publicly accessible due to account restrictions. The component fetches from{' '}
+            <Code>/zcta/{'{fips}'}.topojson</Code>.
           </Text>
         </Stack>
 
@@ -78,7 +78,7 @@ Property for zip code: ZCTA5CE10`}
             Each state file contains a GeometryCollection with zip code polygons:
           </Text>
           <Code block>
-{`{
+            {`{
   "type": "Topology",
   "objects": {
     "{state}_zip_codes_geo.min": {
@@ -96,7 +96,8 @@ Property for zip code: ZCTA5CE10`}
 }`}
           </Code>
           <Text size="sm" c="dimmed">
-            Note: California uses object name <Code>zcta_simplified</Code> instead of the standard pattern.
+            Note: California uses object name <Code>zcta_simplified</Code> instead of the standard
+            pattern.
           </Text>
         </Stack>
 
@@ -108,7 +109,7 @@ Property for zip code: ZCTA5CE10`}
             To populate the map with real data from an API endpoint using TanStack Query:
           </Text>
           <Code block>
-{`import { useQuery } from '@tanstack/react-query';
+            {`import { useQuery } from '@tanstack/react-query';
 import { ZipMap } from './components/ZipMap';
 import { ZipDataPoint } from './components/ZipMap/types';
 
@@ -144,7 +145,7 @@ function AccountsMap() {
             Example Spring Boot controller to serve ZCTA TopoJSON files from S3:
           </Text>
           <Code block>
-{`// ZctaController.java
+            {`// ZctaController.java
 @RestController
 @RequestMapping("/api/zcta")
 public class ZctaController {
@@ -189,14 +190,15 @@ public class S3Config {
 }`}
           </Code>
           <Text size="sm" c="dimmed">
-            Update the frontend <Code>zctaLoader.ts</Code> to fetch from <Code>/api/zcta/{'{fips}'}.topojson</Code> instead of <Code>/zcta/</Code>.
+            Update the frontend <Code>zctaLoader.ts</Code> to fetch from{' '}
+            <Code>/api/zcta/{'{fips}'}.topojson</Code> instead of <Code>/zcta/</Code>.
           </Text>
         </Stack>
 
         <Stack gap="sm">
           <Title order={4}>Expected Data Format</Title>
           <Code block>
-{`interface ZipDataPoint {
+            {`interface ZipDataPoint {
   zipCode: string;  // 5-digit zip code, e.g., "90210"
   value: number;    // Numeric value for color scale
 }
@@ -215,7 +217,7 @@ const data: ZipDataPoint[] = [
         <Stack gap="sm">
           <Title order={4}>Key Dependencies</Title>
           <Code block>
-{`npm install d3 topojson-client
+            {`npm install d3 topojson-client
 npm install -D @types/d3 @types/topojson-client`}
           </Code>
         </Stack>
@@ -223,7 +225,7 @@ npm install -D @types/d3 @types/topojson-client`}
         <Stack gap="sm">
           <Title order={4}>Component Props</Title>
           <Code block>
-{`interface ZipMapProps {
+            {`interface ZipMapProps {
   data: ZipDataPoint[];  // Required: zip codes with values
   width?: number;        // Optional: SVG width (default: 960)
   height?: number;       // Optional: SVG height (default: 600)
@@ -237,7 +239,7 @@ npm install -D @types/d3 @types/topojson-client`}
             The map uses D3's Albers USA projection, which includes insets for Alaska and Hawaii:
           </Text>
           <Code block>
-{`const projection = d3.geoAlbersUsa()
+            {`const projection = d3.geoAlbersUsa()
   .scale(1300)
   .translate([width / 2, height / 2]);
 
@@ -251,7 +253,7 @@ const path = d3.geoPath(projection);`}
             Values are mapped to colors using D3's sequential scale with the Blues interpolator:
           </Text>
           <Code block>
-{`import * as d3 from 'd3';
+            {`import * as d3 from 'd3';
 
 const scale = d3.scaleSequential(d3.interpolateBlues)
   .domain([minValue, maxValue]);
@@ -263,11 +265,9 @@ const color = scale(dataPoint.value);`}
 
         <Stack gap="sm">
           <Title order={4}>Zip Code to State Mapping</Title>
-          <Text size="sm">
-            Zip codes are mapped to states using their 3-digit prefix:
-          </Text>
+          <Text size="sm">Zip codes are mapped to states using their 3-digit prefix:</Text>
           <Code block>
-{`// stateUtils.ts
+            {`// stateUtils.ts
 const ZIP_PREFIX_TO_STATE: Record<string, string> = {
   '900': 'CA', '901': 'CA', // ... Los Angeles
   '100': 'NY', '101': 'NY', // ... New York City
@@ -286,7 +286,7 @@ export function getStateFipsFromZip(zipCode: string): string | null {
         <Divider label="File Structure" labelPosition="left" />
 
         <Code block>
-{`src/components/ZipMap/
+          {`src/components/ZipMap/
 ├── ZipMap.tsx        # Main component with map rendering
 ├── types.ts          # TypeScript interfaces
 ├── colorScale.ts     # D3 color scale utility
@@ -307,19 +307,24 @@ public/zcta/
         <Stack gap="sm">
           <List size="sm" spacing="xs">
             <List.Item>
-              <strong>Lazy Loading:</strong> ZCTA files are only fetched for states that have data points
+              <strong>Lazy Loading:</strong> ZCTA files are only fetched for states that have data
+              points
             </List.Item>
             <List.Item>
-              <strong>File Sizes:</strong> Individual state files range from 30KB (DC) to 2.4MB (Texas)
+              <strong>File Sizes:</strong> Individual state files range from 30KB (DC) to 2.4MB
+              (Texas)
             </List.Item>
             <List.Item>
-              <strong>Caching:</strong> Consider adding HTTP caching headers for ZCTA files in production
+              <strong>Caching:</strong> Consider adding HTTP caching headers for ZCTA files in
+              production
             </List.Item>
             <List.Item>
-              <strong>Simplification:</strong> TopoJSON files are pre-simplified to 10% to reduce size
+              <strong>Simplification:</strong> TopoJSON files are pre-simplified to 10% to reduce
+              size
             </List.Item>
             <List.Item>
-              <strong>SVG vs Canvas:</strong> Current implementation uses SVG; for 10,000+ zip codes, consider Canvas
+              <strong>SVG vs Canvas:</strong> Current implementation uses SVG; for 10,000+ zip
+              codes, consider Canvas
             </List.Item>
           </List>
         </Stack>
@@ -328,12 +333,24 @@ public/zcta/
 
         <Stack gap="sm">
           <List size="sm" spacing="xs">
-            <List.Item><strong>Zoom/Pan:</strong> Mouse wheel to zoom, drag to pan (up to 25x zoom)</List.Item>
-            <List.Item><strong>Click State:</strong> Zooms and centers on the clicked state</List.Item>
-            <List.Item><strong>Click Zip:</strong> Zooms to parent state</List.Item>
-            <List.Item><strong>Double-click:</strong> Resets zoom to full US view</List.Item>
-            <List.Item><strong>Hover Zip:</strong> Shows tooltip and scales up the zip code 1.5x</List.Item>
-            <List.Item><strong>Side Panel:</strong> Lists states or zip codes with click-to-zoom</List.Item>
+            <List.Item>
+              <strong>Zoom/Pan:</strong> Mouse wheel to zoom, drag to pan (up to 25x zoom)
+            </List.Item>
+            <List.Item>
+              <strong>Click State:</strong> Zooms and centers on the clicked state
+            </List.Item>
+            <List.Item>
+              <strong>Click Zip:</strong> Zooms to parent state
+            </List.Item>
+            <List.Item>
+              <strong>Double-click:</strong> Resets zoom to full US view
+            </List.Item>
+            <List.Item>
+              <strong>Hover Zip:</strong> Shows tooltip and scales up the zip code 1.5x
+            </List.Item>
+            <List.Item>
+              <strong>Side Panel:</strong> Lists states or zip codes with click-to-zoom
+            </List.Item>
           </List>
         </Stack>
 
@@ -346,7 +363,11 @@ public/zcta/
           <Anchor href="https://github.com/d3/d3-geo" target="_blank" size="sm">
             D3 Geo Documentation
           </Anchor>
-          <Anchor href="https://github.com/OpenDataDE/State-zip-code-GeoJSON" target="_blank" size="sm">
+          <Anchor
+            href="https://github.com/OpenDataDE/State-zip-code-GeoJSON"
+            target="_blank"
+            size="sm"
+          >
             Original ZCTA GeoJSON Source
           </Anchor>
         </Stack>

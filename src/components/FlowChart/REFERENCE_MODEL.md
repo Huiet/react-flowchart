@@ -8,6 +8,7 @@ The FlowChart component now supports two data models:
 2. **Reference-Based Model** (NEW): Nodes reference each other by ID
 
 The reference-based model solves key limitations:
+
 - ✅ **Multiple parents**: Multiple nodes can point to the same child node
 - ✅ **Cycles/Loops**: Nodes can reference previously defined nodes
 - ✅ **Infinite nesting**: No structural limitations on graph complexity
@@ -21,32 +22,32 @@ The reference-based model solves key limitations:
 import type { FlowChartData } from './components/FlowChart';
 
 const chartData: FlowChartData = {
-  rootId: 'start-node',  // ID of the first node to render
+  rootId: 'start-node', // ID of the first node to render
   nodes: {
     'start-node': {
       id: 'start-node',
       type: 'period',
       label: 'Start',
-      next: 'decision-1',  // Reference by ID
+      next: 'decision-1', // Reference by ID
     },
     'decision-1': {
       id: 'decision-1',
       type: 'decision',
       question: 'Is condition met?',
-      yesPath: 'outcome-yes',  // Reference by ID
-      noPath: 'outcome-no',    // Reference by ID
+      yesPath: 'outcome-yes', // Reference by ID
+      noPath: 'outcome-no', // Reference by ID
     },
     'outcome-yes': {
       id: 'outcome-yes',
       type: 'outcome',
       label: 'Success!',
-      next: 'next-period',  // Both outcomes can point to same node!
+      next: 'next-period', // Both outcomes can point to same node!
     },
     'outcome-no': {
       id: 'outcome-no',
       type: 'outcome',
       label: 'Try again',
-      next: 'next-period',  // Same reference as above
+      next: 'next-period', // Same reference as above
     },
     'next-period': {
       id: 'next-period',
@@ -67,7 +68,7 @@ import { FlowChart } from './components/FlowChart';
 function MyComponent() {
   return (
     <FlowChart
-      chartData={chartData}  // Use chartData prop for reference-based
+      chartData={chartData} // Use chartData prop for reference-based
       title="My Flowchart"
       subtitle="Reference-based model"
     />
@@ -78,6 +79,7 @@ function MyComponent() {
 ## Node Types
 
 ### Period Node (Left Column)
+
 ```typescript
 {
   id: 'period-1',
@@ -88,6 +90,7 @@ function MyComponent() {
 ```
 
 ### Decision Node (Middle Column)
+
 ```typescript
 {
   id: 'decision-1',
@@ -100,6 +103,7 @@ function MyComponent() {
 ```
 
 ### Outcome Node (Right Column)
+
 ```typescript
 {
   id: 'outcome-1',
@@ -112,6 +116,7 @@ function MyComponent() {
 ## Key Features
 
 ### 1. Multiple Parents
+
 Both yes and no paths can point to the same node:
 
 ```typescript
@@ -125,6 +130,7 @@ Both yes and no paths can point to the same node:
 ```
 
 ### 2. Decision-to-Period Links
+
 Decisions can now link directly to periods (not just through outcomes):
 
 ```typescript
@@ -135,6 +141,7 @@ Decisions can now link directly to periods (not just through outcomes):
 ```
 
 ### 3. Cycle Prevention
+
 The layout engine automatically prevents infinite loops by tracking visited nodes.
 
 ## Layout Rules
@@ -167,6 +174,7 @@ The nested model is still supported for backward compatibility:
 ```
 
 To migrate:
+
 1. Extract all nodes into a flat map with unique IDs
 2. Replace nested objects with ID references
 3. Define a `rootId` for the starting node
@@ -175,6 +183,7 @@ To migrate:
 ## Example
 
 See `src/FlowChartDemo.tsx` for a complete example demonstrating:
+
 - Yes/No branching where both paths lead to the same period
 - Decision-to-period direct links
 - Multiple periods with repeating patterns

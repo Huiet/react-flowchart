@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import type {
-  UsersChartProps,
-  TooltipData,
-  HoverData,
-  ChartMargins,
-} from './types';
-import styles from './UsersChart.module.css';
 import { LoadingAnimation } from './LoadingAnimation/LoadingAnimation';
+import type { ChartMargins, HoverData, TooltipData, UsersChartProps } from './types';
+import styles from './UsersChart.module.css';
 
 export const UsersChart: React.FC<UsersChartProps> = ({
   data,
@@ -73,9 +68,7 @@ export const UsersChart: React.FC<UsersChartProps> = ({
     if (visibleSeries.length === 0) return;
 
     // Create main group
-    const g = svg
-      .append('g')
-      .attr('transform', `translate(${margins.left},${margins.top})`);
+    const g = svg.append('g').attr('transform', `translate(${margins.left},${margins.top})`);
 
     // Prepare stacked data
     const stack = d3
@@ -230,10 +223,7 @@ export const UsersChart: React.FC<UsersChartProps> = ({
           const dataPointX = xScale(d.date);
           const hoverLine = d3.select(svgRef.current).select('.hover-line');
 
-          hoverLine
-            .attr('x1', dataPointX)
-            .attr('x2', dataPointX)
-            .attr('opacity', 1);
+          hoverLine.attr('x1', dataPointX).attr('x2', dataPointX).attr('opacity', 1);
 
           // Only update React state if the data point has actually changed
           // Compare by date to avoid object reference issues
@@ -249,14 +239,16 @@ export const UsersChart: React.FC<UsersChartProps> = ({
 
             // Calculate the absolute X position of the data point
             // dataPointX is relative to the inner chart, so we need to add margins
-            const tooltipX = chartContainerRect && containerRect
-              ? (chartContainerRect.left - containerRect.left) + margins.left + dataPointX
-              : margins.left + dataPointX;
+            const tooltipX =
+              chartContainerRect && containerRect
+                ? chartContainerRect.left - containerRect.left + margins.left + dataPointX
+                : margins.left + dataPointX;
 
             // Position tooltip at the top of the chart
-            const tooltipY = chartContainerRect && containerRect
-              ? (chartContainerRect.top - containerRect.top) + margins.top
-              : margins.top;
+            const tooltipY =
+              chartContainerRect && containerRect
+                ? chartContainerRect.top - containerRect.top + margins.top
+                : margins.top;
 
             const tooltipValues = visibleSeries.map((s) => ({
               key: s.key,
@@ -315,7 +307,10 @@ export const UsersChart: React.FC<UsersChartProps> = ({
     if (hoverData) {
       // Use hover data - only calculate percentages for visible series
       const visibleSeriesKeys = series.filter((s) => !hiddenSeries.has(s.key)).map((s) => s.key);
-      const visibleTotal = visibleSeriesKeys.reduce((sum, key) => sum + (hoverData.values[key] || 0), 0);
+      const visibleTotal = visibleSeriesKeys.reduce(
+        (sum, key) => sum + (hoverData.values[key] || 0),
+        0
+      );
 
       return series.map((s) => {
         // Hidden series should show 0%
@@ -341,7 +336,10 @@ export const UsersChart: React.FC<UsersChartProps> = ({
       if (!latestData) return series.map((s) => ({ ...s, percentage: 0, value: 0 }));
 
       const visibleSeriesKeys = series.filter((s) => !hiddenSeries.has(s.key)).map((s) => s.key);
-      const visibleTotal = visibleSeriesKeys.reduce((sum, key) => sum + (latestData.values[key] || 0), 0);
+      const visibleTotal = visibleSeriesKeys.reduce(
+        (sum, key) => sum + (latestData.values[key] || 0),
+        0
+      );
 
       return series.map((s) => {
         // Hidden series should show 0%
@@ -400,9 +398,7 @@ export const UsersChart: React.FC<UsersChartProps> = ({
                 transform: 'translateX(-50%)',
               }}
             >
-              <div className={styles.tooltipDate}>
-                {d3.timeFormat('%b %d, %Y')(tooltip.date)}
-              </div>
+              <div className={styles.tooltipDate}>{d3.timeFormat('%b %d, %Y')(tooltip.date)}</div>
               {tooltip.values.map((v) => (
                 <div key={v.key} className={styles.tooltipRow}>
                   <div className={styles.tooltipColor} style={{ backgroundColor: v.color }} />

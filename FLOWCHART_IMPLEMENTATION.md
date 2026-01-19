@@ -74,6 +74,7 @@ function App() {
 **File:** `FlowChart.tsx`
 
 **Pros:**
+
 - ✅ No external dependencies
 - ✅ Lightweight and fast
 - ✅ Server-side rendering compatible
@@ -81,6 +82,7 @@ function App() {
 - ✅ Automatic layout calculation
 
 **Best for:**
+
 - Most use cases
 - Static flowcharts
 - Simple interactions
@@ -91,23 +93,27 @@ function App() {
 **File:** `FlowChartD3.tsx`
 
 **Pros:**
+
 - ✅ Rich animation capabilities
 - ✅ Built-in zoom/pan features
 - ✅ Advanced path generators
 - ✅ Integration with D3 ecosystem
 
 **Cons:**
+
 - ❌ Requires D3 dependency (~500KB)
 - ❌ More complex setup
 - ❌ Imperative API
 
 **Best for:**
+
 - Complex animations
 - Interactive dashboards
 - Data visualization suites
 - Advanced D3 integrations
 
 **Installation:**
+
 ```bash
 npm install d3 @types/d3
 ```
@@ -117,6 +123,7 @@ npm install d3 @types/d3
 ### Node Types
 
 #### 1. Period Node
+
 Represents a timeline period or process stage.
 
 ```typescript
@@ -131,6 +138,7 @@ Represents a timeline period or process stage.
 **Visual:** Dark blue rectangle with white text
 
 #### 2. Decision Node
+
 Represents a yes/no decision point.
 
 ```typescript
@@ -146,6 +154,7 @@ Represents a yes/no decision point.
 **Visual:** White rectangle with black text, green/orange Yes/No indicators
 
 #### 3. Outcome Node
+
 Represents a result or action.
 
 ```typescript
@@ -179,7 +188,7 @@ The complete implementation matching your image:
 ```tsx
 import { LumaFlowChartExample } from './components/FlowChart/example';
 
-<LumaFlowChartExample />
+<LumaFlowChartExample />;
 ```
 
 ### 2. Approval Workflow
@@ -253,9 +262,9 @@ const getNodeStyle = () => {
   switch (node.type) {
     case 'period':
       return {
-        fill: '#1e3a5f',        // Change background
-        stroke: '#1e3a5f',      // Change border
-        textColor: '#ffffff',   // Change text color
+        fill: '#1e3a5f', // Change background
+        stroke: '#1e3a5f', // Change border
+        textColor: '#ffffff', // Change text color
       };
     // ... other types
   }
@@ -268,15 +277,15 @@ Edit `src/components/FlowChart/layoutEngine.ts`:
 
 ```typescript
 const defaultConfig = {
-  nodeSpacing: 80,        // Vertical space between nodes
-  levelSpacing: 150,      // Unused (legacy)
-  periodWidth: 120,       // Period node width
-  periodHeight: 60,       // Period node height
-  decisionWidth: 200,     // Decision node width
-  decisionHeight: 80,     // Decision node height
-  outcomeWidth: 220,      // Outcome node width
-  outcomeHeight: 70,      // Outcome node height
-  branchSpacing: 250,     // Horizontal spacing for branches
+  nodeSpacing: 80, // Vertical space between nodes
+  levelSpacing: 150, // Unused (legacy)
+  periodWidth: 120, // Period node width
+  periodHeight: 60, // Period node height
+  decisionWidth: 200, // Decision node width
+  decisionHeight: 80, // Decision node height
+  outcomeWidth: 220, // Outcome node width
+  outcomeHeight: 70, // Outcome node height
+  branchSpacing: 250, // Horizontal spacing for branches
 };
 ```
 
@@ -334,10 +343,7 @@ case 'custom':
 ```tsx
 import styles from './FlowChart.module.css';
 
-<FlowChart
-  data={myFlow}
-  className={styles.flowChart}
-/>
+<FlowChart data={myFlow} className={styles.flowChart} />;
 ```
 
 ### With Tailwind CSS
@@ -361,7 +367,7 @@ const FlowChartContainer = styled.div`
 
 <FlowChartContainer>
   <FlowChart data={myFlow} />
-</FlowChartContainer>
+</FlowChartContainer>;
 ```
 
 ## 🚀 Advanced Features
@@ -446,6 +452,7 @@ Or with scroll:
 ### Nodes Overlapping
 
 Increase spacing in `layoutEngine.ts`:
+
 ```typescript
 nodeSpacing: 100,        // Increase from 80
 branchSpacing: 300,      // Increase from 250
@@ -454,6 +461,7 @@ branchSpacing: 300,      // Increase from 250
 ### Text Truncated
 
 Increase node dimensions:
+
 ```typescript
 decisionWidth: 250,      // Increase from 200
 outcomeHeight: 90,       // Increase from 70
@@ -462,6 +470,7 @@ outcomeHeight: 90,       // Increase from 70
 ### Arrows Not Showing
 
 Ensure marker is defined:
+
 ```tsx
 <defs>
   <marker id="arrowhead" ...>
@@ -469,6 +478,7 @@ Ensure marker is defined:
 ```
 
 And referenced:
+
 ```tsx
 <path markerEnd="url(#arrowhead)" ... />
 ```

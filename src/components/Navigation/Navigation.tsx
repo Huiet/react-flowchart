@@ -3,14 +3,16 @@ import { Link, useLocation } from 'react-router-dom';
 export function Navigation() {
   const location = useLocation();
   return (
-    <nav style={{
-      backgroundColor: '#1e3a5f',
-      padding: '15px 30px',
-      display: 'flex',
-      gap: '20px',
-      alignItems: 'center',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    }}>
+    <nav
+      style={{
+        backgroundColor: '#1e3a5f',
+        padding: '15px 30px',
+        display: 'flex',
+        gap: '20px',
+        alignItems: 'center',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      }}
+    >
       <Link
         to="/"
         style={{
@@ -33,7 +35,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/flowchart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/flowchart-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -57,7 +62,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/flowchart-v2-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/flowchart-v2-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -81,7 +89,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/d3-stock-chart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/d3-stock-chart-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -105,7 +116,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/d3-bar-chart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/d3-bar-chart-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -129,7 +143,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/d3-pie-chart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/d3-pie-chart-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -153,7 +170,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/users-chart-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/users-chart-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -177,7 +197,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/stats-card-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/stats-card-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -201,7 +224,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/application-tracking-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/application-tracking-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -225,7 +251,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/zip-map-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/zip-map-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -249,7 +278,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/zip-map-canvas-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/zip-map-canvas-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}
@@ -273,7 +305,10 @@ export function Navigation() {
           textDecoration: 'none',
           fontSize: '16px',
           padding: '8px 16px',
-          backgroundColor: location.pathname === '/zip-map-webgl-demo' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+          backgroundColor:
+            location.pathname === '/zip-map-webgl-demo'
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(255,255,255,0.1)',
           borderRadius: '4px',
           transition: 'background-color 0.2s',
         }}

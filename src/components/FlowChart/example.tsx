@@ -66,7 +66,8 @@ const lumaFlowChartData: FlowNode = {
                     noPath: {
                       id: 'outcome-6',
                       type: 'outcome',
-                      label: 'Investor receives the\nperformance of the worst\nperforming underlying',
+                      label:
+                        'Investor receives the\nperformance of the worst\nperforming underlying',
                     },
                   },
                 },
@@ -133,10 +134,7 @@ const simpleFlowChartData: FlowNode = {
 export const SimpleFlowChartExample: React.FC = () => {
   return (
     <div style={{ padding: '20px' }}>
-      <FlowChart
-        data={simpleFlowChartData}
-        title="Simple Decision Flow"
-      />
+      <FlowChart data={simpleFlowChartData} title="Simple Decision Flow" />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FlowChart } from './components/FlowChart';
-import type { FlowNode, FlowChartData } from './components/FlowChart';
+import type { FlowChartData, FlowNode } from './components/FlowChart';
 
 // Luma Conditional Coupon example
 const lumaData: FlowNode = {
@@ -66,7 +66,8 @@ const lumaData: FlowNode = {
                     noPath: {
                       id: 'outcome-6',
                       type: 'outcome',
-                      label: 'Investor receives the\nperformance of the worst\nperforming underlying',
+                      label:
+                        'Investor receives the\nperformance of the worst\nperforming underlying',
                     },
                   },
                 },
@@ -261,10 +262,22 @@ const referenceBasedData: FlowChartData = {
 };
 
 const examples = {
-  luma: { data: lumaData, title: 'Hypothetical Scenario Analysis', subtitle: 'Trade Idea\nConditional Coupon / Conditional Protection' },
+  luma: {
+    data: lumaData,
+    title: 'Hypothetical Scenario Analysis',
+    subtitle: 'Trade Idea\nConditional Coupon / Conditional Protection',
+  },
   simple: { data: simpleData, title: 'Simple Decision Flow', subtitle: '' },
-  approval: { data: approvalData, title: 'Approval Workflow', subtitle: 'Purchase Request Process' },
-  refBased: { chartData: referenceBasedData, title: 'Reference-Based Model (NEW)', subtitle: 'Demonstrates yes/no paths to same period' },
+  approval: {
+    data: approvalData,
+    title: 'Approval Workflow',
+    subtitle: 'Purchase Request Process',
+  },
+  refBased: {
+    chartData: referenceBasedData,
+    title: 'Reference-Based Model (NEW)',
+    subtitle: 'Demonstrates yes/no paths to same period',
+  },
 };
 
 export function FlowChartDemo() {
@@ -282,12 +295,14 @@ export function FlowChartDemo() {
         </p>
 
         {/* Example selector */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '10px',
-          marginBottom: '30px',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '10px',
+            marginBottom: '30px',
+          }}
+        >
           {(Object.keys(examples) as Array<keyof typeof examples>).map((key) => (
             <button
               key={key}
@@ -309,12 +324,14 @@ export function FlowChartDemo() {
         </div>
 
         {/* FlowChart */}
-        <div style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          padding: '20px',
-        }}>
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            padding: '20px',
+          }}
+        >
           <FlowChart
             data={'data' in example ? example.data : undefined}
             chartData={'chartData' in example ? example.chartData : undefined}
@@ -324,21 +341,25 @@ export function FlowChartDemo() {
         </div>
 
         {/* Instructions */}
-        <div style={{
-          marginTop: '30px',
-          padding: '20px',
-          backgroundColor: '#ffffff',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-        }}>
+        <div
+          style={{
+            marginTop: '30px',
+            padding: '20px',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          }}
+        >
           <h2 style={{ color: '#1e3a5f', marginTop: 0 }}>How to Use</h2>
-          <pre style={{
-            backgroundColor: '#f5f5f5',
-            padding: '15px',
-            borderRadius: '5px',
-            overflow: 'auto',
-          }}>
-{`import { FlowChart } from './components/FlowChart';
+          <pre
+            style={{
+              backgroundColor: '#f5f5f5',
+              padding: '15px',
+              borderRadius: '5px',
+              overflow: 'auto',
+            }}
+          >
+            {`import { FlowChart } from './components/FlowChart';
 import type { FlowNode } from './components/FlowChart';
 
 const myFlow: FlowNode = {
@@ -367,9 +388,15 @@ const myFlow: FlowNode = {
 
           <h3 style={{ color: '#1e3a5f', marginTop: '20px' }}>Node Types</h3>
           <ul>
-            <li><strong>period</strong> - Dark blue boxes for timeline periods or process stages</li>
-            <li><strong>decision</strong> - White boxes for yes/no questions</li>
-            <li><strong>outcome</strong> - Light blue boxes for results or actions</li>
+            <li>
+              <strong>period</strong> - Dark blue boxes for timeline periods or process stages
+            </li>
+            <li>
+              <strong>decision</strong> - White boxes for yes/no questions
+            </li>
+            <li>
+              <strong>outcome</strong> - Light blue boxes for results or actions
+            </li>
           </ul>
 
           <h3 style={{ color: '#1e3a5f' }}>Features</h3>

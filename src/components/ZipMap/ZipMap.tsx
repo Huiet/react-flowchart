@@ -67,6 +67,7 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const [usTopology, setUsTopology] = useState<any>(null);
   const [zctaByState, setZctaByState] = useState<Map<string, any[]>>(new Map());
   const [tooltip, setTooltip] = useState<{
@@ -78,7 +79,9 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
   const [activeState, setActiveState] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredZip, setHoveredZip] = useState<string | null>(null);
+  const [hoveredPrefix, setHoveredPrefix] = useState<string | null>(null);
   const [showEmptyZips, setShowEmptyZips] = useState(false);
+  const [showFiveDigit, setShowFiveDigit] = useState(false);
 
   const dataMap = useMemo(() => new Map(data.map((d) => [d.zipCode, d.value])), [data]);
   const colorScale = useMemo(() => createColorScale(data.map((d) => d.value)), [data]);
@@ -176,8 +179,8 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
   }, [zctaByState]);
 
   // Memoize filtered features for zips with data
-  const dataZctaFeatures = useMemo(() => 
-    allZctaFeatures.filter((d: any) => dataMap.has(d.properties.zipCode)),
+  const dataZctaFeatures = useMemo(
+    () => allZctaFeatures.filter((d: any) => dataMap.has(d.properties.zipCode)),
     [allZctaFeatures, dataMap]
   );
 
@@ -222,9 +225,21 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     [threeDigitAreas]
   );
 
+  // Get 3-digit areas for active state
+  const activeState3Digit = useMemo(() => {
+    if (!activeState) return [];
+    return threeDigitAreas
+      .filter((a) => getStateFipsFromZip(a.prefix + '00') === activeState)
+      .sort((a, b) => b.totalValue - a.totalValue);
+  }, [activeState, threeDigitAreas]);
+
   // Memoize projection
-  const projection = useMemo(() => 
-    d3.geoAlbersUsa().scale(1300).translate([width / 2, height / 2]),
+  const projection = useMemo(
+    () =>
+      d3
+        .geoAlbersUsa()
+        .scale(1300)
+        .translate([width / 2, height / 2]),
     [width, height]
   );
 
@@ -247,7 +262,7 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
   const resetZoom = () => {
     if (!svgRef.current || !zoomRef.current) return;
     setActiveState(null);
-    
+
     setTimeout(() => {
       if (!svgRef.current || !zoomRef.current) return;
       d3.select(svgRef.current)
@@ -262,10 +277,6 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
 
     const path = d3.geoPath(projection);
 
-    if (activeState === fips) {
-      return;
-    }
-
     const [[x0, y0], [x1, y1]] = path.bounds(stateFeature);
     const dx = x1 - x0;
     const dy = y1 - y0;
@@ -275,9 +286,18 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     const tx = width / 2 - scale * x;
     const ty = height / 2 - scale * y;
 
+    if (activeState === fips) {
+      // Already on this state, just re-zoom
+      d3.select(svgRef.current)
+        .transition()
+        .duration(750)
+        .call(zoomRef.current.transform as any, d3.zoomIdentity.translate(tx, ty).scale(scale));
+      return;
+    }
+
     // Set active state and wait for re-render before zooming
     setActiveState(fips);
-    
+
     setTimeout(() => {
       if (!svgRef.current || !zoomRef.current) return;
       d3.select(svgRef.current)
@@ -323,6 +343,31 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .call(zoomRef.current.transform as any, d3.zoomIdentity.translate(tx, ty).scale(scale));
   };
 
+  // Zoom to a specific 3-digit area
+  const zoomTo3Digit = (prefix: string) => {
+    if (!svgRef.current || !zoomRef.current || !gRef.current) return;
+
+    const areaPath = gRef.current
+      .select('.three-digit-areas')
+      .selectAll('path')
+      .filter((d: any) => d.prefix === prefix);
+
+    const node = areaPath.node() as SVGPathElement;
+    if (!node) return;
+
+    const bounds = node.getBBox();
+    const x = bounds.x + bounds.width / 2;
+    const y = bounds.y + bounds.height / 2;
+    const scale = Math.min(15, 0.15 / Math.max(bounds.width / width, bounds.height / height));
+    const tx = width / 2 - scale * x;
+    const ty = height / 2 - scale * y;
+
+    d3.select(svgRef.current)
+      .transition()
+      .duration(750)
+      .call(zoomRef.current.transform as any, d3.zoomIdentity.translate(tx, ty).scale(scale));
+  };
+
   // Highlight zip on map when hovered from table
   const prevHoveredZip = useRef<string | null>(null);
   useEffect(() => {
@@ -350,6 +395,34 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
 
     prevHoveredZip.current = hoveredZip;
   }, [hoveredZip, colorScale, dataMap]);
+
+  // Highlight 3-digit area on map when hovered from table
+  const prevHoveredPrefix = useRef<string | null>(null);
+  useEffect(() => {
+    if (!gRef.current) return;
+
+    const g = gRef.current;
+
+    // Reset previous hovered prefix
+    if (prevHoveredPrefix.current && prevHoveredPrefix.current !== hoveredPrefix) {
+      const prevPrefix = prevHoveredPrefix.current;
+      g.select('.three-digit-areas')
+        .selectAll('path')
+        .filter((d: any) => d.prefix === prevPrefix)
+        .attr('fill', (d: any) => threeDigitColorScale.scale(d.totalValue));
+    }
+
+    // Highlight new hovered prefix
+    if (hoveredPrefix) {
+      g.select('.three-digit-areas')
+        .selectAll('path')
+        .filter((d: any) => d.prefix === hoveredPrefix)
+        .attr('fill', '#f57c00')
+        .raise();
+    }
+
+    prevHoveredPrefix.current = hoveredPrefix;
+  }, [hoveredPrefix, threeDigitColorScale]);
 
   useEffect(() => {
     if (!svgRef.current || !usTopology) return;
@@ -418,28 +491,60 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
 
     // Empty zip borders - single combined path for performance
     if (showEmptyZips) {
-      const emptyZipPathData = allZctaFeatures
-        .filter((d: any) => !dataMap.has(d.properties.zipCode))
-        .map((d: any) => path(d))
-        .filter(Boolean)
-        .join(' ');
-      
-      g.append('path')
-        .attr('class', 'empty-zips')
-        .attr('d', emptyZipPathData)
-        .attr('fill', 'none')
-        .attr('stroke', '#ccc')
-        .attr('stroke-width', 0.25)
-        .attr('pointer-events', 'none');
+      if (activeState && showFiveDigit) {
+        // Show 5-digit empty zips for active state only
+        const emptyZipPathData = allZctaFeatures
+          .filter(
+            (d: any) => !dataMap.has(d.properties.zipCode) && d.properties.stateFips === activeState
+          )
+          .map((d: any) => path(d))
+          .filter(Boolean)
+          .join(' ');
+
+        g.append('path')
+          .attr('class', 'empty-zips')
+          .attr('d', emptyZipPathData)
+          .attr('fill', 'none')
+          .attr('stroke', '#ccc')
+          .attr('stroke-width', 0.25)
+          .attr('pointer-events', 'none');
+      } else {
+        // Show 3-digit empty areas
+        const emptyThreeDigit = Array.from(
+          allZctaFeatures.reduce((map, f) => {
+            const prefix = f.properties.zipCode.substring(0, 3);
+            if (!map.has(prefix)) map.set(prefix, { features: [], hasData: false });
+            map.get(prefix).features.push(f);
+            if (dataMap.has(f.properties.zipCode)) map.get(prefix).hasData = true;
+            return map;
+          }, new Map<string, { features: any[]; hasData: boolean }>())
+        )
+          .filter(([, group]) => !group.hasData)
+          .flatMap(([, group]) => group.features);
+
+        const emptyPathData = emptyThreeDigit
+          .map((d: any) => path(d))
+          .filter(Boolean)
+          .join(' ');
+
+        g.append('path')
+          .attr('class', 'empty-zips')
+          .attr('d', emptyPathData)
+          .attr('fill', 'none')
+          .attr('stroke', '#ccc')
+          .attr('stroke-width', 0.25)
+          .attr('pointer-events', 'none');
+      }
     }
 
-    // Always render 3-digit merged areas (except for active state)
-    const threeDigitToRender = activeState
-      ? threeDigitAreas.filter((d) => {
-          const sampleZip = d.prefix + '00';
-          return getStateFipsFromZip(sampleZip) !== activeState;
-        })
-      : threeDigitAreas;
+    // Always render 3-digit merged areas (except for active state when showing 5-digit)
+    const threeDigitToRender =
+      activeState && showFiveDigit
+        ? threeDigitAreas.filter((d) => {
+            const sampleZip = d.prefix + '00';
+            return getStateFipsFromZip(sampleZip) !== activeState;
+          })
+        : threeDigitAreas;
 
     g.append('g')
       .attr('class', 'three-digit-areas')
@@ -462,6 +567,7 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .attr('stroke', 'transparent')
       .style('cursor', 'pointer')
       .on('mouseenter', function (event: MouseEvent, d: any) {
+        setHoveredPrefix(d.prefix);
         setTooltip({
           zip: `${d.prefix}xx Area`,
           value: d.totalValue,
@@ -473,22 +579,25 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
         setTooltip((t) => (t ? { ...t, x: event.clientX, y: event.clientY } : null));
       })
       .on('mouseleave', function () {
+        setHoveredPrefix(null);
         setTooltip(null);
       })
       .on('click', function (event: MouseEvent, d: any) {
         event.stopPropagation();
-        const sampleZip = d.prefix + '00';
-        const stateFips = getStateFipsFromZip(sampleZip);
-        if (stateFips) {
-          const stateFeature = states.features.find((s: any) => s.id === stateFips);
-          if (stateFeature) {
-            zoomToState(stateFeature, stateFips);
+        // Set active state if not already set
+        if (!activeState) {
+          const sampleZip = d.prefix + '00';
+          const stateFips = getStateFipsFromZip(sampleZip);
+          if (stateFips) {
+            setActiveState(stateFips);
           }
         }
+        // Zoom to the 3-digit area
+        setTimeout(() => zoomTo3Digit(d.prefix), 0);
       });
 
-    // Render 5-digit zips for active state only
-    if (activeState) {
+    // Render 5-digit zips for active state only (when showFiveDigit is true)
+    if (activeState && showFiveDigit) {
       const activeStateZctaFeatures = dataZctaFeatures.filter(
         (d: any) => d.properties.stateFips === activeState
       );
@@ -539,6 +648,7 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .scaleExtent([1, 25])
       .on('zoom', (event) => {
         g.attr('transform', event.transform);
+        transformRef.current = event.transform;
         setZoomLevel(event.transform.k);
       });
 
@@ -546,7 +656,27 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     svg.call(zoom);
     svg.on('dblclick.zoom', null);
     svg.on('dblclick', () => resetZoom());
-  }, [usTopology, allZctaFeatures, dataZctaFeatures, dataMap, colorScale, threeDigitAreas, threeDigitColorScale, activeState, projection, width, height, stateFipsList, showEmptyZips]);
+
+    // Restore previous transform after re-render
+    if (transformRef.current !== d3.zoomIdentity) {
+      svg.call(zoom.transform as any, transformRef.current);
+    }
+  }, [
+    usTopology,
+    allZctaFeatures,
+    dataZctaFeatures,
+    dataMap,
+    colorScale,
+    threeDigitAreas,
+    threeDigitColorScale,
+    activeState,
+    showFiveDigit,
+    projection,
+    width,
+    height,
+    stateFipsList,
+    showEmptyZips,
+  ]);
 
   const isZoomed = zoomLevel > 1.1;
   const panelWidth = 280;
@@ -748,22 +878,43 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
                     ×
                   </button>
                 </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: '#666',
-                    marginTop: 4,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <span>{activeStateZips.length} zip codes</span>
-                  <span>
-                    Total:{' '}
-                    <strong>
-                      {activeStateZips.reduce((sum, z) => sum + z.value, 0).toLocaleString()}
-                    </strong>
-                  </span>
+                <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
+                  {showFiveDigit
+                    ? `${activeStateZips.length} zip codes`
+                    : `${activeState3Digit.length} 3-digit areas`}
+                </div>
+                {/* 3-digit vs 5-digit toggle */}
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button
+                    onClick={() => setShowFiveDigit(false)}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: 4,
+                      background: !showFiveDigit ? '#e3f2fd' : '#fff',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: !showFiveDigit ? 600 : 400,
+                    }}
+                  >
+                    3-digit
+                  </button>
+                  <button
+                    onClick={() => setShowFiveDigit(true)}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      border: '1px solid #ddd',
+                      borderRadius: 4,
+                      background: showFiveDigit ? '#e3f2fd' : '#fff',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: showFiveDigit ? 600 : 400,
+                    }}
+                  >
+                    5-digit
+                  </button>
                 </div>
               </div>
 
@@ -772,7 +923,9 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '10px 12px', textAlign: 'left' }}>Zip Code</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'left' }}>
+                        {showFiveDigit ? 'Zip Code' : '3-Digit'}
+                      </th>
                       <th style={{ padding: '10px 12px', textAlign: 'right' }}>Value</th>
                     </tr>
                   </thead>
@@ -783,37 +936,73 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
               <div style={{ flex: 1, overflow: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <tbody>
-                    {activeStateZips.map((item, i) => (
-                      <tr
-                        key={item.zipCode}
-                        onMouseEnter={() => setHoveredZip(item.zipCode)}
-                        onMouseLeave={() => setHoveredZip(null)}
-                        onClick={() => zoomToZip(item.zipCode)}
-                        style={{
-                          background:
-                            hoveredZip === item.zipCode
-                              ? '#f0f7ff'
-                              : i % 2 === 0
-                                ? '#fff'
-                                : '#fafafa',
-                          cursor: 'pointer',
-                          transition: 'background 0.15s',
-                        }}
-                      >
-                        <td
-                          style={{
-                            padding: '10px 12px',
-                            borderLeft: `10px solid ${colorScale.scale(item.value)}`,
-                            fontFamily: 'monospace',
-                          }}
-                        >
-                          {item.zipCode}
-                        </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}>
-                          {item.value.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
+                    {showFiveDigit
+                      ? activeStateZips.map((item, i) => (
+                          <tr
+                            key={item.zipCode}
+                            onMouseEnter={() => setHoveredZip(item.zipCode)}
+                            onMouseLeave={() => setHoveredZip(null)}
+                            onClick={() => zoomToZip(item.zipCode)}
+                            style={{
+                              background:
+                                hoveredZip === item.zipCode
+                                  ? '#f0f7ff'
+                                  : i % 2 === 0
+                                    ? '#fff'
+                                    : '#fafafa',
+                              cursor: 'pointer',
+                              transition: 'background 0.15s',
+                            }}
+                          >
+                            <td
+                              style={{
+                                padding: '10px 12px',
+                                borderLeft: `10px solid ${hoveredZip === item.zipCode ? '#f57c00' : colorScale.scale(item.value)}`,
+                                fontFamily: 'monospace',
+                              }}
+                            >
+                              {item.zipCode}
+                            </td>
+                            <td
+                              style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}
+                            >
+                              {item.value.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      : activeState3Digit.map((item, i) => (
+                          <tr
+                            key={item.prefix}
+                            onMouseEnter={() => setHoveredPrefix(item.prefix)}
+                            onMouseLeave={() => setHoveredPrefix(null)}
+                            onClick={() => zoomTo3Digit(item.prefix)}
+                            style={{
+                              background:
+                                hoveredPrefix === item.prefix
+                                  ? '#f0f7ff'
+                                  : i % 2 === 0
+                                    ? '#fff'
+                                    : '#fafafa',
+                              cursor: 'pointer',
+                              transition: 'background 0.15s',
+                            }}
+                          >
+                            <td
+                              style={{
+                                padding: '10px 12px',
+                                borderLeft: `10px solid ${hoveredPrefix === item.prefix ? '#f57c00' : threeDigitColorScale.scale(item.totalValue)}`,
+                                fontFamily: 'monospace',
+                              }}
+                            >
+                              {item.prefix}xx
+                            </td>
+                            <td
+                              style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}
+                            >
+                              {item.totalValue.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
                   </tbody>
                 </table>
               </div>

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client';
 import RBush from 'rbush';
-import { ZipMapProps } from '../ZipMap/types';
+import * as topojson from 'topojson-client';
 import { createColorScale } from '../ZipMap/colorScale';
 import { getStateFipsFromZip } from '../ZipMap/stateUtils';
+import { ZipMapProps } from '../ZipMap/types';
 import { fetchStateZCTA, getObjectName } from '../ZipMap/zctaLoader';
 
 const US_STATES_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json';
@@ -12,16 +12,57 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 25;
 
 const FIPS_TO_NAME: Record<string, string> = {
-  '01': 'Alabama', '02': 'Alaska', '04': 'Arizona', '05': 'Arkansas', '06': 'California',
-  '08': 'Colorado', '09': 'Connecticut', '10': 'Delaware', '11': 'DC', '12': 'Florida',
-  '13': 'Georgia', '15': 'Hawaii', '16': 'Idaho', '17': 'Illinois', '18': 'Indiana',
-  '19': 'Iowa', '20': 'Kansas', '21': 'Kentucky', '22': 'Louisiana', '23': 'Maine',
-  '24': 'Maryland', '25': 'Massachusetts', '26': 'Michigan', '27': 'Minnesota', '28': 'Mississippi',
-  '29': 'Missouri', '30': 'Montana', '31': 'Nebraska', '32': 'Nevada', '33': 'New Hampshire',
-  '34': 'New Jersey', '35': 'New Mexico', '36': 'New York', '37': 'North Carolina', '38': 'North Dakota',
-  '39': 'Ohio', '40': 'Oklahoma', '41': 'Oregon', '42': 'Pennsylvania', '44': 'Rhode Island',
-  '45': 'South Carolina', '46': 'South Dakota', '47': 'Tennessee', '48': 'Texas', '49': 'Utah',
-  '50': 'Vermont', '51': 'Virginia', '53': 'Washington', '54': 'West Virginia', '55': 'Wisconsin', '56': 'Wyoming',
+  '01': 'Alabama',
+  '02': 'Alaska',
+  '04': 'Arizona',
+  '05': 'Arkansas',
+  '06': 'California',
+  '08': 'Colorado',
+  '09': 'Connecticut',
+  '10': 'Delaware',
+  '11': 'DC',
+  '12': 'Florida',
+  '13': 'Georgia',
+  '15': 'Hawaii',
+  '16': 'Idaho',
+  '17': 'Illinois',
+  '18': 'Indiana',
+  '19': 'Iowa',
+  '20': 'Kansas',
+  '21': 'Kentucky',
+  '22': 'Louisiana',
+  '23': 'Maine',
+  '24': 'Maryland',
+  '25': 'Massachusetts',
+  '26': 'Michigan',
+  '27': 'Minnesota',
+  '28': 'Mississippi',
+  '29': 'Missouri',
+  '30': 'Montana',
+  '31': 'Nebraska',
+  '32': 'Nevada',
+  '33': 'New Hampshire',
+  '34': 'New Jersey',
+  '35': 'New Mexico',
+  '36': 'New York',
+  '37': 'North Carolina',
+  '38': 'North Dakota',
+  '39': 'Ohio',
+  '40': 'Oklahoma',
+  '41': 'Oregon',
+  '42': 'Pennsylvania',
+  '44': 'Rhode Island',
+  '45': 'South Carolina',
+  '46': 'South Dakota',
+  '47': 'Tennessee',
+  '48': 'Texas',
+  '49': 'Utah',
+  '50': 'Vermont',
+  '51': 'Virginia',
+  '53': 'Washington',
+  '54': 'West Virginia',
+  '55': 'Wisconsin',
+  '56': 'Wyoming',
 };
 
 interface Transform {
@@ -70,7 +111,10 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
 
   // State summaries for side panel
   const stateSummaries = useMemo(() => {
-    const summaries = new Map<string, { fips: string; name: string; count: number; total: number }>();
+    const summaries = new Map<
+      string,
+      { fips: string; name: string; count: number; total: number }
+    >();
     data.forEach((d) => {
       const fips = getStateFipsFromZip(d.zipCode);
       if (!fips) return;
@@ -89,7 +133,11 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
   const stateColorScale = useMemo(() => {
     if (stateSummaries.length === 0) return { scale: () => '#ddd' };
     const totals = stateSummaries.map((s) => s.total);
-    return { scale: d3.scaleSequential(d3.interpolateBlues).domain([Math.min(...totals), Math.max(...totals)]) };
+    return {
+      scale: d3
+        .scaleSequential(d3.interpolateBlues)
+        .domain([Math.min(...totals), Math.max(...totals)]),
+    };
   }, [stateSummaries]);
 
   // Zip codes for active state
@@ -101,7 +149,11 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
   }, [activeState, data]);
 
   const projection = useMemo(
-    () => d3.geoAlbersUsa().scale(1300).translate([width / 2, height / 2]),
+    () =>
+      d3
+        .geoAlbersUsa()
+        .scale(1300)
+        .translate([width / 2, height / 2]),
     [width, height]
   );
 
@@ -215,8 +267,16 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
 
     const path = d3.geoPath(projection, ctx);
     const states = topojson.feature(usTopology, usTopology.objects.states) as any;
-    const stateMesh = topojson.mesh(usTopology, usTopology.objects.states, (a: any, b: any) => a !== b);
-    const nationOutline = topojson.mesh(usTopology, usTopology.objects.states, (a: any, b: any) => a === b);
+    const stateMesh = topojson.mesh(
+      usTopology,
+      usTopology.objects.states,
+      (a: any, b: any) => a !== b
+    );
+    const nationOutline = topojson.mesh(
+      usTopology,
+      usTopology.objects.states,
+      (a: any, b: any) => a === b
+    );
 
     ctx.save();
     ctx.scale(dpr, dpr);
@@ -243,7 +303,12 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
 
     // Draw empty zip borders (only visible ones via spatial query)
     if (showEmptyZips) {
-      const visibleZips = allZipIndex.search({ minX: viewMinX, minY: viewMinY, maxX: viewMaxX, maxY: viewMaxY });
+      const visibleZips = allZipIndex.search({
+        minX: viewMinX,
+        minY: viewMinY,
+        maxX: viewMaxX,
+        maxY: viewMaxY,
+      });
       ctx.strokeStyle = '#ccc';
       ctx.lineWidth = 0.3;
       ctx.beginPath();
@@ -256,7 +321,12 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
     }
 
     // Draw zip code fills (only those with data, only visible)
-    const visibleDataZips = spatialIndex.search({ minX: viewMinX, minY: viewMinY, maxX: viewMaxX, maxY: viewMaxY });
+    const visibleDataZips = spatialIndex.search({
+      minX: viewMinX,
+      minY: viewMinY,
+      maxX: viewMaxX,
+      maxY: viewMaxY,
+    });
     visibleDataZips.forEach((item) => {
       const isHovered = item.zipCode === hoveredZip;
       ctx.fillStyle = isHovered ? '#ffeb3b' : colorScale.scale(dataMap.get(item.zipCode)!);
@@ -267,7 +337,7 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
 
     // Highlight hovered zip with border
     if (hoveredZip) {
-      const hoveredItem = visibleDataZips.find(item => item.zipCode === hoveredZip);
+      const hoveredItem = visibleDataZips.find((item) => item.zipCode === hoveredZip);
       if (hoveredItem) {
         ctx.strokeStyle = '#f57c00';
         ctx.lineWidth = 1.5;
@@ -294,7 +364,20 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
     ctx.stroke();
 
     ctx.restore();
-  }, [usTopology, projection, width, height, dataMap, colorScale, stateFipsList, showEmptyZips, allZipIndex, spatialIndex, transform, hoveredZip]);
+  }, [
+    usTopology,
+    projection,
+    width,
+    height,
+    dataMap,
+    colorScale,
+    stateFipsList,
+    showEmptyZips,
+    allZipIndex,
+    spatialIndex,
+    transform,
+    hoveredZip,
+  ]);
 
   useEffect(() => {
     const frameId = requestAnimationFrame(draw);
@@ -302,70 +385,79 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
   }, [draw]);
 
   // Animate transform to target
-  const animateToTransform = useCallback((target: Transform, duration = 750) => {
-    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+  const animateToTransform = useCallback(
+    (target: Transform, duration = 750) => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
 
-    const start = { ...transform };
-    const startTime = performance.now();
+      const start = { ...transform };
+      const startTime = performance.now();
 
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = easeOutCubic(progress);
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = easeOutCubic(progress);
 
-      setTransform({
-        x: start.x + (target.x - start.x) * eased,
-        y: start.y + (target.y - start.y) * eased,
-        k: start.k + (target.k - start.k) * eased,
-      });
+        setTransform({
+          x: start.x + (target.x - start.x) * eased,
+          y: start.y + (target.y - start.y) * eased,
+          k: start.k + (target.k - start.k) * eased,
+        });
 
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      }
-    };
+        if (progress < 1) {
+          animationRef.current = requestAnimationFrame(animate);
+        }
+      };
 
-    animationRef.current = requestAnimationFrame(animate);
-  }, [transform]);
+      animationRef.current = requestAnimationFrame(animate);
+    },
+    [transform]
+  );
 
   // Find state at canvas point
-  const findStateAtPoint = useCallback((canvasX: number, canvasY: number): string | null => {
-    if (!usTopology) return null;
+  const findStateAtPoint = useCallback(
+    (canvasX: number, canvasY: number): string | null => {
+      if (!usTopology) return null;
 
-    const geoX = (canvasX - transform.x) / transform.k;
-    const geoY = (canvasY - transform.y) / transform.k;
-    const projected = projection.invert?.([geoX, geoY]);
-    if (!projected) return null;
+      const geoX = (canvasX - transform.x) / transform.k;
+      const geoY = (canvasY - transform.y) / transform.k;
+      const projected = projection.invert?.([geoX, geoY]);
+      if (!projected) return null;
 
-    const states = topojson.feature(usTopology, usTopology.objects.states) as any;
-    for (const feature of states.features) {
-      if (d3.geoContains(feature, projected)) {
-        return feature.id;
+      const states = topojson.feature(usTopology, usTopology.objects.states) as any;
+      for (const feature of states.features) {
+        if (d3.geoContains(feature, projected)) {
+          return feature.id;
+        }
       }
-    }
-    return null;
-  }, [usTopology, transform, projection]);
+      return null;
+    },
+    [usTopology, transform, projection]
+  );
 
   // Zoom to state
-  const zoomToState = useCallback((fips: string) => {
-    if (!usTopology) return;
+  const zoomToState = useCallback(
+    (fips: string) => {
+      if (!usTopology) return;
 
-    const states = topojson.feature(usTopology, usTopology.objects.states) as any;
-    const stateFeature = states.features.find((s: any) => s.id === fips);
-    if (!stateFeature) return;
+      const states = topojson.feature(usTopology, usTopology.objects.states) as any;
+      const stateFeature = states.features.find((s: any) => s.id === fips);
+      if (!stateFeature) return;
 
-    const path = d3.geoPath(projection);
-    const [[x0, y0], [x1, y1]] = path.bounds(stateFeature);
-    const dx = x1 - x0;
-    const dy = y1 - y0;
-    const x = (x0 + x1) / 2;
-    const y = (y0 + y1) / 2;
-    const scale = Math.min(10, 0.8 / Math.max(dx / width, dy / height));
-    const tx = width / 2 - scale * x;
-    const ty = height / 2 - scale * y;
+      const path = d3.geoPath(projection);
+      const [[x0, y0], [x1, y1]] = path.bounds(stateFeature);
+      const dx = x1 - x0;
+      const dy = y1 - y0;
+      const x = (x0 + x1) / 2;
+      const y = (y0 + y1) / 2;
+      const scale = Math.min(10, 0.8 / Math.max(dx / width, dy / height));
+      const tx = width / 2 - scale * x;
+      const ty = height / 2 - scale * y;
 
-    setActiveState(fips);
-    animateToTransform({ x: tx, y: ty, k: scale });
-  }, [usTopology, projection, width, height, animateToTransform]);
+      setActiveState(fips);
+      animateToTransform({ x: tx, y: ty, k: scale });
+    },
+    [usTopology, projection, width, height, animateToTransform]
+  );
 
   const resetZoom = useCallback(() => {
     setActiveState(null);
@@ -373,58 +465,69 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
   }, [animateToTransform]);
 
   // Zoom to a specific zip code
-  const zoomToZip = useCallback((zipCode: string) => {
-    const feature = Array.from(spatialIndex.all()).find((item) => item.zipCode === zipCode)?.feature;
-    if (!feature) return;
+  const zoomToZip = useCallback(
+    (zipCode: string) => {
+      const feature = Array.from(spatialIndex.all()).find(
+        (item) => item.zipCode === zipCode
+      )?.feature;
+      if (!feature) return;
 
-    const path = d3.geoPath(projection);
-    const bounds = path.bounds(feature);
-    if (!bounds || !isFinite(bounds[0][0])) return;
+      const path = d3.geoPath(projection);
+      const bounds = path.bounds(feature);
+      if (!bounds || !isFinite(bounds[0][0])) return;
 
-    const [[x0, y0], [x1, y1]] = bounds;
-    const x = (x0 + x1) / 2;
-    const y = (y0 + y1) / 2;
-    const scale = Math.min(15, 0.15 / Math.max((x1 - x0) / width, (y1 - y0) / height));
-    const tx = width / 2 - scale * x;
-    const ty = height / 2 - scale * y;
+      const [[x0, y0], [x1, y1]] = bounds;
+      const x = (x0 + x1) / 2;
+      const y = (y0 + y1) / 2;
+      const scale = Math.min(15, 0.15 / Math.max((x1 - x0) / width, (y1 - y0) / height));
+      const tx = width / 2 - scale * x;
+      const ty = height / 2 - scale * y;
 
-    animateToTransform({ x: tx, y: ty, k: scale });
-  }, [spatialIndex, projection, width, height, animateToTransform]);
+      animateToTransform({ x: tx, y: ty, k: scale });
+    },
+    [spatialIndex, projection, width, height, animateToTransform]
+  );
 
   // Point-in-polygon test for zip codes
-  const findZipAtPoint = useCallback((canvasX: number, canvasY: number): string | null => {
-    const geoX = (canvasX - transform.x) / transform.k;
-    const geoY = (canvasY - transform.y) / transform.k;
+  const findZipAtPoint = useCallback(
+    (canvasX: number, canvasY: number): string | null => {
+      const geoX = (canvasX - transform.x) / transform.k;
+      const geoY = (canvasY - transform.y) / transform.k;
 
-    const candidates = spatialIndex.search({ minX: geoX, minY: geoY, maxX: geoX, maxY: geoY });
+      const candidates = spatialIndex.search({ minX: geoX, minY: geoY, maxX: geoX, maxY: geoY });
 
-    for (const candidate of candidates) {
-      const projected = projection.invert?.([geoX, geoY]);
-      if (projected && d3.geoContains(candidate.feature, projected)) {
-        return candidate.zipCode;
+      for (const candidate of candidates) {
+        const projected = projection.invert?.([geoX, geoY]);
+        if (projected && d3.geoContains(candidate.feature, projected)) {
+          return candidate.zipCode;
+        }
       }
-    }
-    return null;
-  }, [spatialIndex, transform, projection]);
+      return null;
+    },
+    [spatialIndex, transform, projection]
+  );
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
 
-    const scaleFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newK = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, transform.k * scaleFactor));
+      const scaleFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      const newK = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, transform.k * scaleFactor));
 
-    if (newK === transform.k) return;
+      if (newK === transform.k) return;
 
-    const newX = mouseX - (mouseX - transform.x) * (newK / transform.k);
-    const newY = mouseY - (mouseY - transform.y) * (newK / transform.k);
+      const newX = mouseX - (mouseX - transform.x) * (newK / transform.k);
+      const newY = mouseY - (mouseY - transform.y) * (newK / transform.k);
 
-    setTransform({ x: newX, y: newY, k: newK });
-  }, [transform]);
+      setTransform({ x: newX, y: newY, k: newK });
+    },
+    [transform]
+  );
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     isDragging.current = true;
@@ -432,26 +535,29 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
     lastMouse.current = { x: e.clientX, y: e.clientY };
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    setMousePos({ x: e.clientX, y: e.clientY });
+      setMousePos({ x: e.clientX, y: e.clientY });
 
-    if (isDragging.current) {
-      const dx = e.clientX - lastMouse.current.x;
-      const dy = e.clientY - lastMouse.current.y;
-      dragDistance.current += Math.abs(dx) + Math.abs(dy);
-      lastMouse.current = { x: e.clientX, y: e.clientY };
-      setTransform((t) => ({ ...t, x: t.x + dx, y: t.y + dy }));
-      setHoveredZip(null);
-    } else {
-      const canvasX = e.clientX - rect.left;
-      const canvasY = e.clientY - rect.top;
-      const zip = findZipAtPoint(canvasX, canvasY);
-      setHoveredZip(zip);
-    }
-  }, [findZipAtPoint]);
+      if (isDragging.current) {
+        const dx = e.clientX - lastMouse.current.x;
+        const dy = e.clientY - lastMouse.current.y;
+        dragDistance.current += Math.abs(dx) + Math.abs(dy);
+        lastMouse.current = { x: e.clientX, y: e.clientY };
+        setTransform((t) => ({ ...t, x: t.x + dx, y: t.y + dy }));
+        setHoveredZip(null);
+      } else {
+        const canvasX = e.clientX - rect.left;
+        const canvasY = e.clientY - rect.top;
+        const zip = findZipAtPoint(canvasX, canvasY);
+        setHoveredZip(zip);
+      }
+    },
+    [findZipAtPoint]
+  );
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false;
@@ -462,21 +568,34 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
     setHoveredZip(null);
   }, []);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    // Ignore if this was a drag
-    if (dragDistance.current > 5) return;
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Ignore if this was a drag
+      if (dragDistance.current > 5) return;
 
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
 
-    // Check for zip click first
-    const zip = findZipAtPoint(canvasX, canvasY);
-    if (zip) {
-      // Zip click - zoom to parent state
-      const stateFips = getStateFipsFromZip(zip);
+      // Check for zip click first
+      const zip = findZipAtPoint(canvasX, canvasY);
+      if (zip) {
+        // Zip click - zoom to parent state
+        const stateFips = getStateFipsFromZip(zip);
+        if (stateFips) {
+          if (activeState === stateFips) {
+            resetZoom();
+          } else {
+            zoomToState(stateFips);
+          }
+        }
+        return;
+      }
+
+      // Check for state click
+      const stateFips = findStateAtPoint(canvasX, canvasY);
       if (stateFips) {
         if (activeState === stateFips) {
           resetZoom();
@@ -484,19 +603,9 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
           zoomToState(stateFips);
         }
       }
-      return;
-    }
-
-    // Check for state click
-    const stateFips = findStateAtPoint(canvasX, canvasY);
-    if (stateFips) {
-      if (activeState === stateFips) {
-        resetZoom();
-      } else {
-        zoomToState(stateFips);
-      }
-    }
-  }, [findZipAtPoint, findStateAtPoint, activeState, zoomToState, resetZoom]);
+    },
+    [findZipAtPoint, findStateAtPoint, activeState, zoomToState, resetZoom]
+  );
 
   const handleDoubleClick = useCallback(() => {
     resetZoom();
@@ -504,14 +613,30 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
 
   const zoomIn = () => {
     const newK = Math.min(MAX_ZOOM, transform.k * 1.5);
-    const cx = width / 2, cy = height / 2;
-    animateToTransform({ x: cx - (cx - transform.x) * (newK / transform.k), y: cy - (cy - transform.y) * (newK / transform.k), k: newK }, 300);
+    const cx = width / 2,
+      cy = height / 2;
+    animateToTransform(
+      {
+        x: cx - (cx - transform.x) * (newK / transform.k),
+        y: cy - (cy - transform.y) * (newK / transform.k),
+        k: newK,
+      },
+      300
+    );
   };
 
   const zoomOut = () => {
     const newK = Math.max(MIN_ZOOM, transform.k * 0.67);
-    const cx = width / 2, cy = height / 2;
-    animateToTransform({ x: cx - (cx - transform.x) * (newK / transform.k), y: cy - (cy - transform.y) * (newK / transform.k), k: newK }, 300);
+    const cx = width / 2,
+      cy = height / 2;
+    animateToTransform(
+      {
+        x: cx - (cx - transform.x) * (newK / transform.k),
+        y: cy - (cy - transform.y) * (newK / transform.k),
+        k: newK,
+      },
+      300
+    );
   };
 
   const isZoomed = transform.k > 1.1;
@@ -541,104 +666,135 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
         />
 
         {/* Zoom controls */}
-        <div style={{
-          position: 'absolute',
-          top: 12,
-          right: 12,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-          background: '#fff',
-          borderRadius: 8,
-          padding: 6,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-        }}>
-          <button onClick={zoomIn} style={btnStyle} title="Zoom In">+</button>
-          <button onClick={zoomOut} style={btnStyle} title="Zoom Out">−</button>
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            background: '#fff',
+            borderRadius: 8,
+            padding: 6,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        >
+          <button onClick={zoomIn} style={btnStyle} title="Zoom In">
+            +
+          </button>
+          <button onClick={zoomOut} style={btnStyle} title="Zoom Out">
+            −
+          </button>
           <div style={{ height: 1, background: '#eee', margin: '4px 0' }} />
           <button
             onClick={resetZoom}
             disabled={!isZoomed}
-            style={{ ...btnStyle, color: isZoomed ? '#333' : '#aaa', background: isZoomed ? '#fff' : '#f5f5f5' }}
+            style={{
+              ...btnStyle,
+              color: isZoomed ? '#333' : '#aaa',
+              background: isZoomed ? '#fff' : '#f5f5f5',
+            }}
             title="Reset View"
-          >⌂</button>
+          >
+            ⌂
+          </button>
         </div>
 
         {/* Zoom indicator */}
         {isZoomed && (
-          <div style={{
-            position: 'absolute',
-            bottom: 12,
-            right: 12,
-            background: 'rgba(0,0,0,0.7)',
-            color: '#fff',
-            padding: '4px 10px',
-            borderRadius: 4,
-            fontSize: 12,
-          }}>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 12,
+              right: 12,
+              background: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              padding: '4px 10px',
+              borderRadius: 4,
+              fontSize: 12,
+            }}
+          >
             {Math.round(transform.k * 100)}%
           </div>
         )}
 
         {/* Tooltip */}
         {hoveredZip && dataMap.has(hoveredZip) && (
-          <div style={{
-            position: 'fixed',
-            left: mousePos.x + 15,
-            top: mousePos.y - 10,
-            background: 'rgba(0,0,0,0.9)',
-            color: '#fff',
-            padding: '10px 14px',
-            borderRadius: 6,
-            fontSize: 14,
-            pointerEvents: 'none',
-            zIndex: 1000,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          }}>
+          <div
+            style={{
+              position: 'fixed',
+              left: mousePos.x + 15,
+              top: mousePos.y - 10,
+              background: 'rgba(0,0,0,0.9)',
+              color: '#fff',
+              padding: '10px 14px',
+              borderRadius: 6,
+              fontSize: 14,
+              pointerEvents: 'none',
+              zIndex: 1000,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}
+          >
             <div style={{ fontWeight: 600, marginBottom: 4 }}>ZIP {hoveredZip}</div>
             <div style={{ color: '#ccc' }}>
-              Value: <span style={{ color: '#fff' }}>{dataMap.get(hoveredZip)?.toLocaleString()}</span>
+              Value:{' '}
+              <span style={{ color: '#fff' }}>{dataMap.get(hoveredZip)?.toLocaleString()}</span>
             </div>
           </div>
         )}
       </div>
 
       {/* Side panel */}
-      <div style={{ width: panelWidth, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: height + 60 }}>
-        {/* Legend */}
-        <div style={{
+      <div
+        style={{
+          width: panelWidth,
           display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '12px 16px',
-          background: '#fff',
-          borderRadius: 8,
-          border: '1px solid #eee',
-        }}>
+          flexDirection: 'column',
+          gap: 12,
+          maxHeight: height + 60,
+        }}
+      >
+        {/* Legend */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 16px',
+            background: '#fff',
+            borderRadius: 8,
+            border: '1px solid #eee',
+          }}
+        >
           <span style={{ fontSize: 13, color: '#666' }}>Low</span>
-          <div style={{
-            flex: 1,
-            height: 14,
-            background: `linear-gradient(to right, ${d3.interpolateBlues(0)}, ${d3.interpolateBlues(0.25)}, ${d3.interpolateBlues(0.5)}, ${d3.interpolateBlues(0.75)}, ${d3.interpolateBlues(1)})`,
-            borderRadius: 3,
-            border: '1px solid #ddd',
-          }} />
+          <div
+            style={{
+              flex: 1,
+              height: 14,
+              background: `linear-gradient(to right, ${d3.interpolateBlues(0)}, ${d3.interpolateBlues(0.25)}, ${d3.interpolateBlues(0.5)}, ${d3.interpolateBlues(0.75)}, ${d3.interpolateBlues(1)})`,
+              borderRadius: 3,
+              border: '1px solid #ddd',
+            }}
+          />
           <span style={{ fontSize: 13, color: '#666' }}>High</span>
         </div>
 
         {/* Show empty zips toggle */}
-        <label style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '8px 16px',
-          background: '#fff',
-          borderRadius: 8,
-          border: '1px solid #eee',
-          cursor: 'pointer',
-          fontSize: 13,
-          color: '#666',
-        }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px',
+            background: '#fff',
+            borderRadius: 8,
+            border: '1px solid #eee',
+            cursor: 'pointer',
+            fontSize: 13,
+            color: '#666',
+          }}
+        >
           <input
             type="checkbox"
             checked={showEmptyZips}
@@ -648,29 +804,59 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
         </label>
 
         {/* Table panel - switches between states list and zip codes */}
-        <div style={{
-          flex: 1,
-          background: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
+        <div
+          style={{
+            flex: 1,
+            background: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: 8,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           {activeState ? (
             <>
               {/* State header */}
-              <div style={{ padding: '16px', borderBottom: '1px solid #eee', background: '#f8f8f8' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ margin: 0, fontSize: 16 }}>{FIPS_TO_NAME[activeState] || activeState}</h3>
+              <div
+                style={{ padding: '16px', borderBottom: '1px solid #eee', background: '#f8f8f8' }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <h3 style={{ margin: 0, fontSize: 16 }}>
+                    {FIPS_TO_NAME[activeState] || activeState}
+                  </h3>
                   <button
                     onClick={resetZoom}
-                    style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#666', padding: '4px 8px' }}
-                  >×</button>
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: 18,
+                      cursor: 'pointer',
+                      color: '#666',
+                      padding: '4px 8px',
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
-                <div style={{ fontSize: 13, color: '#666', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: '#666',
+                    marginTop: 4,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}
+                >
                   <span>{activeStateZips.length} zip codes</span>
-                  <span>Total: <strong>{activeStateZips.reduce((sum, z) => sum + z.value, 0).toLocaleString()}</strong></span>
+                  <span>
+                    Total:{' '}
+                    <strong>
+                      {activeStateZips.reduce((sum, z) => sum + z.value, 0).toLocaleString()}
+                    </strong>
+                  </span>
                 </div>
               </div>
 
@@ -697,12 +883,23 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
                         onMouseLeave={() => setHoveredZip(null)}
                         onClick={() => zoomToZip(item.zipCode)}
                         style={{
-                          background: hoveredZip === item.zipCode ? '#f0f7ff' : i % 2 === 0 ? '#fff' : '#fafafa',
+                          background:
+                            hoveredZip === item.zipCode
+                              ? '#f0f7ff'
+                              : i % 2 === 0
+                                ? '#fff'
+                                : '#fafafa',
                           cursor: 'pointer',
                           transition: 'background 0.15s',
                         }}
                       >
-                        <td style={{ padding: '10px 12px', borderLeft: `10px solid ${colorScale.scale(item.value)}`, fontFamily: 'monospace' }}>
+                        <td
+                          style={{
+                            padding: '10px 12px',
+                            borderLeft: `10px solid ${colorScale.scale(item.value)}`,
+                            fontFamily: 'monospace',
+                          }}
+                        >
                           {item.zipCode}
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}>
@@ -717,11 +914,24 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
           ) : (
             <>
               {/* States list header */}
-              <div style={{ padding: '16px', borderBottom: '1px solid #eee', background: '#f8f8f8' }}>
+              <div
+                style={{ padding: '16px', borderBottom: '1px solid #eee', background: '#f8f8f8' }}
+              >
                 <h3 style={{ margin: 0, fontSize: 16 }}>States with Data</h3>
-                <div style={{ fontSize: 13, color: '#666', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: '#666',
+                    marginTop: 4,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}
+                >
                   <span>{stateSummaries.length} states</span>
-                  <span>Total: <strong>{data.reduce((sum, d) => sum + d.value, 0).toLocaleString()}</strong></span>
+                  <span>
+                    Total:{' '}
+                    <strong>{data.reduce((sum, d) => sum + d.value, 0).toLocaleString()}</strong>
+                  </span>
                 </div>
               </div>
 
@@ -750,10 +960,17 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
                           cursor: 'pointer',
                           transition: 'background 0.15s',
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#f0f7ff'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = i % 2 === 0 ? '#fff' : '#fafafa'}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f7ff')}
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = i % 2 === 0 ? '#fff' : '#fafafa')
+                        }
                       >
-                        <td style={{ padding: '10px 12px', borderLeft: `10px solid ${stateColorScale.scale(state.total)}` }}>
+                        <td
+                          style={{
+                            padding: '10px 12px',
+                            borderLeft: `10px solid ${stateColorScale.scale(state.total)}`,
+                          }}
+                        >
                           <div>{state.name}</div>
                           <div style={{ fontSize: 11, color: '#888' }}>{state.count} zip codes</div>
                         </td>

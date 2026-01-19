@@ -18,16 +18,16 @@ const flow = {
   },
 };
 
-<FlowChart data={flow} title="My Flow" />
+<FlowChart data={flow} title="My Flow" />;
 ```
 
 ## 🎨 Node Type Reference
 
-| Type | Visual | Use For | Properties |
-|------|--------|---------|------------|
-| `period` | Dark blue box | Timeline stages | `id`, `type`, `label`, `next?` |
-| `decision` | White box | Yes/No questions | `id`, `type`, `question`, `yesPath?`, `noPath?` |
-| `outcome` | Light blue box | Results/Actions | `id`, `type`, `label`, `next?` |
+| Type       | Visual         | Use For          | Properties                                      |
+| ---------- | -------------- | ---------------- | ----------------------------------------------- |
+| `period`   | Dark blue box  | Timeline stages  | `id`, `type`, `label`, `next?`                  |
+| `decision` | White box      | Yes/No questions | `id`, `type`, `question`, `yesPath?`, `noPath?` |
+| `outcome`  | Light blue box | Results/Actions  | `id`, `type`, `label`, `next?`                  |
 
 ## 📝 Common Patterns
 
@@ -124,23 +124,27 @@ const flow = {
 
 ```tsx
 <FlowChart
-  data={flowNode}           // Required: Your flow data
-  title="Flow Title"        // Optional: Header title
-  subtitle="Version 1.0"    // Optional: Header subtitle
-  className="custom-class"  // Optional: CSS class
+  data={flowNode} // Required: Your flow data
+  title="Flow Title" // Optional: Header title
+  subtitle="Version 1.0" // Optional: Header subtitle
+  className="custom-class" // Optional: CSS class
 />
 ```
 
 ## 💡 Tips
 
 ### Multi-line Text
+
 Use `\n` for line breaks:
+
 ```tsx
-label: "Line 1\nLine 2\nLine 3"
+label: 'Line 1\nLine 2\nLine 3';
 ```
 
 ### Unique IDs
+
 Every node needs a unique ID:
+
 ```tsx
 // ✅ Good
 { id: 'period-1', ... }
@@ -153,7 +157,9 @@ Every node needs a unique ID:
 ```
 
 ### Optional Paths
+
 Not all paths are required:
+
 ```tsx
 {
   type: 'decision',
@@ -168,6 +174,7 @@ Not all paths are required:
 ### Change Colors
 
 Edit `Node.tsx`:
+
 ```tsx
 case 'period':
   return { fill: '#YOUR_COLOR' };
@@ -176,6 +183,7 @@ case 'period':
 ### Change Spacing
 
 Edit `layoutEngine.ts`:
+
 ```tsx
 nodeSpacing: 100,    // Space between nodes
 branchSpacing: 300,  // Space for yes/no branches
@@ -184,6 +192,7 @@ branchSpacing: 300,  // Space for yes/no branches
 ### Change Sizes
 
 Edit `layoutEngine.ts`:
+
 ```tsx
 periodWidth: 150,
 periodHeight: 70,
@@ -213,6 +222,7 @@ periodHeight: 70,
 ## 📦 Files You Need
 
 Minimum files to copy:
+
 - `types.ts`
 - `Node.tsx`
 - `Arrow.tsx`

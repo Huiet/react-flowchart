@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { ChartType, D3PieChartProps } from './types';
 import { LoadingAnimation } from './LoadingAnimation';
+import { ChartType, D3PieChartProps } from './types';
 import styles from './D3PieChart.module.css';
 
 const DEFAULT_COLORS = [
@@ -87,9 +87,7 @@ export const D3PieChart: React.FC<D3PieChartProps> = ({
     const innerRadius = propChartType === 'donut' ? radius * 0.6 : 0;
 
     // Create main group
-    const g = svg
-      .append('g')
-      .attr('transform', `translate(${width / 2},${height / 2})`);
+    const g = svg.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
 
     // Calculate total value
     const totalValue = d3.sum(data, (d) => d.value);
@@ -119,12 +117,7 @@ export const D3PieChart: React.FC<D3PieChartProps> = ({
       .outerRadius(radius * 0.8);
 
     // Create slices
-    const slices = g
-      .selectAll('.slice')
-      .data(pie(data))
-      .enter()
-      .append('g')
-      .attr('class', 'slice');
+    const slices = g.selectAll('.slice').data(pie(data)).enter().append('g').attr('class', 'slice');
 
     // Add paths
     slices
@@ -155,7 +148,6 @@ export const D3PieChart: React.FC<D3PieChartProps> = ({
         setTooltip(null);
         d3.select(this).style('opacity', 1);
       });
-
   }, [data, width, height, propChartType, showLabels, colorScheme]);
 
   return (
@@ -181,7 +173,13 @@ export const D3PieChart: React.FC<D3PieChartProps> = ({
           </div>
           <div className={styles.tooltipRow}>
             <span className={styles.tooltipKey}>Value:</span>
-            <span className={styles.tooltipValue}>${tooltip.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className={styles.tooltipValue}>
+              $
+              {tooltip.value.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
           </div>
           <div className={styles.tooltipRow}>
             <span className={styles.tooltipKey}>Percentage:</span>

@@ -1,7 +1,7 @@
 import * as topojson from 'topojson-client';
 import { fetchStateZCTA, getObjectName } from '../ZipMap/zctaLoader';
-import { ZipDataPoint, ZipGeometry, ThreeDigitGeometry } from './types';
-import { tessellateGeometry, createColorScale, TessellatedGeometry } from './tessellator';
+import { createColorScale, TessellatedGeometry, tessellateGeometry } from './tessellator';
+import { ThreeDigitGeometry, ZipDataPoint, ZipGeometry } from './types';
 
 interface GeometryCache {
   fiveDigit: Map<string, ZipGeometry>;
@@ -12,11 +12,9 @@ interface GeometryCache {
   allZipsByState: Map<string, any[]>; // All zip geometries by state FIPS
 }
 
-export async function loadAndProcessGeometries(
-  data: ZipDataPoint[]
-): Promise<GeometryCache> {
+export async function loadAndProcessGeometries(data: ZipDataPoint[]): Promise<GeometryCache> {
   const dataMap = new Map(data.map((d) => [d.zipCode, d.value]));
-  
+
   // Group zip codes by state FIPS
   const zipsByState = new Map<string, string[]>();
   data.forEach((d) => {
@@ -70,7 +68,7 @@ export async function loadAndProcessGeometries(
 
   // Merge 3-digit geometries
   const threeDigit = new Map<string, ThreeDigitGeometry>();
-  
+
   threeDigitGroups.forEach((group, prefix) => {
     if (group.features.length === 0) return;
 
@@ -173,7 +171,14 @@ export async function loadAndProcessGeometries(
   });
   console.log(`Tessellated ${threeDigitFullBuffers.size} full-coverage 3-digit geometries`);
 
-  return { fiveDigit, threeDigit, fiveDigitBuffers, threeDigitBuffers, threeDigitFullBuffers, allZipsByState };
+  return {
+    fiveDigit,
+    threeDigit,
+    fiveDigitBuffers,
+    threeDigitBuffers,
+    threeDigitFullBuffers,
+    allZipsByState,
+  };
 }
 
 export function getStateFipsFromZip(zipCode: string): string | null {
@@ -221,7 +226,7 @@ export function getStateFipsFromZip(zipCode: string): string | null {
   if (zip >= 29000 && zip <= 29999) return '45'; // SC
   if (zip >= 57000 && zip <= 57999) return '46'; // SD
   if (zip >= 37000 && zip <= 38599) return '47'; // TN
-  if (zip >= 75000 && zip <= 79999 || zip >= 88500 && zip <= 88599) return '48'; // TX
+  if ((zip >= 75000 && zip <= 79999) || (zip >= 88500 && zip <= 88599)) return '48'; // TX
   if (zip >= 84000 && zip <= 84999) return '49'; // UT
   if (zip >= 5000 && zip <= 5999) return '50'; // VT
   if (zip >= 22000 && zip <= 24699) return '51'; // VA

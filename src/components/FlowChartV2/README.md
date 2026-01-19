@@ -7,51 +7,67 @@ FlowChart V2 is a flexible React component for creating flowcharts with a **conn
 ## Core Concepts
 
 ### 1. Unified Node Structure
+
 All nodes use the same interface regardless of their visual style:
 
 ```typescript
 interface FlowNode {
   id: string;
-  variant: 'primary' | 'neutral' | 'secondary';  // Visual styling
-  label: string;                                 // Display text
-  column: number;                                // Horizontal position (1, 2, 3, etc.)
-  connections: NodeConnection[];                 // Outgoing arrows
-  isActive?: boolean;                           // Highlight as active path
+  variant: 'primary' | 'neutral' | 'secondary'; // Visual styling
+  label: string; // Display text
+  column: number; // Horizontal position (1, 2, 3, etc.)
+  connections: NodeConnection[]; // Outgoing arrows
+  isActive?: boolean; // Highlight as active path
 }
 ```
 
 ### 2. Connections Array
+
 Navigation is handled through an array of connections:
 
 ```typescript
 interface NodeConnection {
-  targetId: string;            // Destination node ID
-  label?: string;             // Text shown on arrow (e.g., "Yes", "No")
-  color?: ConnectionColor;    // Arrow color: 'green' | 'red' | 'blue' | 'orange' | 'default'
-  fromSide?: 'top' | 'right' | 'bottom' | 'left';  // Exit side (auto-calculated if omitted)
-  toSide?: 'top' | 'right' | 'bottom' | 'left';    // Entry side (auto-calculated if omitted)
+  targetId: string; // Destination node ID
+  label?: string; // Text shown on arrow (e.g., "Yes", "No")
+  color?: ConnectionColor; // Arrow color: 'green' | 'red' | 'blue' | 'orange' | 'default'
+  fromSide?: 'top' | 'right' | 'bottom' | 'left'; // Exit side (auto-calculated if omitted)
+  toSide?: 'top' | 'right' | 'bottom' | 'left'; // Entry side (auto-calculated if omitted)
 }
 ```
 
 ### 3. Flat Array Structure
+
 All nodes are defined in a flat array:
 
 ```typescript
 const chartData: FlowChartData = {
   rootId: 'start',
   nodes: [
-    { id: 'start', variant: 'primary', column: 1, label: 'Start', connections: [{ targetId: 'decision-1' }] },
-    { id: 'decision-1', variant: 'neutral', column: 2, label: 'Check?', connections: [
-      { targetId: 'outcome-yes', label: 'Yes', color: 'green' },
-      { targetId: 'outcome-no', label: 'No', color: 'red' }
-    ]},
+    {
+      id: 'start',
+      variant: 'primary',
+      column: 1,
+      label: 'Start',
+      connections: [{ targetId: 'decision-1' }],
+    },
+    {
+      id: 'decision-1',
+      variant: 'neutral',
+      column: 2,
+      label: 'Check?',
+      connections: [
+        { targetId: 'outcome-yes', label: 'Yes', color: 'green' },
+        { targetId: 'outcome-no', label: 'No', color: 'red' },
+      ],
+    },
     { id: 'outcome-yes', variant: 'secondary', column: 3, label: 'Success', connections: [] },
-    { id: 'outcome-no', variant: 'secondary', column: 3, label: 'Failed', connections: [] }
-  ]
+    { id: 'outcome-no', variant: 'secondary', column: 3, label: 'Failed', connections: [] },
+  ],
 };
 ```
 
 ### 4. Multiple Paths & Convergence
+
 Multiple nodes can point to the same target, and nodes can loop back to earlier steps:
 
 ```typescript
@@ -165,7 +181,7 @@ const complexData: FlowChartData = {
       column: 3,
       label: 'Fix\nIssues',
       connections: [
-        { targetId: 'validate', label: 'Retry', color: 'blue' },  // Loop back!
+        { targetId: 'validate', label: 'Retry', color: 'blue' }, // Loop back!
       ],
     },
     {
@@ -205,7 +221,7 @@ const complexData: FlowChartData = {
       variant: 'primary',
       column: 1,
       label: 'Completed',
-      connections: [],  // Multiple paths converge here
+      connections: [], // Multiple paths converge here
     },
   ],
 };
@@ -215,12 +231,12 @@ const complexData: FlowChartData = {
 
 ```typescript
 interface FlowChartV2Props {
-  data: FlowChartData;                    // Required: chart data
-  title?: string;                         // Optional: header title
-  subtitle?: string;                      // Optional: header subtitle
-  columnPositions?: Partial<ColumnPositions>;  // Optional: custom column X positions
-  scale?: number;                         // Optional: manual scale (0.5 to 2.0)
-  maxWidth?: number;                      // Optional: auto-scale to fit width
+  data: FlowChartData; // Required: chart data
+  title?: string; // Optional: header title
+  subtitle?: string; // Optional: header subtitle
+  columnPositions?: Partial<ColumnPositions>; // Optional: custom column X positions
+  scale?: number; // Optional: manual scale (0.5 to 2.0)
+  maxWidth?: number; // Optional: auto-scale to fit width
 }
 ```
 
@@ -284,7 +300,7 @@ Available colors for arrows and labels:
 connections: [
   { targetId: 'success', label: 'Yes', color: 'green' },
   { targetId: 'failed', label: 'No', color: 'red' },
-]
+];
 ```
 
 ## Active Path Highlighting
@@ -302,6 +318,7 @@ Mark nodes as active to highlight the path taken through the flow:
 ```
 
 **Visual Effects:**
+
 - Active nodes: 4px border (vs 2px inactive)
 - Inactive nodes: 40% opacity
 - Active arrows: Full color with matching arrowhead
@@ -320,10 +337,10 @@ Arrows use Manhattan (perpendicular) routing with automatic collision avoidance:
 connections: [
   {
     targetId: 'target-node',
-    fromSide: 'bottom',  // Force exit from bottom
-    toSide: 'top',       // Force entry from top
+    fromSide: 'bottom', // Force exit from bottom
+    toSide: 'top', // Force entry from top
   },
-]
+];
 ```
 
 ## Key Features
