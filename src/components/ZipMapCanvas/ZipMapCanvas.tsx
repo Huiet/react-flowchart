@@ -245,7 +245,7 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
     if (showEmptyZips) {
       const visibleZips = allZipIndex.search({ minX: viewMinX, minY: viewMinY, maxX: viewMaxX, maxY: viewMaxY });
       ctx.strokeStyle = '#ccc';
-      ctx.lineWidth = 0.5 / transform.k;
+      ctx.lineWidth = 0.3;
       ctx.beginPath();
       visibleZips.forEach((item) => {
         if (!dataMap.has(item.zipCode)) {
@@ -259,32 +259,36 @@ export function ZipMapCanvas({ data, width = 960, height = 600 }: ZipMapProps) {
     const visibleDataZips = spatialIndex.search({ minX: viewMinX, minY: viewMinY, maxX: viewMaxX, maxY: viewMaxY });
     visibleDataZips.forEach((item) => {
       const isHovered = item.zipCode === hoveredZip;
-      if (isHovered) {
-        ctx.fillStyle = '#ffeb3b';
-        ctx.strokeStyle = '#f57c00';
-        ctx.lineWidth = 2 / transform.k;
-        ctx.beginPath();
-        path(item.feature);
-        ctx.fill();
-        ctx.stroke();
-      } else {
-        ctx.fillStyle = colorScale.scale(dataMap.get(item.zipCode)!);
-        ctx.beginPath();
-        path(item.feature);
-        ctx.fill();
-      }
+      ctx.fillStyle = isHovered ? '#ffeb3b' : colorScale.scale(dataMap.get(item.zipCode)!);
+      ctx.beginPath();
+      path(item.feature);
+      ctx.fill();
     });
 
-    // Draw state borders
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 1 / transform.k;
-    ctx.beginPath();
-    path(stateMesh);
-    ctx.stroke();
+    // Highlight hovered zip with border
+    if (hoveredZip) {
+      const hoveredItem = visibleDataZips.find(item => item.zipCode === hoveredZip);
+      if (hoveredItem) {
+        ctx.strokeStyle = '#f57c00';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        path(hoveredItem.feature);
+        ctx.stroke();
+      }
+    }
+
+    // Draw state borders only when zoomed out
+    if (transform.k < 8) {
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      path(stateMesh);
+      ctx.stroke();
+    }
 
     // Draw nation outline
     ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1 / transform.k;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     path(nationOutline);
     ctx.stroke();

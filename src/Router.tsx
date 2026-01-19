@@ -10,6 +10,7 @@ import { StatsCardDemo } from './StatsCardDemo';
 import { ApplicationTrackingDemo } from './ApplicationTrackingDemo';
 import { ZipMapDemo } from './ZipMapDemo';
 import { ZipMapCanvasDemo } from './ZipMapCanvasDemo';
+import { ZipMapWebGLDemo } from './ZipMapWebGLDemo';
 import { Navigation } from './components/Navigation';
 
 function Layout() {
@@ -68,6 +69,10 @@ const router = createBrowserRouter([
       {
         path: '/zip-map-canvas-demo',
         element: <ZipMapCanvasDemo />,
+      },
+      {
+        path: '/zip-map-webgl-demo',
+        element: <ZipMapWebGLDemo />,
       },
     ],
   },
