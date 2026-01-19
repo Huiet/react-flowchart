@@ -8,6 +8,7 @@ interface GeometryCache {
   threeDigit: Map<string, ThreeDigitGeometry>;
   fiveDigitBuffers: Map<string, TessellatedGeometry>;
   threeDigitBuffers: Map<string, TessellatedGeometry>;
+  threeDigitFullBuffers: Map<string, TessellatedGeometry>;
   allZipsByState: Map<string, any[]>; // All zip geometries by state FIPS
 }
 
@@ -137,7 +138,42 @@ export async function loadAndProcessGeometries(
   console.log(`Tessellated ${fiveDigitBuffers.size} 5-digit geometries`);
   console.log(`Tessellated ${threeDigitBuffers.size} 3-digit geometries`);
 
-  return { fiveDigit, threeDigit, fiveDigitBuffers, threeDigitBuffers, allZipsByState };
+  // Create full-coverage 3-digit groups (including empty zips)
+  const threeDigitFullGroups = new Map<string, { features: any[]; totalValue: number }>();
+  allZipsByState.forEach((features) => {
+    features.forEach((feature: any) => {
+      const zipCode = feature.properties.ZCTA5CE10;
+      const prefix = zipCode.substring(0, 3);
+      if (!threeDigitFullGroups.has(prefix)) {
+        threeDigitFullGroups.set(prefix, { features: [], totalValue: 0 });
+      }
+      const group = threeDigitFullGroups.get(prefix)!;
+      group.features.push(feature);
+      if (dataMap.has(zipCode)) {
+        group.totalValue += dataMap.get(zipCode)!;
+      }
+    });
+  });
+
+  // Tessellate full-coverage 3-digit geometries
+  const threeDigitFullBuffers = new Map<string, TessellatedGeometry>();
+  threeDigitFullGroups.forEach((group, prefix) => {
+    if (group.totalValue === 0) return;
+    const coordinates: any[] = [];
+    group.features.forEach((feature: any) => {
+      if (feature.geometry.type === 'Polygon') {
+        coordinates.push(feature.geometry.coordinates);
+      } else if (feature.geometry.type === 'MultiPolygon') {
+        coordinates.push(...feature.geometry.coordinates);
+      }
+    });
+    const color = threeDigitColorScale(group.totalValue);
+    const tessellated = tessellateGeometry({ type: 'MultiPolygon', coordinates }, color, prefix);
+    if (tessellated) threeDigitFullBuffers.set(prefix, tessellated);
+  });
+  console.log(`Tessellated ${threeDigitFullBuffers.size} full-coverage 3-digit geometries`);
+
+  return { fiveDigit, threeDigit, fiveDigitBuffers, threeDigitBuffers, threeDigitFullBuffers, allZipsByState };
 }
 
 export function getStateFipsFromZip(zipCode: string): string | null {

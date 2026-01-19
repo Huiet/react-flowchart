@@ -1,24 +1,64 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
-import * as topojson from 'topojson-client';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { ZipMapWebGLProps } from './types';
-import { loadAndProcessGeometries } from './geometryProcessor';
+import * as topojson from 'topojson-client';
+import { getStateFipsFromZip, loadAndProcessGeometries } from './geometryProcessor';
 import { WebGLRenderer } from './renderer';
-import { getStateFipsFromZip } from './geometryProcessor';
+import { ZipMapWebGLProps } from './types';
 
 const US_STATES_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json';
 
 const FIPS_TO_NAME: Record<string, string> = {
-  '01': 'Alabama', '02': 'Alaska', '04': 'Arizona', '05': 'Arkansas', '06': 'California',
-  '08': 'Colorado', '09': 'Connecticut', '10': 'Delaware', '11': 'DC', '12': 'Florida',
-  '13': 'Georgia', '15': 'Hawaii', '16': 'Idaho', '17': 'Illinois', '18': 'Indiana',
-  '19': 'Iowa', '20': 'Kansas', '21': 'Kentucky', '22': 'Louisiana', '23': 'Maine',
-  '24': 'Maryland', '25': 'Massachusetts', '26': 'Michigan', '27': 'Minnesota', '28': 'Mississippi',
-  '29': 'Missouri', '30': 'Montana', '31': 'Nebraska', '32': 'Nevada', '33': 'New Hampshire',
-  '34': 'New Jersey', '35': 'New Mexico', '36': 'New York', '37': 'North Carolina', '38': 'North Dakota',
-  '39': 'Ohio', '40': 'Oklahoma', '41': 'Oregon', '42': 'Pennsylvania', '44': 'Rhode Island',
-  '45': 'South Carolina', '46': 'South Dakota', '47': 'Tennessee', '48': 'Texas', '49': 'Utah',
-  '50': 'Vermont', '51': 'Virginia', '53': 'Washington', '54': 'West Virginia', '55': 'Wisconsin', '56': 'Wyoming',
+  '01': 'Alabama',
+  '02': 'Alaska',
+  '04': 'Arizona',
+  '05': 'Arkansas',
+  '06': 'California',
+  '08': 'Colorado',
+  '09': 'Connecticut',
+  '10': 'Delaware',
+  '11': 'DC',
+  '12': 'Florida',
+  '13': 'Georgia',
+  '15': 'Hawaii',
+  '16': 'Idaho',
+  '17': 'Illinois',
+  '18': 'Indiana',
+  '19': 'Iowa',
+  '20': 'Kansas',
+  '21': 'Kentucky',
+  '22': 'Louisiana',
+  '23': 'Maine',
+  '24': 'Maryland',
+  '25': 'Massachusetts',
+  '26': 'Michigan',
+  '27': 'Minnesota',
+  '28': 'Mississippi',
+  '29': 'Missouri',
+  '30': 'Montana',
+  '31': 'Nebraska',
+  '32': 'Nevada',
+  '33': 'New Hampshire',
+  '34': 'New Jersey',
+  '35': 'New Mexico',
+  '36': 'New York',
+  '37': 'North Carolina',
+  '38': 'North Dakota',
+  '39': 'Ohio',
+  '40': 'Oklahoma',
+  '41': 'Oregon',
+  '42': 'Pennsylvania',
+  '44': 'Rhode Island',
+  '45': 'South Carolina',
+  '46': 'South Dakota',
+  '47': 'Tennessee',
+  '48': 'Texas',
+  '49': 'Utah',
+  '50': 'Vermont',
+  '51': 'Virginia',
+  '53': 'Washington',
+  '54': 'West Virginia',
+  '55': 'Wisconsin',
+  '56': 'Wyoming',
 };
 
 export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProps) {
@@ -44,7 +84,12 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   const [usTopology, setUsTopology] = useState<any>(null);
   const [activeState, setActiveState] = useState<string | null>(null);
   const [hoveredZip, setHoveredZip] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ zip: string; value: number; x: number; y: number } | null>(null);
+  const [tooltip, setTooltip] = useState<{
+    zip: string;
+    value: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const [showZipBorders, setShowZipBorders] = useState(false);
   const [showStateColors, setShowStateColors] = useState(false);
   const isDragging = useRef(false);
@@ -78,7 +123,10 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
 
   // Aggregate data by state
   const stateSummaries = useMemo(() => {
-    const summaries = new Map<string, { fips: string; name: string; count: number; total: number }>();
+    const summaries = new Map<
+      string,
+      { fips: string; name: string; count: number; total: number }
+    >();
     data.forEach((d) => {
       const fips = getStateFipsFromZip(d.zipCode);
       if (!fips) return;
@@ -102,7 +150,9 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   const stateColorScale = useMemo(() => {
     if (stateSummaries.length === 0) return (v: number) => '#ddd';
     const totals = stateSummaries.map((s) => s.total);
-    const scale = d3.scaleSequential(d3.interpolateBlues).domain([Math.min(...totals), Math.max(...totals)]);
+    const scale = d3
+      .scaleSequential(d3.interpolateBlues)
+      .domain([Math.min(...totals), Math.max(...totals)]);
     return (value: number) => scale(value);
   }, [stateSummaries]);
 
@@ -110,7 +160,9 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   const zipColorScale = useMemo(() => {
     if (activeStateZips.length === 0) return (v: number) => '#ddd';
     const values = activeStateZips.map((z) => z.value);
-    const scale = d3.scaleSequential(d3.interpolateBlues).domain([Math.min(...values), Math.max(...values)]);
+    const scale = d3
+      .scaleSequential(d3.interpolateBlues)
+      .domain([Math.min(...values), Math.max(...values)]);
     return (value: number) => scale(value);
   }, [activeStateZips]);
 
@@ -118,7 +170,9 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   const threeDigitColorScale = useMemo(() => {
     if (activeState3Digit.length === 0) return (v: number) => '#ddd';
     const totals = activeState3Digit.map((a) => a.total);
-    const scale = d3.scaleSequential(d3.interpolateBlues).domain([Math.min(...totals), Math.max(...totals)]);
+    const scale = d3
+      .scaleSequential(d3.interpolateBlues)
+      .domain([Math.min(...totals), Math.max(...totals)]);
     return (value: number) => scale(value);
   }, [activeState3Digit]);
 
@@ -165,23 +219,23 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   useEffect(() => {
     if (!geometries || !rendererRef.current || !usTopology) return;
 
-    // LOD switching: use 3-digit at low zoom, 5-digit at high zoom
-    const useHighDetail = zoomLevel >= 4;
-    let buffers = useHighDetail ? geometries.fiveDigitBuffers : geometries.threeDigitBuffers;
+    // Use 3-digit merged areas when no state selected, 5-digit when state is selected
+    const useHighDetail = activeState !== null;
+    let buffers = useHighDetail ? geometries.fiveDigitBuffers : geometries.threeDigitFullBuffers;
 
     // Filter to active state if one is selected
     if (activeState) {
       const filtered = new Map<string, any>();
       if (useHighDetail) {
         // Show only 5-digit zips in active state
-        activeStateZips.forEach(zip => {
+        activeStateZips.forEach((zip) => {
           if (geometries.fiveDigitBuffers.has(zip.zipCode)) {
             filtered.set(zip.zipCode, geometries.fiveDigitBuffers.get(zip.zipCode));
           }
         });
       } else {
         // Show only 3-digit areas in active state
-        activeState3Digit.forEach(area => {
+        activeState3Digit.forEach((area) => {
           if (geometries.threeDigitBuffers.has(area.prefix)) {
             filtered.set(area.prefix, geometries.threeDigitBuffers.get(area.prefix));
           }
@@ -209,10 +263,10 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     if (showZipBorders && geometries && activeState) {
       const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
       const allZips = geometries.allZipsByState.get(activeState);
-      
+
       if (allZips) {
         const borderVertices: number[] = [];
-        
+
         // Group by 3-digit if zoomed out
         if (zoomLevel < 4) {
           const grouped = new Map<string, any[]>();
@@ -222,13 +276,14 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
             if (!grouped.has(prefix)) grouped.set(prefix, []);
             grouped.get(prefix)!.push(feature);
           });
-          
+
           grouped.forEach((features) => {
             features.forEach((feature: any) => {
-              const coords = feature.geometry.type === 'Polygon' 
-                ? [feature.geometry.coordinates] 
-                : feature.geometry.coordinates;
-              
+              const coords =
+                feature.geometry.type === 'Polygon'
+                  ? [feature.geometry.coordinates]
+                  : feature.geometry.coordinates;
+
               coords.forEach((polygon: number[][][]) => {
                 polygon.forEach((ring: number[][]) => {
                   for (let i = 0; i < ring.length - 1; i++) {
@@ -245,10 +300,11 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
         } else {
           // Show all individual zip borders when zoomed in
           allZips.forEach((feature: any) => {
-            const coords = feature.geometry.type === 'Polygon' 
-              ? [feature.geometry.coordinates] 
-              : feature.geometry.coordinates;
-            
+            const coords =
+              feature.geometry.type === 'Polygon'
+                ? [feature.geometry.coordinates]
+                : feature.geometry.coordinates;
+
             coords.forEach((polygon: number[][][]) => {
               polygon.forEach((ring: number[][]) => {
                 for (let i = 0; i < ring.length - 1; i++) {
@@ -262,7 +318,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
             });
           });
         }
-        
+
         zipBorders = borderVertices;
       }
     }
@@ -272,11 +328,11 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     if (showStateColors && !activeState && usTopology) {
       const states = topojson.feature(usTopology, usTopology.objects.states) as any;
       const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
-      
+
       stateGeometries = new Map<string, any>();
       states.features.forEach((stateFeature: any) => {
         const fips = stateFeature.id;
-        const stateSummary = stateSummaries.find(s => s.fips === fips);
+        const stateSummary = stateSummaries.find((s) => s.fips === fips);
         if (stateSummary) {
           const color = d3.rgb(stateColorScale(stateSummary.total));
           stateGeometries.set(fips, {
@@ -288,8 +344,27 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       });
     }
 
-    rendererRef.current.render(buffers, transform, stateMesh, nationMesh, zipBorders, hoveredZip, stateGeometries);
-  }, [geometries, transform, zoomLevel, usTopology, showZipBorders, hoveredZip, activeState, showStateColors, stateSummaries, stateColorScale]);
+    rendererRef.current.render(
+      buffers,
+      transform,
+      stateMesh,
+      nationMesh,
+      zipBorders,
+      hoveredZip,
+      stateGeometries
+    );
+  }, [
+    geometries,
+    transform,
+    zoomLevel,
+    usTopology,
+    showZipBorders,
+    hoveredZip,
+    activeState,
+    showStateColors,
+    stateSummaries,
+    stateColorScale,
+  ]);
 
   // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -334,7 +409,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       for (const [id, geom] of dataSource.entries()) {
         const bounds = path.bounds(geom.geometry);
         const [[x0, y0], [x1, y1]] = bounds;
-        
+
         // Simple bounding box check
         if (worldX >= x0 && worldX <= x1 && worldY >= y0 && worldY <= y1) {
           const value = useHighDetail ? geom.value : geom.totalValue;
@@ -357,7 +432,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     if (isDragging.current && dragDistance.current < 5 && usTopology) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
-      
+
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
       const worldX = (mouseX - transform.x) / transform.scale;
@@ -371,21 +446,21 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       for (const stateFeature of states.features) {
         const bounds = path.bounds(stateFeature);
         const [[x0, y0], [x1, y1]] = bounds;
-        
+
         if (worldX >= x0 && worldX <= x1 && worldY >= y0 && worldY <= y1) {
           const fips = stateFeature.id;
-          const stateSummary = stateSummaries.find(s => s.fips === fips);
-          
+          const stateSummary = stateSummaries.find((s) => s.fips === fips);
+
           if (stateSummary) {
             setActiveState(fips);
-            
+
             // Zoom to state
             const dx = x1 - x0;
             const dy = y1 - y0;
             const x = (x0 + x1) / 2;
             const y = (y0 + y1) / 2;
             const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
-            
+
             setTransform({
               x: width / 2 - x * scale,
               y: height / 2 - y * scale,
@@ -397,7 +472,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
         }
       }
     }
-    
+
     isDragging.current = false;
   };
 
@@ -426,7 +501,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       // Zoom towards mouse position in world space
       const worldX = (mouseX - transform.x) / transform.scale;
       const worldY = (mouseY - transform.y) / transform.scale;
-      
+
       const newX = mouseX - worldX * newScale;
       const newY = mouseY - worldY * newScale;
 
@@ -488,7 +563,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
             Loading geometries...
           </div>
         )}
-        
+
         {/* Zoom controls */}
         {!isLoading && geometries && (
           <div
@@ -511,14 +586,14 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                 const centerY = height / 2;
                 const zoomFactor = 1.5;
                 const newScale = Math.min(100, zoomLevel * zoomFactor);
-                
+
                 // Zoom towards center
                 const worldX = (centerX - transform.x) / transform.scale;
                 const worldY = (centerY - transform.y) / transform.scale;
-                
+
                 const newX = centerX - worldX * newScale;
                 const newY = centerY - worldY * newScale;
-                
+
                 setTransform({ x: newX, y: newY, scale: newScale });
                 setZoomLevel(newScale);
               }}
@@ -533,14 +608,14 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                 const centerY = height / 2;
                 const zoomFactor = 0.67;
                 const newScale = Math.max(1, zoomLevel * zoomFactor);
-                
+
                 // Zoom towards center
                 const worldX = (centerX - transform.x) / transform.scale;
                 const worldY = (centerY - transform.y) / transform.scale;
-                
+
                 const newX = centerX - worldX * newScale;
                 const newY = centerY - worldY * newScale;
-                
+
                 setTransform({ x: newX, y: newY, scale: newScale });
                 setZoomLevel(newScale);
               }}
@@ -593,7 +668,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
             </div>
           </div>
         )}
-        
+
         {/* Tooltip */}
         {tooltip && (
           <div
@@ -738,7 +813,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                       const x = (x0 + x1) / 2;
                       const y = (y0 + y1) / 2;
                       const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
-                      
+
                       setTransform({
                         x: width / 2 - x * scale,
                         y: height / 2 - y * scale,
@@ -749,7 +824,9 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                   }
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
                   <h3 style={{ margin: 0, fontSize: 16 }}>
                     {FIPS_TO_NAME[activeState] || activeState}
                   </h3>
@@ -768,7 +845,9 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                   </button>
                 </div>
                 <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
-                  {zoomLevel >= 4 ? `${activeStateZips.length} zip codes` : `${activeState3Digit.length} 3-digit areas`}
+                  {zoomLevel >= 4
+                    ? `${activeStateZips.length} zip codes`
+                    : `${activeState3Digit.length} 3-digit areas`}
                 </div>
               </div>
 
@@ -777,10 +856,24 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead style={{ position: 'sticky', top: 0, background: '#f8f8f8', zIndex: 1 }}>
                     <tr>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #eee' }}>
+                      <th
+                        style={{
+                          padding: '10px 12px',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #eee',
+                        }}
+                      >
                         {zoomLevel >= 4 ? 'Zip Code' : '3-Digit'}
                       </th>
-                      <th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: '1px solid #eee' }}>Value</th>
+                      <th
+                        style={{
+                          padding: '10px 12px',
+                          textAlign: 'right',
+                          borderBottom: '1px solid #eee',
+                        }}
+                      >
+                        Value
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -794,7 +887,10 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                               // Zoom to zip code
                               if (geometries?.fiveDigit.has(item.zipCode)) {
                                 const zipGeom = geometries.fiveDigit.get(item.zipCode);
-                                const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
+                                const projection = d3
+                                  .geoAlbersUsa()
+                                  .scale(1300)
+                                  .translate([480, 300]);
                                 const path = d3.geoPath(projection);
                                 const bounds = path.bounds(zipGeom.geometry);
                                 const [[x0, y0], [x1, y1]] = bounds;
@@ -803,7 +899,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                                 const x = (x0 + x1) / 2;
                                 const y = (y0 + y1) / 2;
                                 const scale = Math.min(15, 0.2 / Math.max(dx / width, dy / height));
-                                
+
                                 setTransform({
                                   x: width / 2 - x * scale,
                                   y: height / 2 - y * scale,
@@ -832,7 +928,9 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                             >
                               {item.zipCode}
                             </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}>
+                            <td
+                              style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}
+                            >
                               {item.value.toLocaleString()}
                             </td>
                           </tr>
@@ -844,7 +942,10 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                               // Zoom to 3-digit area
                               if (geometries?.threeDigit.has(item.prefix)) {
                                 const areaGeom = geometries.threeDigit.get(item.prefix);
-                                const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
+                                const projection = d3
+                                  .geoAlbersUsa()
+                                  .scale(1300)
+                                  .translate([480, 300]);
                                 const path = d3.geoPath(projection);
                                 const bounds = path.bounds(areaGeom.geometry);
                                 const [[x0, y0], [x1, y1]] = bounds;
@@ -853,7 +954,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                                 const x = (x0 + x1) / 2;
                                 const y = (y0 + y1) / 2;
                                 const scale = Math.min(12, 0.5 / Math.max(dx / width, dy / height));
-                                
+
                                 setTransform({
                                   x: width / 2 - x * scale,
                                   y: height / 2 - y * scale,
@@ -880,9 +981,13 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                               }}
                             >
                               <div>{item.prefix}xx</div>
-                              <div style={{ fontSize: 11, color: '#888' }}>{item.count} zip codes</div>
+                              <div style={{ fontSize: 11, color: '#888' }}>
+                                {item.count} zip codes
+                              </div>
                             </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}>
+                            <td
+                              style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 500 }}
+                            >
                               {item.total.toLocaleString()}
                             </td>
                           </tr>
@@ -903,7 +1008,8 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
               >
                 <h3 style={{ margin: 0, fontSize: 16 }}>States with Data</h3>
                 <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
-                  {stateSummaries.length} states • {data.reduce((sum, d) => sum + d.value, 0).toLocaleString()} total
+                  {stateSummaries.length} states •{' '}
+                  {data.reduce((sum, d) => sum + d.value, 0).toLocaleString()} total
                 </div>
               </div>
 
@@ -912,8 +1018,24 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead style={{ position: 'sticky', top: 0, background: '#f8f8f8', zIndex: 1 }}>
                     <tr>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #eee' }}>State</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: '1px solid #eee' }}>Total</th>
+                      <th
+                        style={{
+                          padding: '10px 12px',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #eee',
+                        }}
+                      >
+                        State
+                      </th>
+                      <th
+                        style={{
+                          padding: '10px 12px',
+                          textAlign: 'right',
+                          borderBottom: '1px solid #eee',
+                        }}
+                      >
+                        Total
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -924,10 +1046,18 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                           setActiveState(state.fips);
                           // Zoom to state - find state bounds and zoom
                           if (usTopology) {
-                            const states = topojson.feature(usTopology, usTopology.objects.states) as any;
-                            const stateFeature = states.features.find((s: any) => s.id === state.fips);
+                            const states = topojson.feature(
+                              usTopology,
+                              usTopology.objects.states
+                            ) as any;
+                            const stateFeature = states.features.find(
+                              (s: any) => s.id === state.fips
+                            );
                             if (stateFeature) {
-                              const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
+                              const projection = d3
+                                .geoAlbersUsa()
+                                .scale(1300)
+                                .translate([480, 300]);
                               const path = d3.geoPath(projection);
                               const bounds = path.bounds(stateFeature);
                               const [[x0, y0], [x1, y1]] = bounds;
@@ -936,7 +1066,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                               const x = (x0 + x1) / 2;
                               const y = (y0 + y1) / 2;
                               const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
-                              
+
                               setTransform({
                                 x: width / 2 - x * scale,
                                 y: height / 2 - y * scale,
