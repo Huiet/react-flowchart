@@ -1,4 +1,4 @@
-import { TessellatedGeometry } from './tessellator';
+import { TessellatedGeometry, tessellateGeometry } from './tessellator';
 import { initShaderProgram } from './shaders';
 import * as d3 from 'd3';
 
@@ -34,7 +34,7 @@ export class WebGLRenderer {
     this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
   }
 
-  render(geometries: Map<string, TessellatedGeometry>, transform: { x: number; y: number; scale: number }, stateBorders?: any, nationBorders?: any, zipBorders?: number[] | null, hoveredZip?: string | null) {
+  render(geometries: Map<string, TessellatedGeometry>, transform: { x: number; y: number; scale: number }, stateBorders?: any, nationBorders?: any, zipBorders?: number[] | null, hoveredZip?: string | null, stateGeometries?: Map<string, any> | null) {
     if (!this.program) return;
 
     const gl = this.gl;
@@ -48,24 +48,47 @@ export class WebGLRenderer {
     const matrix = this.createMatrix(transform);
     gl.uniformMatrix3fv(this.matrixLocation, false, matrix);
 
-    // Render each geometry
-    geometries.forEach((geom, id) => {
-      const buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, geom.vertices, gl.STATIC_DRAW);
+    // Render state geometries if provided, otherwise render zip geometries
+    if (stateGeometries) {
+      // Tessellate and render states
+      stateGeometries.forEach((stateData, fips) => {
+        const tessellated = tessellateGeometry(stateData.geometry, stateData.color, fips);
+        if (!tessellated) return;
 
-      gl.enableVertexAttribArray(this.positionLocation);
-      gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, tessellated.vertices, gl.STATIC_DRAW);
 
-      // Use orange color if this is the hovered zip, otherwise use original color
-      const color = hoveredZip === id ? [0.96, 0.49, 0] : geom.color;
-      gl.uniform3fv(this.colorLocation, color);
+        gl.enableVertexAttribArray(this.positionLocation);
+        gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-      const vertexCount = geom.vertices.length / 2;
-      gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+        gl.uniform3fv(this.colorLocation, tessellated.color);
 
-      gl.deleteBuffer(buffer);
-    });
+        const vertexCount = tessellated.vertices.length / 2;
+        gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+
+        gl.deleteBuffer(buffer);
+      });
+    } else {
+      // Render each zip geometry
+      geometries.forEach((geom, id) => {
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, geom.vertices, gl.STATIC_DRAW);
+
+        gl.enableVertexAttribArray(this.positionLocation);
+        gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        // Use orange color if this is the hovered zip, otherwise use original color
+        const color = hoveredZip === id ? [0.96, 0.49, 0] : geom.color;
+        gl.uniform3fv(this.colorLocation, color);
+
+        const vertexCount = geom.vertices.length / 2;
+        gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+
+        gl.deleteBuffer(buffer);
+      });
+    }
 
     // Draw state borders as lines
     if (stateBorders) {

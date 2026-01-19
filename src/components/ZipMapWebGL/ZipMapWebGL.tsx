@@ -46,7 +46,9 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
   const [hoveredZip, setHoveredZip] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ zip: string; value: number; x: number; y: number } | null>(null);
   const [showZipBorders, setShowZipBorders] = useState(false);
+  const [showStateColors, setShowStateColors] = useState(false);
   const isDragging = useRef(false);
+  const dragDistance = useRef(0);
   const lastMouse = useRef({ x: 0, y: 0 });
 
   // Get zip codes for active state
@@ -244,12 +246,34 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       }
     }
 
-    rendererRef.current.render(buffers, transform, stateMesh, nationMesh, zipBorders, hoveredZip);
-  }, [geometries, transform, zoomLevel, usTopology, showZipBorders, hoveredZip, activeState]);
+    // Create state-colored geometries if enabled (only when no state is selected)
+    let stateGeometries = null;
+    if (showStateColors && !activeState && usTopology) {
+      const states = topojson.feature(usTopology, usTopology.objects.states) as any;
+      const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
+      
+      stateGeometries = new Map<string, any>();
+      states.features.forEach((stateFeature: any) => {
+        const fips = stateFeature.id;
+        const stateSummary = stateSummaries.find(s => s.fips === fips);
+        if (stateSummary) {
+          const color = d3.rgb(stateColorScale(stateSummary.total));
+          stateGeometries.set(fips, {
+            geometry: stateFeature.geometry,
+            color: [color.r / 255, color.g / 255, color.b / 255],
+            projection,
+          });
+        }
+      });
+    }
+
+    rendererRef.current.render(buffers, transform, stateMesh, nationMesh, zipBorders, hoveredZip, stateGeometries);
+  }, [geometries, transform, zoomLevel, usTopology, showZipBorders, hoveredZip, activeState, showStateColors, stateSummaries, stateColorScale]);
 
   // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true;
+    dragDistance.current = 0;
     lastMouse.current = { x: e.clientX, y: e.clientY };
   };
 
@@ -257,6 +281,8 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     if (isDragging.current) {
       const dx = e.clientX - lastMouse.current.x;
       const dy = e.clientY - lastMouse.current.y;
+
+      dragDistance.current += Math.abs(dx) + Math.abs(dy);
 
       setTransform((prev) => ({
         ...prev,
@@ -305,7 +331,52 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent) => {
+    // If drag distance is small, treat as click
+    if (isDragging.current && dragDistance.current < 5 && usTopology) {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const worldX = (mouseX - transform.x) / transform.scale;
+      const worldY = (mouseY - transform.y) / transform.scale;
+
+      const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
+      const path = d3.geoPath(projection);
+      const states = topojson.feature(usTopology, usTopology.objects.states) as any;
+
+      // Find clicked state
+      for (const stateFeature of states.features) {
+        const bounds = path.bounds(stateFeature);
+        const [[x0, y0], [x1, y1]] = bounds;
+        
+        if (worldX >= x0 && worldX <= x1 && worldY >= y0 && worldY <= y1) {
+          const fips = stateFeature.id;
+          const stateSummary = stateSummaries.find(s => s.fips === fips);
+          
+          if (stateSummary) {
+            setActiveState(fips);
+            
+            // Zoom to state
+            const dx = x1 - x0;
+            const dy = y1 - y0;
+            const x = (x0 + x1) / 2;
+            const y = (y0 + y1) / 2;
+            const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
+            
+            setTransform({
+              x: width / 2 - x * scale,
+              y: height / 2 - y * scale,
+              scale,
+            });
+            setZoomLevel(scale);
+            break;
+          }
+        }
+      }
+    }
+    
     isDragging.current = false;
   };
 
@@ -586,6 +657,29 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
           Show zip code borders
         </label>
 
+        {/* Show state colors toggle */}
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px',
+            background: '#fff',
+            borderRadius: 8,
+            border: '1px solid #eee',
+            cursor: 'pointer',
+            fontSize: 13,
+            color: '#666',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showStateColors}
+            onChange={(e) => setShowStateColors(e.target.checked)}
+          />
+          Color states (instead of zip codes)
+        </label>
+
         {/* States list or zip codes table */}
         <div
           style={{
@@ -606,6 +700,32 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                   padding: '16px',
                   borderBottom: '1px solid #eee',
                   background: '#f8f8f8',
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  // Zoom back to state level
+                  if (usTopology && activeState) {
+                    const states = topojson.feature(usTopology, usTopology.objects.states) as any;
+                    const stateFeature = states.features.find((s: any) => s.id === activeState);
+                    if (stateFeature) {
+                      const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
+                      const path = d3.geoPath(projection);
+                      const bounds = path.bounds(stateFeature);
+                      const [[x0, y0], [x1, y1]] = bounds;
+                      const dx = x1 - x0;
+                      const dy = y1 - y0;
+                      const x = (x0 + x1) / 2;
+                      const y = (y0 + y1) / 2;
+                      const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
+                      
+                      setTransform({
+                        x: width / 2 - x * scale,
+                        y: height / 2 - y * scale,
+                        scale,
+                      });
+                      setZoomLevel(scale);
+                    }
+                  }
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
