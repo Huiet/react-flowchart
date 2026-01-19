@@ -424,17 +424,23 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       const worldY = (mouseY - transform.y) / transform.scale;
 
       const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
-      const path = d3.geoPath(projection);
-      const useHighDetail = zoomLevel >= 4;
-      const dataSource = useHighDetail ? geometries.fiveDigit : geometries.threeDigit;
+      
+      // Convert screen coords back to geo coords
+      const geoCoords = projection.invert?.([worldX, worldY]);
+      if (!geoCoords) {
+        setHoveredZip(null);
+        setTooltip(null);
+        return;
+      }
+
+      // Use 5-digit only when state is selected AND showFiveDigit is on
+      const useHighDetail = activeState !== null && showFiveDigit;
+      const dataSource = useHighDetail ? geometries.fiveDigit : geometries.threeDigitFull;
 
       let found = false;
       for (const [id, geom] of dataSource.entries()) {
-        const bounds = path.bounds(geom.geometry);
-        const [[x0, y0], [x1, y1]] = bounds;
-
-        // Simple bounding box check
-        if (worldX >= x0 && worldX <= x1 && worldY >= y0 && worldY <= y1) {
+        // Use proper point-in-polygon check
+        if (d3.geoContains(geom.geometry, geoCoords)) {
           const value = useHighDetail ? geom.value : geom.totalValue;
           setHoveredZip(id);
           setTooltip({ zip: id, value, x: e.clientX, y: e.clientY });
@@ -452,7 +458,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
 
   const handleMouseUp = (e: React.MouseEvent) => {
     // If drag distance is small, treat as click
-    if (isDragging.current && dragDistance.current < 5 && usTopology) {
+    if (isDragging.current && dragDistance.current < 5 && usTopology && geometries) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -463,6 +469,34 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
 
       const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
       const path = d3.geoPath(projection);
+      const geoCoords = projection.invert?.([worldX, worldY]);
+
+      // Check for 3-digit area click first (when not in 5-digit mode)
+      if (geoCoords && !(activeState && showFiveDigit)) {
+        for (const [prefix, geom] of geometries.threeDigitFull.entries()) {
+          if (d3.geoContains(geom.geometry, geoCoords)) {
+            // Zoom to 3-digit area
+            const bounds = path.bounds(geom.geometry);
+            const [[x0, y0], [x1, y1]] = bounds;
+            const dx = x1 - x0;
+            const dy = y1 - y0;
+            const x = (x0 + x1) / 2;
+            const y = (y0 + y1) / 2;
+            const scale = Math.min(12, 0.5 / Math.max(dx / width, dy / height));
+
+            animateTo({
+              x: width / 2 - x * scale,
+              y: height / 2 - y * scale,
+              scale,
+            });
+
+            isDragging.current = false;
+            setIsDraggingState(false);
+            return;
+          }
+        }
+      }
+
       const states = topojson.feature(usTopology, usTopology.objects.states) as any;
 
       // Find clicked state
@@ -734,7 +768,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
             }}
           >
             <div style={{ fontWeight: 600, marginBottom: 4 }}>
-              {zoomLevel >= 4 ? `ZIP ${tooltip.zip}` : `${tooltip.zip}xx Area`}
+              {activeState && showFiveDigit ? `ZIP ${tooltip.zip}` : `${tooltip.zip}xx Area`}
             </div>
             <div style={{ color: '#ccc' }}>
               Value: <span style={{ color: '#fff' }}>{tooltip.value.toLocaleString()}</span>

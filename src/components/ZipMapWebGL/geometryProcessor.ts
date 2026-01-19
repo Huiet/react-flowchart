@@ -155,6 +155,7 @@ export async function loadAndProcessGeometries(data: ZipDataPoint[]): Promise<Ge
 
   // Tessellate full-coverage 3-digit geometries
   const threeDigitFullBuffers = new Map<string, TessellatedGeometry>();
+  const threeDigitFull = new Map<string, ThreeDigitGeometry>();
   threeDigitFullGroups.forEach((group, prefix) => {
     if (group.totalValue === 0) return;
     const coordinates: any[] = [];
@@ -165,8 +166,15 @@ export async function loadAndProcessGeometries(data: ZipDataPoint[]): Promise<Ge
         coordinates.push(...feature.geometry.coordinates);
       }
     });
+    const geometry = { type: 'MultiPolygon' as const, coordinates };
+    threeDigitFull.set(prefix, {
+      prefix,
+      geometry,
+      totalValue: group.totalValue,
+      zipCodes: group.features.map((f: any) => f.properties.ZCTA5CE10),
+    });
     const color = threeDigitColorScale(group.totalValue);
-    const tessellated = tessellateGeometry({ type: 'MultiPolygon', coordinates }, color, prefix);
+    const tessellated = tessellateGeometry(geometry, color, prefix);
     if (tessellated) threeDigitFullBuffers.set(prefix, tessellated);
   });
   console.log(`Tessellated ${threeDigitFullBuffers.size} full-coverage 3-digit geometries`);
@@ -174,6 +182,7 @@ export async function loadAndProcessGeometries(data: ZipDataPoint[]): Promise<Ge
   return {
     fiveDigit,
     threeDigit,
+    threeDigitFull,
     fiveDigitBuffers,
     threeDigitBuffers,
     threeDigitFullBuffers,
