@@ -6,26 +6,31 @@ const mockData: MetricData[] = [
     label: 'Total Accounts',
     value: 1247,
     percentage: 100,
+    color: 'green',
   },
   {
     label: 'Active Accounts',
     value: 1089,
     percentage: 87.3,
+    color: 'blue',
   },
   {
     label: 'Discovery',
     value: 980,
     percentage: 78.6,
+    color: 'orange',
   },
   {
     label: 'Applications Started',
     value: 920,
     percentage: 73.8,
+    color: 'gray',
   },
   {
     label: 'Completed',
     value: 853,
     percentage: 68.4,
+    color: 'red',
   },
 ];
 
@@ -68,6 +73,7 @@ export const ApplicationTrackingDemo = () => {
             </p>
           </div>
           <button
+            type="button"
             onClick={toggleLoading}
             style={{
               padding: '10px 20px',

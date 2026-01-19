@@ -510,17 +510,17 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
           .attr('pointer-events', 'none');
       } else {
         // Show 3-digit empty areas
-        const emptyThreeDigit = Array.from(
-          allZctaFeatures.reduce((map, f) => {
-            const prefix = f.properties.zipCode.substring(0, 3);
-            if (!map.has(prefix)) map.set(prefix, { features: [], hasData: false });
-            map.get(prefix).features.push(f);
-            if (dataMap.has(f.properties.zipCode)) map.get(prefix).hasData = true;
-            return map;
-          }, new Map<string, { features: any[]; hasData: boolean }>())
-        )
-          .filter(([, group]) => !group.hasData)
-          .flatMap(([, group]) => group.features);
+        const threeDigitMap = allZctaFeatures.reduce((map, f) => {
+          const prefix = f.properties.zipCode.substring(0, 3);
+          if (!map.has(prefix)) map.set(prefix, { features: [] as any[], hasData: false });
+          map.get(prefix)!.features.push(f);
+          if (dataMap.has(f.properties.zipCode)) map.get(prefix)!.hasData = true;
+          return map;
+        }, new Map<string, { features: any[]; hasData: boolean }>());
+
+        const emptyThreeDigit = [...threeDigitMap.entries()]
+          .filter((entry): entry is [string, { features: any[]; hasData: boolean }] => !entry[1].hasData)
+          .flatMap((entry) => entry[1].features);
 
         const emptyPathData = emptyThreeDigit
           .map((d: any) => path(d))
