@@ -63,27 +63,14 @@ const FIPS_TO_NAME: Record<string, string> = {
 
 export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const glRef = useRef<WebGLRenderingContext | null>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [geometries, setGeometries] = useState<any>(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
-  const [zoomLevel, setZoomLevel] = useState(1);
   const [showFiveDigit, setShowFiveDigit] = useState(false);
   const [isDraggingState, setIsDraggingState] = useState(false);
   const animationRef = useRef<number | null>(null);
-
-  // Calculate initial center position
-  useEffect(() => {
-    // Projection is centered at [480, 300] with scale 1300
-    // We need to center this in our canvas
-    const projectionCenterX = 480;
-    const projectionCenterY = 300;
-    const initialX = width / 2 - projectionCenterX;
-    const initialY = height / 2 - projectionCenterY;
-    setTransform({ x: initialX, y: initialY, scale: 1 });
-  }, [width, height]);
   const [usTopology, setUsTopology] = useState<any>(null);
   const [activeState, setActiveState] = useState<string | null>(null);
   const [hoveredZip, setHoveredZip] = useState<string | null>(null);
@@ -94,10 +81,19 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     y: number;
   } | null>(null);
   const [showZipBorders, setShowZipBorders] = useState(false);
-  const [showStateColors, setShowStateColors] = useState(false);
   const isDragging = useRef(false);
   const dragDistance = useRef(0);
   const lastMouse = useRef({ x: 0, y: 0 });
+
+  // Shared projection
+  const projection = useMemo(() => d3.geoAlbersUsa().scale(1300).translate([480, 300]), []);
+
+  // Calculate initial center position
+  useEffect(() => {
+    const initialX = width / 2 - 480;
+    const initialY = height / 2 - 300;
+    setTransform({ x: initialX, y: initialY, scale: 1 });
+  }, [width, height]);
 
   // Animate transform changes
   const animateTo = (target: { x: number; y: number; scale: number }, duration = 400) => {
@@ -112,7 +108,6 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
         y: start.y + (target.y - start.y) * ease,
         scale: start.scale + (target.scale - start.scale) * ease,
       });
-      setZoomLevel(start.scale + (target.scale - start.scale) * ease);
       if (t < 1) animationRef.current = requestAnimationFrame(animate);
     };
     animationRef.current = requestAnimationFrame(animate);
@@ -170,7 +165,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
 
   // Color scale for states
   const stateColorScale = useMemo(() => {
-    if (stateSummaries.length === 0) return (v: number) => '#ddd';
+    if (stateSummaries.length === 0) return () => '#ddd';
     const totals = stateSummaries.map((s) => s.total);
     const scale = d3
       .scaleSequential(d3.interpolateBlues)
@@ -180,7 +175,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
 
   // Color scale for active state zip codes (5-digit)
   const zipColorScale = useMemo(() => {
-    if (activeStateZips.length === 0) return (v: number) => '#ddd';
+    if (activeStateZips.length === 0) return () => '#ddd';
     const values = activeStateZips.map((z) => z.value);
     const scale = d3
       .scaleSequential(d3.interpolateBlues)
@@ -190,13 +185,22 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
 
   // Color scale for active state 3-digit areas
   const threeDigitColorScale = useMemo(() => {
-    if (activeState3Digit.length === 0) return (v: number) => '#ddd';
+    if (activeState3Digit.length === 0) return () => '#ddd';
     const totals = activeState3Digit.map((a) => a.total);
     const scale = d3
       .scaleSequential(d3.interpolateBlues)
       .domain([Math.min(...totals), Math.max(...totals)]);
     return (value: number) => scale(value);
   }, [activeState3Digit]);
+
+  // Memoize border meshes
+  const { stateMesh, nationMesh } = useMemo(() => {
+    if (!usTopology) return { stateMesh: null, nationMesh: null };
+    return {
+      stateMesh: topojson.mesh(usTopology, usTopology.objects.states, (a: any, b: any) => a !== b),
+      nationMesh: topojson.mesh(usTopology, usTopology.objects.states, (a: any, b: any) => a === b),
+    };
+  }, [usTopology]);
 
   // Load US states topology
   useEffect(() => {
@@ -214,13 +218,16 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       return;
     }
 
-    glRef.current = gl;
     gl.viewport(0, 0, width, height);
     gl.clearColor(0.98, 0.98, 0.98, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     rendererRef.current = new WebGLRenderer(gl, width, height);
     setIsReady(true);
+
+    return () => {
+      rendererRef.current?.clearBufferCache();
+    };
   }, [width, height]);
 
   useEffect(() => {
@@ -230,23 +237,23 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
     loadAndProcessGeometries(data).then((geoms) => {
       setGeometries(geoms);
       setIsLoading(false);
-      console.log('Geometries loaded:', {
-        fiveDigit: geoms.fiveDigit.size,
-        threeDigit: geoms.threeDigit.size,
-      });
     });
   }, [data, isReady]);
 
-  // Render when geometries or transform changes
+  // Set borders once when topology loads
   useEffect(() => {
-    if (!geometries || !rendererRef.current || !usTopology) return;
+    if (!rendererRef.current || !stateMesh || !nationMesh) return;
+    rendererRef.current.setBorders(stateMesh, nationMesh);
+  }, [stateMesh, nationMesh]);
 
-    // Build combined buffers: 3-digit for all states, plus detail for active state
+  // Memoize the buffer map - only rebuild when data/state changes, not on transform
+  const renderBuffers = useMemo(() => {
+    if (!geometries) return new Map();
+
     const buffers = new Map<string, any>();
 
     // Add all 3-digit areas first
     geometries.threeDigitFullBuffers.forEach((value: any, key: string) => {
-      // Only skip active state's 3-digit areas if showing 5-digit detail
       if (activeState && showFiveDigit) {
         const belongsToActiveState = activeState3Digit.some((a) => a.prefix === key);
         if (belongsToActiveState) return;
@@ -263,130 +270,44 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       });
     }
 
-    // Get state borders
-    const stateMesh = topojson.mesh(
-      usTopology,
-      usTopology.objects.states,
-      (a: any, b: any) => a !== b
-    );
+    return buffers;
+  }, [geometries, activeState, showFiveDigit, activeState3Digit, activeStateZips]);
 
-    // Get nation borders
-    const nationMesh = topojson.mesh(
-      usTopology,
-      usTopology.objects.states,
-      (a: any, b: any) => a === b
-    );
+  // Compute zip borders only when needed
+  const zipBorderVertices = useMemo(() => {
+    if (!showZipBorders || !geometries || !activeState) return null;
 
-    // Get zip code borders if enabled
-    let zipBorders = null;
-    if (showZipBorders && geometries && activeState) {
-      const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
-      const allZips = geometries.allZipsByState.get(activeState);
+    const allZips = geometries.allZipsByState.get(activeState);
+    if (!allZips) return null;
 
-      if (allZips) {
-        const borderVertices: number[] = [];
+    const borderVertices: number[] = [];
+    allZips.forEach((feature: any) => {
+      const coords =
+        feature.geometry.type === 'Polygon'
+          ? [feature.geometry.coordinates]
+          : feature.geometry.coordinates;
 
-        // Group by 3-digit if zoomed out
-        if (zoomLevel < 4) {
-          const grouped = new Map<string, any[]>();
-          allZips.forEach((feature: any) => {
-            const zipCode = feature.properties.ZCTA5CE10;
-            const prefix = zipCode.substring(0, 3);
-            if (!grouped.has(prefix)) grouped.set(prefix, []);
-            grouped.get(prefix)!.push(feature);
-          });
-
-          grouped.forEach((features) => {
-            features.forEach((feature: any) => {
-              const coords =
-                feature.geometry.type === 'Polygon'
-                  ? [feature.geometry.coordinates]
-                  : feature.geometry.coordinates;
-
-              coords.forEach((polygon: number[][][]) => {
-                polygon.forEach((ring: number[][]) => {
-                  for (let i = 0; i < ring.length - 1; i++) {
-                    const p1 = projection(ring[i]);
-                    const p2 = projection(ring[i + 1]);
-                    if (p1 && p2) {
-                      borderVertices.push(p1[0], p1[1], p2[0], p2[1]);
-                    }
-                  }
-                });
-              });
-            });
-          });
-        } else {
-          // Show all individual zip borders when zoomed in
-          allZips.forEach((feature: any) => {
-            const coords =
-              feature.geometry.type === 'Polygon'
-                ? [feature.geometry.coordinates]
-                : feature.geometry.coordinates;
-
-            coords.forEach((polygon: number[][][]) => {
-              polygon.forEach((ring: number[][]) => {
-                for (let i = 0; i < ring.length - 1; i++) {
-                  const p1 = projection(ring[i]);
-                  const p2 = projection(ring[i + 1]);
-                  if (p1 && p2) {
-                    borderVertices.push(p1[0], p1[1], p2[0], p2[1]);
-                  }
-                }
-              });
-            });
-          });
-        }
-
-        zipBorders = borderVertices;
-      }
-    }
-
-    // Create state-colored geometries if enabled (only when no state is selected)
-    let stateGeometries = null;
-    if (showStateColors && !activeState && usTopology) {
-      const states = topojson.feature(usTopology, usTopology.objects.states) as any;
-      const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
-
-      stateGeometries = new Map<string, any>();
-      states.features.forEach((stateFeature: any) => {
-        const fips = stateFeature.id;
-        const stateSummary = stateSummaries.find((s) => s.fips === fips);
-        if (stateSummary) {
-          const color = d3.rgb(stateColorScale(stateSummary.total));
-          stateGeometries.set(fips, {
-            geometry: stateFeature.geometry,
-            color: [color.r / 255, color.g / 255, color.b / 255],
-            projection,
-          });
-        }
+      coords.forEach((polygon: number[][][]) => {
+        polygon.forEach((ring: number[][]) => {
+          for (let i = 0; i < ring.length - 1; i++) {
+            const p1 = projection(ring[i] as [number, number]);
+            const p2 = projection(ring[i + 1] as [number, number]);
+            if (p1 && p2) {
+              borderVertices.push(p1[0], p1[1], p2[0], p2[1]);
+            }
+          }
+        });
       });
-    }
+    });
 
-    rendererRef.current.render(
-      buffers,
-      transform,
-      stateMesh,
-      nationMesh,
-      zipBorders,
-      hoveredZip,
-      stateGeometries
-    );
-  }, [
-    geometries,
-    transform,
-    zoomLevel,
-    usTopology,
-    showZipBorders,
-    hoveredZip,
-    activeState,
-    showStateColors,
-    stateSummaries,
-    stateColorScale,
-    showFiveDigit,
-    activeStateZips,
-    activeState3Digit,
-  ]);
+    return borderVertices;
+  }, [showZipBorders, geometries, activeState, projection]);
+
+  // Render - only depends on transform and hover for smooth updates
+  useEffect(() => {
+    if (!rendererRef.current || renderBuffers.size === 0) return;
+    rendererRef.current.render(renderBuffers, transform, zipBorderVertices, hoveredZip);
+  }, [renderBuffers, transform, zipBorderVertices, hoveredZip]);
 
   // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -423,8 +344,6 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       const worldX = (mouseX - transform.x) / transform.scale;
       const worldY = (mouseY - transform.y) / transform.scale;
 
-      const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
-      
       // Convert screen coords back to geo coords
       const geoCoords = projection.invert?.([worldX, worldY]);
       if (!geoCoords) {
@@ -467,7 +386,6 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
       const worldX = (mouseX - transform.x) / transform.scale;
       const worldY = (mouseY - transform.y) / transform.scale;
 
-      const projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
       const path = d3.geoPath(projection);
       const geoCoords = projection.invert?.([worldX, worldY]);
 
@@ -568,7 +486,6 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
         y: newY,
         scale: newScale,
       });
-      setZoomLevel(newScale);
     };
 
     canvas.addEventListener('wheel', handleWheelEvent, { passive: false });
@@ -642,18 +559,14 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
               onClick={() => {
                 const centerX = width / 2;
                 const centerY = height / 2;
-                const zoomFactor = 1.5;
-                const newScale = Math.min(100, zoomLevel * zoomFactor);
-
-                // Zoom towards center
+                const newScale = Math.min(100, transform.scale * 1.5);
                 const worldX = (centerX - transform.x) / transform.scale;
                 const worldY = (centerY - transform.y) / transform.scale;
-
-                const newX = centerX - worldX * newScale;
-                const newY = centerY - worldY * newScale;
-
-                setTransform({ x: newX, y: newY, scale: newScale });
-                setZoomLevel(newScale);
+                setTransform({
+                  x: centerX - worldX * newScale,
+                  y: centerY - worldY * newScale,
+                  scale: newScale,
+                });
               }}
               style={btnStyle}
               title="Zoom In"
@@ -664,18 +577,14 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
               onClick={() => {
                 const centerX = width / 2;
                 const centerY = height / 2;
-                const zoomFactor = 0.67;
-                const newScale = Math.max(1, zoomLevel * zoomFactor);
-
-                // Zoom towards center
+                const newScale = Math.max(1, transform.scale * 0.67);
                 const worldX = (centerX - transform.x) / transform.scale;
                 const worldY = (centerY - transform.y) / transform.scale;
-
-                const newX = centerX - worldX * newScale;
-                const newY = centerY - worldY * newScale;
-
-                setTransform({ x: newX, y: newY, scale: newScale });
-                setZoomLevel(newScale);
+                setTransform({
+                  x: centerX - worldX * newScale,
+                  y: centerY - worldY * newScale,
+                  scale: newScale,
+                });
               }}
               style={btnStyle}
               title="Zoom Out"
@@ -683,54 +592,37 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
               −
             </button>
             <div style={{ height: 1, background: '#eee', margin: '4px 0' }} />
-            <button
-              onClick={() => {
-                const projectionCenterX = 480;
-                const projectionCenterY = 300;
-                const initialX = width / 2 - projectionCenterX;
-                const initialY = height / 2 - projectionCenterY;
-                animateTo({ x: initialX, y: initialY, scale: 1 });
-                setActiveState(null);
-              }}
-              disabled={(() => {
-                const initialX = width / 2 - 480;
-                const initialY = height / 2 - 300;
-                const isAtInitial =
-                  Math.abs(transform.x - initialX) < 1 &&
-                  Math.abs(transform.y - initialY) < 1 &&
-                  transform.scale <= 1.01;
-                return isAtInitial && !activeState;
-              })()}
-              style={{
-                ...btnStyle,
-                color: (() => {
-                  const initialX = width / 2 - 480;
-                  const initialY = height / 2 - 300;
-                  const isAtInitial =
-                    Math.abs(transform.x - initialX) < 1 &&
-                    Math.abs(transform.y - initialY) < 1 &&
-                    transform.scale <= 1.01;
-                  return !isAtInitial || activeState ? '#333' : '#aaa';
-                })(),
-                background: (() => {
-                  const initialX = width / 2 - 480;
-                  const initialY = height / 2 - 300;
-                  const isAtInitial =
-                    Math.abs(transform.x - initialX) < 1 &&
-                    Math.abs(transform.y - initialY) < 1 &&
-                    transform.scale <= 1.01;
-                  return !isAtInitial || activeState ? '#fff' : '#f5f5f5';
-                })(),
-              }}
-              title="Reset View"
-            >
-              ⌂
-            </button>
+            {(() => {
+              const initialX = width / 2 - 480;
+              const initialY = height / 2 - 300;
+              const isAtInitial =
+                Math.abs(transform.x - initialX) < 1 &&
+                Math.abs(transform.y - initialY) < 1 &&
+                transform.scale <= 1.01;
+              const isEnabled = !isAtInitial || activeState;
+              return (
+                <button
+                  onClick={() => {
+                    animateTo({ x: initialX, y: initialY, scale: 1 });
+                    setActiveState(null);
+                  }}
+                  disabled={!isEnabled}
+                  style={{
+                    ...btnStyle,
+                    color: isEnabled ? '#333' : '#aaa',
+                    background: isEnabled ? '#fff' : '#f5f5f5',
+                  }}
+                  title="Reset View"
+                >
+                  ⌂
+                </button>
+              );
+            })()}
           </div>
         )}
 
-        {/* Zoom level and LOD indicator */}
-        {!isLoading && geometries && zoomLevel > 1.1 && (
+        {/* Zoom level indicator */}
+        {!isLoading && geometries && transform.scale > 1.1 && (
           <div
             style={{
               position: 'absolute',
@@ -743,10 +635,7 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
               fontSize: 12,
             }}
           >
-            <div>{Math.round(zoomLevel * 100)}%</div>
-            <div style={{ fontSize: 10, color: '#ccc', marginTop: 2 }}>
-              {zoomLevel >= 4 ? '5-digit detail' : '3-digit areas'}
-            </div>
+            {Math.round(transform.scale * 100)}%
           </div>
         )}
 
@@ -832,29 +721,6 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
             onChange={(e) => setShowZipBorders(e.target.checked)}
           />
           Show zip code borders
-        </label>
-
-        {/* Show state colors toggle */}
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 16px',
-            background: '#fff',
-            borderRadius: 8,
-            border: '1px solid #eee',
-            cursor: 'pointer',
-            fontSize: 13,
-            color: '#666',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={showStateColors}
-            onChange={(e) => setShowStateColors(e.target.checked)}
-          />
-          Color states (instead of zip codes)
         </label>
 
         {/* States list or zip codes table */}
@@ -980,22 +846,17 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                             onMouseEnter={() => setHoveredZip(item.zipCode)}
                             onMouseLeave={() => setHoveredZip(null)}
                             onClick={() => {
-                              // Zoom to zip code
                               if (geometries?.fiveDigit.has(item.zipCode)) {
                                 const zipGeom = geometries.fiveDigit.get(item.zipCode);
-                                const projection = d3
-                                  .geoAlbersUsa()
-                                  .scale(1300)
-                                  .translate([480, 300]);
                                 const path = d3.geoPath(projection);
                                 const bounds = path.bounds(zipGeom.geometry);
                                 const [[x0, y0], [x1, y1]] = bounds;
-                                const dx = x1 - x0;
-                                const dy = y1 - y0;
                                 const x = (x0 + x1) / 2;
                                 const y = (y0 + y1) / 2;
-                                const scale = Math.min(15, 0.2 / Math.max(dx / width, dy / height));
-
+                                const scale = Math.min(
+                                  15,
+                                  0.2 / Math.max((x1 - x0) / width, (y1 - y0) / height)
+                                );
                                 animateTo({
                                   x: width / 2 - x * scale,
                                   y: height / 2 - y * scale,
@@ -1034,22 +895,17 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                           <tr
                             key={item.prefix}
                             onClick={() => {
-                              // Zoom to 3-digit area
-                              if (geometries?.threeDigit.has(item.prefix)) {
-                                const areaGeom = geometries.threeDigit.get(item.prefix);
-                                const projection = d3
-                                  .geoAlbersUsa()
-                                  .scale(1300)
-                                  .translate([480, 300]);
+                              if (geometries?.threeDigitFull.has(item.prefix)) {
+                                const areaGeom = geometries.threeDigitFull.get(item.prefix);
                                 const path = d3.geoPath(projection);
                                 const bounds = path.bounds(areaGeom.geometry);
                                 const [[x0, y0], [x1, y1]] = bounds;
-                                const dx = x1 - x0;
-                                const dy = y1 - y0;
                                 const x = (x0 + x1) / 2;
                                 const y = (y0 + y1) / 2;
-                                const scale = Math.min(12, 0.5 / Math.max(dx / width, dy / height));
-
+                                const scale = Math.min(
+                                  12,
+                                  0.5 / Math.max((x1 - x0) / width, (y1 - y0) / height)
+                                );
                                 animateTo({
                                   x: width / 2 - x * scale,
                                   y: height / 2 - y * scale,
@@ -1141,7 +997,6 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                         key={state.fips}
                         onClick={() => {
                           setActiveState(state.fips);
-                          // Zoom to state - find state bounds and zoom
                           if (usTopology) {
                             const states = topojson.feature(
                               usTopology,
@@ -1151,19 +1006,15 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
                               (s: any) => s.id === state.fips
                             );
                             if (stateFeature) {
-                              const projection = d3
-                                .geoAlbersUsa()
-                                .scale(1300)
-                                .translate([480, 300]);
                               const path = d3.geoPath(projection);
                               const bounds = path.bounds(stateFeature);
                               const [[x0, y0], [x1, y1]] = bounds;
-                              const dx = x1 - x0;
-                              const dy = y1 - y0;
                               const x = (x0 + x1) / 2;
                               const y = (y0 + y1) / 2;
-                              const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
-
+                              const scale = Math.min(
+                                8,
+                                0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)
+                              );
                               animateTo({
                                 x: width / 2 - x * scale,
                                 y: height / 2 - y * scale,

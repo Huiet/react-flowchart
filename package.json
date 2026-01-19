@@ -17,7 +17,8 @@
     "vitest:watch": "vitest",
     "test": "npm run typecheck && npm run prettier && npm run lint && npm run vitest && npm run build",
     "storybook": "storybook dev -p 6006",
-    "storybook:build": "storybook build"
+    "storybook:build": "storybook build",
+    "download:zcta": "node scripts/zcta/download-zcta.cjs"
   },
   "dependencies": {
     "@mantine/core": "8.3.4",

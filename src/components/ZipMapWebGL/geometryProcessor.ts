@@ -6,10 +6,11 @@ import { ThreeDigitGeometry, ZipDataPoint, ZipGeometry } from './types';
 interface GeometryCache {
   fiveDigit: Map<string, ZipGeometry>;
   threeDigit: Map<string, ThreeDigitGeometry>;
+  threeDigitFull: Map<string, ThreeDigitGeometry>;
   fiveDigitBuffers: Map<string, TessellatedGeometry>;
   threeDigitBuffers: Map<string, TessellatedGeometry>;
   threeDigitFullBuffers: Map<string, TessellatedGeometry>;
-  allZipsByState: Map<string, any[]>; // All zip geometries by state FIPS
+  allZipsByState: Map<string, any[]>;
 }
 
 export async function loadAndProcessGeometries(data: ZipDataPoint[]): Promise<GeometryCache> {
@@ -137,13 +138,16 @@ export async function loadAndProcessGeometries(data: ZipDataPoint[]): Promise<Ge
   console.log(`Tessellated ${threeDigitBuffers.size} 3-digit geometries`);
 
   // Create full-coverage 3-digit groups (including empty zips)
-  const threeDigitFullGroups = new Map<string, { features: any[]; totalValue: number }>();
-  allZipsByState.forEach((features) => {
+  const threeDigitFullGroups = new Map<
+    string,
+    { features: any[]; totalValue: number; stateFips: string }
+  >();
+  allZipsByState.forEach((features, stateFips) => {
     features.forEach((feature: any) => {
       const zipCode = feature.properties.ZCTA5CE10;
       const prefix = zipCode.substring(0, 3);
       if (!threeDigitFullGroups.has(prefix)) {
-        threeDigitFullGroups.set(prefix, { features: [], totalValue: 0 });
+        threeDigitFullGroups.set(prefix, { features: [], totalValue: 0, stateFips });
       }
       const group = threeDigitFullGroups.get(prefix)!;
       group.features.push(feature);
@@ -153,11 +157,54 @@ export async function loadAndProcessGeometries(data: ZipDataPoint[]): Promise<Ge
     });
   });
 
-  // Tessellate full-coverage 3-digit geometries
+  // Tessellate full-coverage 3-digit geometries using topojson.merge to dissolve internal boundaries
   const threeDigitFullBuffers = new Map<string, TessellatedGeometry>();
   const threeDigitFull = new Map<string, ThreeDigitGeometry>();
+
+  // Group by state to use topojson.merge properly
+  const topoByState = new Map<string, any>();
+  await Promise.all(
+    Array.from(zipsByState.keys()).map(async (fips) => {
+      const topo = await fetchStateZCTA(fips);
+      if (topo) topoByState.set(fips, topo);
+    })
+  );
+
   threeDigitFullGroups.forEach((group, prefix) => {
     if (group.totalValue === 0) return;
+
+    const topo = topoByState.get(group.stateFips);
+    if (topo) {
+      const objName = getObjectName(group.stateFips);
+      const obj = topo.objects[objName];
+      if (obj) {
+        // Filter to only geometries in this 3-digit group
+        const filteredObj = {
+          type: obj.type,
+          geometries: obj.geometries.filter((g: any) => {
+            const zipCode = g.properties?.ZCTA5CE10;
+            return zipCode && zipCode.startsWith(prefix);
+          }),
+        };
+
+        if (filteredObj.geometries.length > 0) {
+          // Use topojson.merge to dissolve internal boundaries
+          const merged = topojson.merge(topo, filteredObj.geometries);
+          threeDigitFull.set(prefix, {
+            prefix,
+            geometry: merged,
+            totalValue: group.totalValue,
+            zipCodes: group.features.map((f: any) => f.properties.ZCTA5CE10),
+          });
+          const color = threeDigitColorScale(group.totalValue);
+          const tessellated = tessellateGeometry(merged, color, prefix);
+          if (tessellated) threeDigitFullBuffers.set(prefix, tessellated);
+          return;
+        }
+      }
+    }
+
+    // Fallback to MultiPolygon if merge fails
     const coordinates: any[] = [];
     group.features.forEach((feature: any) => {
       if (feature.geometry.type === 'Polygon') {

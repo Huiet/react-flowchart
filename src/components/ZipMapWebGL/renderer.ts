@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { initShaderProgram } from './shaders';
-import { TessellatedGeometry, tessellateGeometry } from './tessellator';
+import { TessellatedGeometry } from './tessellator';
 
 export class WebGLRenderer {
   private gl: WebGLRenderingContext;
@@ -11,6 +11,13 @@ export class WebGLRenderer {
   private width: number;
   private height: number;
   private projection = d3.geoAlbersUsa().scale(1300).translate([480, 300]);
+
+  // Buffer cache
+  private bufferCache = new Map<string, WebGLBuffer>();
+  private borderBuffer: WebGLBuffer | null = null;
+  private nationBuffer: WebGLBuffer | null = null;
+  private borderVertexCount = 0;
+  private nationVertexCount = 0;
 
   constructor(gl: WebGLRenderingContext, width: number, height: number) {
     this.gl = gl;
@@ -34,14 +41,62 @@ export class WebGLRenderer {
     this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
   }
 
+  private getOrCreateBuffer(id: string, vertices: Float32Array): WebGLBuffer | null {
+    if (this.bufferCache.has(id)) {
+      return this.bufferCache.get(id)!;
+    }
+    const buffer = this.gl.createBuffer();
+    if (!buffer) return null;
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+    this.bufferCache.set(id, buffer);
+    return buffer;
+  }
+
+  clearBufferCache() {
+    this.bufferCache.forEach((buffer) => this.gl.deleteBuffer(buffer));
+    this.bufferCache.clear();
+    if (this.borderBuffer) {
+      this.gl.deleteBuffer(this.borderBuffer);
+      this.borderBuffer = null;
+    }
+    if (this.nationBuffer) {
+      this.gl.deleteBuffer(this.nationBuffer);
+      this.nationBuffer = null;
+    }
+  }
+
+  setBorders(stateBorders: any, nationBorders: any) {
+    // Cache state borders
+    if (stateBorders) {
+      const vertices = this.extractBorderVertices(stateBorders);
+      if (vertices.length > 0) {
+        if (this.borderBuffer) this.gl.deleteBuffer(this.borderBuffer);
+        this.borderBuffer = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.borderBuffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
+        this.borderVertexCount = vertices.length / 2;
+      }
+    }
+
+    // Cache nation borders
+    if (nationBorders) {
+      const vertices = this.extractBorderVertices(nationBorders);
+      if (vertices.length > 0) {
+        if (this.nationBuffer) this.gl.deleteBuffer(this.nationBuffer);
+        this.nationBuffer = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.nationBuffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
+        this.nationVertexCount = vertices.length / 2;
+      }
+    }
+  }
+
   render(
     geometries: Map<string, TessellatedGeometry>,
     transform: { x: number; y: number; scale: number },
-    stateBorders?: any,
-    nationBorders?: any,
     zipBorders?: number[] | null,
-    hoveredZip?: string | null,
-    stateGeometries?: Map<string, any> | null
+    hoveredZip?: string | null
   ) {
     if (!this.program) return;
 
@@ -52,100 +107,50 @@ export class WebGLRenderer {
 
     gl.useProgram(this.program);
 
-    // Create transformation matrix
     const matrix = this.createMatrix(transform);
     gl.uniformMatrix3fv(this.matrixLocation, false, matrix);
 
-    // Render state geometries if provided, otherwise render zip geometries
-    if (stateGeometries) {
-      // Tessellate and render states
-      stateGeometries.forEach((stateData, fips) => {
-        const tessellated = tessellateGeometry(stateData.geometry, stateData.color, fips);
-        if (!tessellated) return;
+    // Render geometries using cached buffers
+    geometries.forEach((geom, id) => {
+      const buffer = this.getOrCreateBuffer(id, geom.vertices);
+      if (!buffer) return;
 
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, tessellated.vertices, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.enableVertexAttribArray(this.positionLocation);
+      gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-        gl.enableVertexAttribArray(this.positionLocation);
-        gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
+      const color = hoveredZip === id ? [0.96, 0.49, 0] : geom.color;
+      gl.uniform3fv(this.colorLocation, color);
 
-        gl.uniform3fv(this.colorLocation, tessellated.color);
+      gl.drawArrays(gl.TRIANGLES, 0, geom.vertices.length / 2);
+    });
 
-        const vertexCount = tessellated.vertices.length / 2;
-        gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
-
-        gl.deleteBuffer(buffer);
-      });
-    } else {
-      // Render each zip geometry
-      geometries.forEach((geom, id) => {
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, geom.vertices, gl.STATIC_DRAW);
-
-        gl.enableVertexAttribArray(this.positionLocation);
-        gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        // Use orange color if this is the hovered zip, otherwise use original color
-        const color = hoveredZip === id ? [0.96, 0.49, 0] : geom.color;
-        gl.uniform3fv(this.colorLocation, color);
-
-        const vertexCount = geom.vertices.length / 2;
-        gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
-
-        gl.deleteBuffer(buffer);
-      });
+    // Draw cached state borders
+    if (this.borderBuffer && this.borderVertexCount > 0) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.borderBuffer);
+      gl.enableVertexAttribArray(this.positionLocation);
+      gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform3fv(this.colorLocation, [0.4, 0.4, 0.4]);
+      gl.drawArrays(gl.LINES, 0, this.borderVertexCount);
     }
 
-    // Draw state borders as lines
-    if (stateBorders) {
-      const borderVertices = this.extractBorderVertices(stateBorders);
-      if (borderVertices.length > 0) {
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(borderVertices), gl.STATIC_DRAW);
-
-        gl.enableVertexAttribArray(this.positionLocation);
-        gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        gl.uniform3fv(this.colorLocation, [0.4, 0.4, 0.4]); // Gray color for state borders
-
-        gl.drawArrays(gl.LINES, 0, borderVertices.length / 2);
-        gl.deleteBuffer(buffer);
-      }
+    // Draw cached nation borders
+    if (this.nationBuffer && this.nationVertexCount > 0) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.nationBuffer);
+      gl.enableVertexAttribArray(this.positionLocation);
+      gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform3fv(this.colorLocation, [0.2, 0.2, 0.2]);
+      gl.drawArrays(gl.LINES, 0, this.nationVertexCount);
     }
 
-    // Draw nation borders as thicker lines
-    if (nationBorders) {
-      const borderVertices = this.extractBorderVertices(nationBorders);
-      if (borderVertices.length > 0) {
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(borderVertices), gl.STATIC_DRAW);
-
-        gl.enableVertexAttribArray(this.positionLocation);
-        gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        gl.uniform3fv(this.colorLocation, [0.2, 0.2, 0.2]); // Darker color for nation borders
-        gl.lineWidth(2);
-
-        gl.drawArrays(gl.LINES, 0, borderVertices.length / 2);
-        gl.deleteBuffer(buffer);
-      }
-    }
-
-    // Draw zip code borders if provided
+    // Draw zip borders (not cached - changes with zoom)
     if (zipBorders && zipBorders.length > 0) {
       const buffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(zipBorders), gl.STATIC_DRAW);
-
       gl.enableVertexAttribArray(this.positionLocation);
       gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-      gl.uniform3fv(this.colorLocation, [0.7, 0.7, 0.7]); // Light gray for zip borders
-
+      gl.uniform3fv(this.colorLocation, [0.7, 0.7, 0.7]);
       gl.drawArrays(gl.LINES, 0, zipBorders.length / 2);
       gl.deleteBuffer(buffer);
     }
@@ -153,10 +158,9 @@ export class WebGLRenderer {
 
   private extractBorderVertices(geometry: any): number[] {
     const vertices: number[] = [];
-    const path = d3.geoPath(this.projection);
 
     if (geometry.type === 'MultiLineString') {
-      geometry.coordinates.forEach((line: number[][]) => {
+      geometry.coordinates.forEach((line: [number, number][]) => {
         for (let i = 0; i < line.length - 1; i++) {
           const p1 = this.projection(line[i]);
           const p2 = this.projection(line[i + 1]);
@@ -171,13 +175,10 @@ export class WebGLRenderer {
   }
 
   private createMatrix(transform: { x: number; y: number; scale: number }): Float32Array {
-    // Convert from pixel coordinates to clip space (-1 to 1)
     const scaleX = (2 / this.width) * transform.scale;
     const scaleY = (-2 / this.height) * transform.scale;
-
     const translateX = (transform.x / this.width) * 2 - 1;
     const translateY = -((transform.y / this.height) * 2 - 1);
-
     return new Float32Array([scaleX, 0, 0, 0, scaleY, 0, translateX, translateY, 1]);
   }
 }
