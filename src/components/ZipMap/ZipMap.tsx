@@ -181,6 +181,47 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     [allZctaFeatures, dataMap]
   );
 
+  // 3-digit merged areas
+  const threeDigitAreas = useMemo(() => {
+    const groups = new Map<string, { features: any[]; totalValue: number }>();
+    allZctaFeatures.forEach((feature) => {
+      const zipCode = feature.properties.zipCode;
+      const prefix = zipCode.substring(0, 3);
+      if (!groups.has(prefix)) {
+        groups.set(prefix, { features: [], totalValue: 0 });
+      }
+      const group = groups.get(prefix)!;
+      group.features.push(feature);
+      if (dataMap.has(zipCode)) {
+        group.totalValue += dataMap.get(zipCode)!;
+      }
+    });
+
+    const areas: Array<{ prefix: string; geometry: any; totalValue: number }> = [];
+    groups.forEach((group, prefix) => {
+      if (group.totalValue === 0) return;
+      const coordinates: any[] = [];
+      group.features.forEach((f) => {
+        if (f.geometry.type === 'Polygon') {
+          coordinates.push(f.geometry.coordinates);
+        } else if (f.geometry.type === 'MultiPolygon') {
+          coordinates.push(...f.geometry.coordinates);
+        }
+      });
+      areas.push({
+        prefix,
+        geometry: { type: 'MultiPolygon', coordinates },
+        totalValue: group.totalValue,
+      });
+    });
+    return areas;
+  }, [allZctaFeatures, dataMap]);
+
+  const threeDigitColorScale = useMemo(
+    () => createColorScale(threeDigitAreas.map((a) => a.totalValue)),
+    [threeDigitAreas]
+  );
+
   // Memoize projection
   const projection = useMemo(() => 
     d3.geoAlbersUsa().scale(1300).translate([width / 2, height / 2]),
@@ -206,10 +247,14 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
   const resetZoom = () => {
     if (!svgRef.current || !zoomRef.current) return;
     setActiveState(null);
-    d3.select(svgRef.current)
-      .transition()
-      .duration(500)
-      .call(zoomRef.current.transform as any, d3.zoomIdentity);
+    
+    setTimeout(() => {
+      if (!svgRef.current || !zoomRef.current) return;
+      d3.select(svgRef.current)
+        .transition()
+        .duration(500)
+        .call(zoomRef.current.transform as any, d3.zoomIdentity);
+    }, 0);
   };
 
   const zoomToState = (stateFeature: any, fips: string) => {
@@ -218,11 +263,8 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     const path = d3.geoPath(projection);
 
     if (activeState === fips) {
-      resetZoom();
       return;
     }
-
-    setActiveState(fips);
 
     const [[x0, y0], [x1, y1]] = path.bounds(stateFeature);
     const dx = x1 - x0;
@@ -233,10 +275,16 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     const tx = width / 2 - scale * x;
     const ty = height / 2 - scale * y;
 
-    d3.select(svgRef.current)
-      .transition()
-      .duration(750)
-      .call(zoomRef.current.transform as any, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    // Set active state and wait for re-render before zooming
+    setActiveState(fips);
+    
+    setTimeout(() => {
+      if (!svgRef.current || !zoomRef.current) return;
+      d3.select(svgRef.current)
+        .transition()
+        .duration(750)
+        .call(zoomRef.current.transform as any, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    }, 0);
   };
 
   // Zoom to state by FIPS (for clicking from panel)
@@ -330,14 +378,17 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
       .attr('fill', (d: any) => (stateFipsList.includes(d.id) ? '#e8e8e8' : '#f8f8f8'))
       .attr('stroke', '#999')
       .attr('stroke-width', 0)
-      .style('cursor', 'pointer')
-      .on('mouseenter', function () {
-        d3.select(this).attr('stroke-width', 2.5);
+      .style('cursor', (d: any) => (stateFipsList.includes(d.id) ? 'pointer' : 'default'))
+      .on('mouseenter', function (event, d: any) {
+        if (stateFipsList.includes(d.id)) {
+          d3.select(this).attr('stroke-width', 2.5);
+        }
       })
       .on('mouseleave', function () {
         d3.select(this).attr('stroke-width', 0);
       })
       .on('click', function (event: MouseEvent, d: any) {
+        if (!stateFipsList.includes(d.id)) return;
         event.stopPropagation();
         zoomToState(d, d.id);
       });
@@ -382,50 +433,106 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
         .attr('pointer-events', 'none');
     }
 
-    // ZCTA zip codes with data (render on top)
+    // Always render 3-digit merged areas (except for active state)
+    const threeDigitToRender = activeState
+      ? threeDigitAreas.filter((d) => {
+          const sampleZip = d.prefix + '00';
+          return getStateFipsFromZip(sampleZip) !== activeState;
+        })
+      : threeDigitAreas;
+
     g.append('g')
-      .attr('class', 'zcta')
+      .attr('class', 'three-digit-areas')
       .selectAll('path')
-      .data(dataZctaFeatures)
+      .data(threeDigitToRender)
       .join('path')
-      .attr('d', path as any)
-      .attr('fill', (d: any) => colorScale.scale(dataMap.get(d.properties.zipCode)!))
+      .attr('d', (d: any) => path(d.geometry))
+      .attr('fill', (d: any) => threeDigitColorScale.scale(d.totalValue))
       .attr('stroke', 'none')
       .attr('opacity', 0.9)
       .style('pointer-events', 'none');
 
     g.append('g')
-      .attr('class', 'zcta-overlay')
+      .attr('class', 'three-digit-overlay')
       .selectAll('path')
-      .data(dataZctaFeatures)
+      .data(threeDigitToRender)
       .join('path')
-      .attr('d', path as any)
+      .attr('d', (d: any) => path(d.geometry))
       .attr('fill', 'transparent')
       .attr('stroke', 'transparent')
       .style('cursor', 'pointer')
       .on('mouseenter', function (event: MouseEvent, d: any) {
-        const zip = d.properties.zipCode;
-        const val = dataMap.get(zip);
-        if (val !== undefined) {
-          setHoveredZip(zip);
-          setTooltip({ zip, value: val, x: event.clientX, y: event.clientY });
-        }
+        setTooltip({
+          zip: `${d.prefix}xx Area`,
+          value: d.totalValue,
+          x: event.clientX,
+          y: event.clientY,
+        });
       })
       .on('mousemove', (event: MouseEvent) => {
         setTooltip((t) => (t ? { ...t, x: event.clientX, y: event.clientY } : null));
       })
       .on('mouseleave', function () {
-        setHoveredZip(null);
         setTooltip(null);
       })
       .on('click', function (event: MouseEvent, d: any) {
         event.stopPropagation();
-        const stateFips = d.properties.stateFips;
-        const stateFeature = states.features.find((s: any) => s.id === stateFips);
-        if (stateFeature) {
-          zoomToState(stateFeature, stateFips);
+        const sampleZip = d.prefix + '00';
+        const stateFips = getStateFipsFromZip(sampleZip);
+        if (stateFips) {
+          const stateFeature = states.features.find((s: any) => s.id === stateFips);
+          if (stateFeature) {
+            zoomToState(stateFeature, stateFips);
+          }
         }
       });
+
+    // Render 5-digit zips for active state only
+    if (activeState) {
+      const activeStateZctaFeatures = dataZctaFeatures.filter(
+        (d: any) => d.properties.stateFips === activeState
+      );
+
+      g.append('g')
+        .attr('class', 'zcta')
+        .selectAll('path')
+        .data(activeStateZctaFeatures)
+        .join('path')
+        .attr('d', path as any)
+        .attr('fill', (d: any) => colorScale.scale(dataMap.get(d.properties.zipCode)!))
+        .attr('stroke', 'none')
+        .attr('opacity', 0.9)
+        .style('pointer-events', 'none');
+
+      g.append('g')
+        .attr('class', 'zcta-overlay')
+        .selectAll('path')
+        .data(activeStateZctaFeatures)
+        .join('path')
+        .attr('d', path as any)
+        .attr('fill', 'transparent')
+        .attr('stroke', 'transparent')
+        .style('cursor', 'pointer')
+        .on('mouseenter', function (event: MouseEvent, d: any) {
+          const zip = d.properties.zipCode;
+          const val = dataMap.get(zip);
+          if (val !== undefined) {
+            setHoveredZip(zip);
+            setTooltip({ zip, value: val, x: event.clientX, y: event.clientY });
+          }
+        })
+        .on('mousemove', (event: MouseEvent) => {
+          setTooltip((t) => (t ? { ...t, x: event.clientX, y: event.clientY } : null));
+        })
+        .on('mouseleave', function () {
+          setHoveredZip(null);
+          setTooltip(null);
+        })
+        .on('click', function (event: MouseEvent, d: any) {
+          event.stopPropagation();
+          zoomToZip(d.properties.zipCode);
+        });
+    }
 
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
@@ -439,7 +546,7 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     svg.call(zoom);
     svg.on('dblclick.zoom', null);
     svg.on('dblclick', () => resetZoom());
-  }, [usTopology, allZctaFeatures, dataZctaFeatures, dataMap, colorScale, projection, width, height, stateFipsList, showEmptyZips]);
+  }, [usTopology, allZctaFeatures, dataZctaFeatures, dataMap, colorScale, threeDigitAreas, threeDigitColorScale, activeState, projection, width, height, stateFipsList, showEmptyZips]);
 
   const isZoomed = zoomLevel > 1.1;
   const panelWidth = 280;
@@ -531,7 +638,9 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
               boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             }}
           >
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>ZIP {tooltip.zip}</div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>
+              {tooltip.zip.includes('xx') ? tooltip.zip : `ZIP ${tooltip.zip}`}
+            </div>
             <div style={{ color: '#ccc' }}>
               Value: <span style={{ color: '#fff' }}>{tooltip.value.toLocaleString()}</span>
             </div>
