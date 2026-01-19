@@ -9,7 +9,6 @@ import { FlowChartV2Demo } from './FlowChartV2Demo';
 import { HomePage } from './pages/Home.page';
 import { StatsCardDemo } from './StatsCardDemo';
 import { UsersChartDemo } from './UsersChartDemo';
-import { ZipMapCanvasDemo } from './ZipMapCanvasDemo';
 import { ZipMapDemo } from './ZipMapDemo';
 import { ZipMapWebGLDemo } from './ZipMapWebGLDemo';
 
@@ -66,10 +65,7 @@ const router = createBrowserRouter([
         path: '/zip-map-demo',
         element: <ZipMapDemo />,
       },
-      {
-        path: '/zip-map-canvas-demo',
-        element: <ZipMapCanvasDemo />,
-      },
+
       {
         path: '/zip-map-webgl-demo',
         element: <ZipMapWebGLDemo />,
