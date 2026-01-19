@@ -167,7 +167,28 @@ export function ZipMapWebGL({ data, width = 960, height = 600 }: ZipMapWebGLProp
 
     // LOD switching: use 3-digit at low zoom, 5-digit at high zoom
     const useHighDetail = zoomLevel >= 4;
-    const buffers = useHighDetail ? geometries.fiveDigitBuffers : geometries.threeDigitBuffers;
+    let buffers = useHighDetail ? geometries.fiveDigitBuffers : geometries.threeDigitBuffers;
+
+    // Filter to active state if one is selected
+    if (activeState) {
+      const filtered = new Map<string, any>();
+      if (useHighDetail) {
+        // Show only 5-digit zips in active state
+        activeStateZips.forEach(zip => {
+          if (geometries.fiveDigitBuffers.has(zip.zipCode)) {
+            filtered.set(zip.zipCode, geometries.fiveDigitBuffers.get(zip.zipCode));
+          }
+        });
+      } else {
+        // Show only 3-digit areas in active state
+        activeState3Digit.forEach(area => {
+          if (geometries.threeDigitBuffers.has(area.prefix)) {
+            filtered.set(area.prefix, geometries.threeDigitBuffers.get(area.prefix));
+          }
+        });
+      }
+      buffers = filtered;
+    }
 
     // Get state borders
     const stateMesh = topojson.mesh(
