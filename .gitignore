@@ -132,4 +132,4 @@ dist
 .DS_Store
 
 # Large TopoJSON files (download with `npm run download:zcta`)
-public/zcta/
+public/*
