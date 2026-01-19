@@ -64,11 +64,7 @@ export const Node: React.FC<NodeProps> = ({ node, x, y, width, height, scale = 1
         fontFamily="Arial, sans-serif"
       >
         {lines.map((line, i) => (
-          <tspan
-            key={i}
-            x={x + width / 2}
-            y={startY + i * scaledLineHeight}
-          >
+          <tspan key={i} x={x + width / 2} y={startY + i * scaledLineHeight}>
             {line}
           </tspan>
         ))}

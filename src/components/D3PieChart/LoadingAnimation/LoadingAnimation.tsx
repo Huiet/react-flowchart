@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { ChartType } from '../types';
 import styles from './LoadingAnimation.module.scss';
+import { ChartType } from '../types';
 
 interface LoadingAnimationProps {
   chartType: ChartType;

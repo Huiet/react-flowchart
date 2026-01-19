@@ -173,7 +173,7 @@ export const Arrow: React.FC<ArrowProps> = ({ connection }) => {
             cx={labelPos.x}
             cy={labelPos.y}
             r="15"
-            fill={isActive === false ? '#9e9e9e' : (label === 'Yes' ? '#4CAF50' : '#FF9800')}
+            fill={isActive === false ? '#9e9e9e' : label === 'Yes' ? '#4CAF50' : '#FF9800'}
             stroke="none"
           />
           <text

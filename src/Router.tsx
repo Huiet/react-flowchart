@@ -1,14 +1,16 @@
-import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
-import { HomePage } from './pages/Home.page';
-import { FlowChartDemo } from './FlowChartDemo';
-import { FlowChartV2Demo } from './FlowChartV2Demo';
-import { D3StockChartDemo } from './D3StockChartDemo';
-import { D3BarChartDemo } from './D3BarChartDemo';
-import { D3PieChartDemo } from './D3PieChartDemo';
-import { UsersChartDemo } from './UsersChartDemo';
-import { StatsCardDemo } from './StatsCardDemo';
+import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
 import { ApplicationTrackingDemo } from './ApplicationTrackingDemo';
 import { Navigation } from './components/Navigation';
+import { D3BarChartDemo } from './D3BarChartDemo';
+import { D3PieChartDemo } from './D3PieChartDemo';
+import { D3StockChartDemo } from './D3StockChartDemo';
+import { FlowChartDemo } from './FlowChartDemo';
+import { FlowChartV2Demo } from './FlowChartV2Demo';
+import { HomePage } from './pages/Home.page';
+import { StatsCardDemo } from './StatsCardDemo';
+import { UsersChartDemo } from './UsersChartDemo';
+import { ZipMapDemo } from './ZipMapDemo';
+import { ZipMapWebGLDemo } from './ZipMapWebGLDemo';
 
 function Layout() {
   return (
@@ -58,6 +60,15 @@ const router = createBrowserRouter([
       {
         path: '/application-tracking-demo',
         element: <ApplicationTrackingDemo />,
+      },
+      {
+        path: '/zip-map-demo',
+        element: <ZipMapDemo />,
+      },
+
+      {
+        path: '/zip-map-webgl-demo',
+        element: <ZipMapWebGLDemo />,
       },
     ],
   },

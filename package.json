@@ -17,7 +17,8 @@
     "vitest:watch": "vitest",
     "test": "npm run typecheck && npm run prettier && npm run lint && npm run vitest && npm run build",
     "storybook": "storybook dev -p 6006",
-    "storybook:build": "storybook build"
+    "storybook:build": "storybook build",
+    "download:zcta": "node scripts/zcta/download-zcta.cjs"
   },
   "dependencies": {
     "@mantine/core": "8.3.4",
@@ -25,11 +26,16 @@
     "@mantine/hooks": "8.3.4",
     "@tabler/icons-react": "^3.35.0",
     "@types/d3": "^7.4.3",
+    "@types/earcut": "^3.0.0",
     "d3": "^7.9.0",
     "dayjs": "^1.11.19",
+    "earcut": "^3.0.2",
+    "rbush": "^4.0.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.4"
+    "react-router-dom": "^7.9.4",
+    "topojson-client": "^3.1.0",
+    "us-atlas": "^3.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
@@ -42,8 +48,10 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.7.1",
+    "@types/rbush": "^4.0.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
+    "@types/topojson-client": "^3.1.5",
     "@vitejs/plugin-react": "^5.0.4",
     "eslint": "^9.37.0",
     "eslint-config-mantine": "^4.0.3",

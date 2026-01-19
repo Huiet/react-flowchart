@@ -1,8 +1,8 @@
 import React from 'react';
-import type { FlowNode, FlowChartData, ColumnPositions } from './types';
+import { Arrow } from './Arrow';
 import { calculateLayout, calculateLayoutFromRefs } from './layoutEngine';
 import { Node } from './Node';
-import { Arrow } from './Arrow';
+import type { ColumnPositions, FlowChartData, FlowNode } from './types';
 
 interface FlowChartProps {
   // Support both models: nested or reference-based
@@ -37,18 +37,8 @@ export const FlowChart: React.FC<FlowChartProps> = ({
       >
         {/* Define arrowhead marker */}
         <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="10"
-            markerHeight="10"
-            refX="9"
-            refY="3"
-            orient="auto"
-          >
-            <polygon
-              points="0 0, 10 3, 0 6"
-              fill="#333333"
-            />
+          <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <polygon points="0 0, 10 3, 0 6" fill="#333333" />
           </marker>
         </defs>
 
@@ -81,14 +71,7 @@ export const FlowChart: React.FC<FlowChartProps> = ({
               </text>
             )}
             {/* Header underline */}
-            <line
-              x1={20}
-              y1={40}
-              x2={layout.width - 20}
-              y2={40}
-              stroke="#4a90e2"
-              strokeWidth="3"
-            />
+            <line x1={20} y1={40} x2={layout.width - 20} y2={40} stroke="#4a90e2" strokeWidth="3" />
           </g>
         )}
 

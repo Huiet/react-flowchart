@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { BarDataPoint, BarSeries, D3BarChartProps } from './types';
 import { LoadingAnimation } from './LoadingAnimation';
+import { BarDataPoint, BarSeries, D3BarChartProps } from './types';
 import styles from './D3BarChart.module.css';
 
 interface TooltipData {
@@ -79,13 +79,14 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
     // Pre-calculate if rotation is needed to determine appropriate bottom margin
     let needsRotation = false;
     if (filteredData.length > 0) {
-      const tempX0 = d3.scaleBand()
+      const tempX0 = d3
+        .scaleBand()
         .domain(filteredData.map((d) => d.category))
         .range([0, width - margins.left - margins.right])
         .padding(0.2);
 
       const bandWidth = tempX0.bandwidth();
-      const maxLabelLength = d3.max(filteredData.map(d => d.category.length)) || 0;
+      const maxLabelLength = d3.max(filteredData.map((d) => d.category.length)) || 0;
       const estimatedLabelWidth = maxLabelLength * 8;
       needsRotation = estimatedLabelWidth > bandWidth * 0.8;
     }
@@ -93,7 +94,7 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
     // Adjust bottom margin based on rotation needs
     const dynamicMargins = {
       ...margins,
-      bottom: needsRotation ? margins.bottom : Math.max(40, margins.bottom * 0.4)
+      bottom: needsRotation ? margins.bottom : Math.max(40, margins.bottom * 0.4),
     };
 
     const innerWidth = width - dynamicMargins.left - dynamicMargins.right;
@@ -103,7 +104,9 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
     const visibleSeries = series.filter((s) => !hiddenSeries.has(s.key));
 
     // Create main group
-    const g = svg.append('g').attr('transform', `translate(${dynamicMargins.left},${dynamicMargins.top})`);
+    const g = svg
+      .append('g')
+      .attr('transform', `translate(${dynamicMargins.left},${dynamicMargins.top})`);
 
     // Create scales
     const x0 = d3
@@ -119,13 +122,10 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
       .padding(0.05);
 
     // Calculate max value across all visible series (or use all series if none visible)
-    const maxValue = visibleSeries.length > 0
-      ? d3.max(filteredData, (d) =>
-          d3.max(visibleSeries, (s) => d.values[s.key] || 0)
-        ) || 0
-      : d3.max(filteredData, (d) =>
-          d3.max(series, (s) => d.values[s.key] || 0)
-        ) || 100; // Default to 100 if no data
+    const maxValue =
+      visibleSeries.length > 0
+        ? d3.max(filteredData, (d) => d3.max(visibleSeries, (s) => d.values[s.key] || 0)) || 0
+        : d3.max(filteredData, (d) => d3.max(series, (s) => d.values[s.key] || 0)) || 100; // Default to 100 if no data
 
     const y = d3
       .scaleLinear()
@@ -143,7 +143,8 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
       );
 
     // Add X axis with responsive label rotation
-    const xAxis = g.append('g')
+    const xAxis = g
+      .append('g')
       .attr('class', 'axis x-axis')
       .attr('transform', `translate(0,${innerHeight})`)
       .call(d3.axisBottom(x0));
@@ -157,9 +158,7 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
         .attr('dx', '-0.8em')
         .attr('dy', '0.15em');
     } else {
-      xAxisTexts
-        .style('text-anchor', 'middle')
-        .attr('dy', '1em');
+      xAxisTexts.style('text-anchor', 'middle').attr('dy', '1em');
     }
 
     // Add Y axis
@@ -351,7 +350,7 @@ export const D3BarChart: React.FC<D3BarChartProps> = ({
 
           // If collision detected, stagger the label
           if (needsStagger) {
-            labelY = barY - 5 - (labelHeight * 2); // Move up by 2x label height
+            labelY = barY - 5 - labelHeight * 2; // Move up by 2x label height
           }
 
           // Recalculate bounding box with final position

@@ -162,7 +162,7 @@ const example2_ComputerTroubleshooting: FlowChartData = {
       id: 'start',
       variant: 'primary',
       column: 1,
-      label: 'Computer\nWon\'t Start',
+      label: "Computer\nWon't Start",
       connections: [{ targetId: 'power-connected' }],
     },
     {
@@ -623,7 +623,7 @@ const example6_PrinterTroubleshooting: FlowChartData = {
       id: 'printer-issue',
       variant: 'primary',
       column: 1,
-      label: 'Printer Won\'t\nPrint',
+      label: "Printer Won't\nPrint",
       connections: [{ targetId: 'power-on' }],
     },
     {

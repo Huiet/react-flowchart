@@ -12,6 +12,7 @@ import * as d3 from 'd3';
 import { ActionIcon, Group, Menu } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { calculateBollingerBands, calculateEMA, calculateSMA } from './indicators';
+import { LoadingAnimation } from './LoadingAnimation';
 import {
   CustomAnnotation,
   D3StockChartProps,
@@ -21,7 +22,6 @@ import {
   StockLine,
   TechnicalIndicators,
 } from './types';
-import { LoadingAnimation } from './LoadingAnimation';
 import styles from './D3StockChart.module.css';
 
 interface TooltipData {
@@ -326,16 +326,20 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       const fullSma200 = lineIndicators.sma200 ? calculateSMA(line.data, 200) : null;
       const fullEma20 = lineIndicators.ema20 ? calculateEMA(line.data, 20) : null;
       const fullEma50 = lineIndicators.ema50 ? calculateEMA(line.data, 50) : null;
-      const fullBollingerBands = lineIndicators.bollingerBands ? calculateBollingerBands(line.data) : null;
+      const fullBollingerBands = lineIndicators.bollingerBands
+        ? calculateBollingerBands(line.data)
+        : null;
 
       // Filter indicator results to match the selected date range
       allIndicators[line.id] = {
-        sma20: fullSma20 ? fullSma20.filter(d => d.date >= startDate) : null,
-        sma50: fullSma50 ? fullSma50.filter(d => d.date >= startDate) : null,
-        sma200: fullSma200 ? fullSma200.filter(d => d.date >= startDate) : null,
-        ema20: fullEma20 ? fullEma20.filter(d => d.date >= startDate) : null,
-        ema50: fullEma50 ? fullEma50.filter(d => d.date >= startDate) : null,
-        bollingerBands: fullBollingerBands ? fullBollingerBands.filter(d => d.date >= startDate) : null,
+        sma20: fullSma20 ? fullSma20.filter((d) => d.date >= startDate) : null,
+        sma50: fullSma50 ? fullSma50.filter((d) => d.date >= startDate) : null,
+        sma200: fullSma200 ? fullSma200.filter((d) => d.date >= startDate) : null,
+        ema20: fullEma20 ? fullEma20.filter((d) => d.date >= startDate) : null,
+        ema50: fullEma50 ? fullEma50.filter((d) => d.date >= startDate) : null,
+        bollingerBands: fullBollingerBands
+          ? fullBollingerBands.filter((d) => d.date >= startDate)
+          : null,
       };
     });
 
@@ -1181,7 +1185,7 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       newY = Math.max(0, Math.min(newY, containerRect.height - legendRect.height));
 
       setLegendPosition({ x: newX, y: newY });
-    }
+    };
 
     const handleMouseUp = () => {
       if (dragStateRef.current.isDragging) {
@@ -1208,11 +1212,12 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
       return;
     }
 
-    const currentOrder = tooltip.values.map(v => v.lineId);
+    const currentOrder = tooltip.values.map((v) => v.lineId);
     const previousOrder = tooltipOrderRef.current;
 
     // Check if order has changed
-    const orderChanged = currentOrder.length !== previousOrder.length ||
+    const orderChanged =
+      currentOrder.length !== previousOrder.length ||
       currentOrder.some((id, index) => id !== previousOrder[index]);
 
     if (orderChanged && previousOrder.length > 0 && tooltipItemsRef.current.size > 0) {
@@ -1345,7 +1350,9 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
                         }}
                       >
                         Ref:{' '}
-                        {isPercentage ? `${val.refValue.toFixed(2)}%` : `$${val.refValue.toFixed(2)}`}
+                        {isPercentage
+                          ? `${val.refValue.toFixed(2)}%`
+                          : `$${val.refValue.toFixed(2)}`}
                       </span>
                     )}
                   </div>
@@ -1674,156 +1681,161 @@ export const D3StockChart: React.FC<D3StockChartProps> = ({
 
               {/* Line items */}
               <div className={styles.underliersList}>
-              {(() => {
-                // Sort lines alphabetically by name
-                const sortedLines = [...internalLines].sort((a, b) => {
-                  return a.name.localeCompare(b.name);
-                });
+                {(() => {
+                  // Sort lines alphabetically by name
+                  const sortedLines = [...internalLines].sort((a, b) => {
+                    return a.name.localeCompare(b.name);
+                  });
 
-                return sortedLines.map((line) => {
-                const lineIndicators = indicators[line.id] || {};
-                const hasActiveIndicators = Object.values(lineIndicators).some((v) => v);
+                  return sortedLines.map((line) => {
+                    const lineIndicators = indicators[line.id] || {};
+                    const hasActiveIndicators = Object.values(lineIndicators).some((v) => v);
 
-                return (
-                  <div key={line.id} className={styles.legendItemContainer}>
-                    <div
-                      className={`${styles.legendItem} ${!line.visible ? styles.disabled : ''}`}
-                      onClick={() => handleLineToggle(line.id)}
-                    >
-                      <div
-                        className={styles.legendColorBox}
-                        style={{ backgroundColor: line.color }}
-                      />
-                      <div className={styles.legendLabel}>{line.name}</div>
-                    </div>
-
-                    <Menu shadow="md" width={200} position="right-start" closeOnItemClick={false}>
-                      <Menu.Target>
-                        <ActionIcon
-                          variant={hasActiveIndicators ? 'filled' : 'subtle'}
-                          color={hasActiveIndicators ? 'blue' : 'gray.7'}
-                          size="sm"
-                          className={styles.indicatorMenuButton}
-                          onClick={(e) => e.stopPropagation()}
+                    return (
+                      <div key={line.id} className={styles.legendItemContainer}>
+                        <div
+                          className={`${styles.legendItem} ${!line.visible ? styles.disabled : ''}`}
+                          onClick={() => handleLineToggle(line.id)}
                         >
-                          <IconChartLine size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
+                          <div
+                            className={styles.legendColorBox}
+                            style={{ backgroundColor: line.color }}
+                          />
+                          <div className={styles.legendLabel}>{line.name}</div>
+                        </div>
 
-                      <Menu.Dropdown>
-                        <Menu.Label>Technical Indicators</Menu.Label>
-
-                        <Menu.Item
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleIndicatorToggle(line.id, 'sma20');
-                          }}
-                          leftSection={
-                            <input
-                              type="checkbox"
-                              checked={lineIndicators.sma20 || false}
-                              onChange={() => {}}
-                              style={{ pointerEvents: 'none' }}
-                            />
-                          }
+                        <Menu
+                          shadow="md"
+                          width={200}
+                          position="right-start"
+                          closeOnItemClick={false}
                         >
-                          SMA 20
-                        </Menu.Item>
+                          <Menu.Target>
+                            <ActionIcon
+                              variant={hasActiveIndicators ? 'filled' : 'subtle'}
+                              color={hasActiveIndicators ? 'blue' : 'gray.7'}
+                              size="sm"
+                              className={styles.indicatorMenuButton}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <IconChartLine size={16} />
+                            </ActionIcon>
+                          </Menu.Target>
 
-                        <Menu.Item
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleIndicatorToggle(line.id, 'sma50');
-                          }}
-                          leftSection={
-                            <input
-                              type="checkbox"
-                              checked={lineIndicators.sma50 || false}
-                              onChange={() => {}}
-                              style={{ pointerEvents: 'none' }}
-                            />
-                          }
-                        >
-                          SMA 50
-                        </Menu.Item>
+                          <Menu.Dropdown>
+                            <Menu.Label>Technical Indicators</Menu.Label>
 
-                        <Menu.Item
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleIndicatorToggle(line.id, 'sma200');
-                          }}
-                          leftSection={
-                            <input
-                              type="checkbox"
-                              checked={lineIndicators.sma200 || false}
-                              onChange={() => {}}
-                              style={{ pointerEvents: 'none' }}
-                            />
-                          }
-                        >
-                          SMA 200
-                        </Menu.Item>
+                            <Menu.Item
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIndicatorToggle(line.id, 'sma20');
+                              }}
+                              leftSection={
+                                <input
+                                  type="checkbox"
+                                  checked={lineIndicators.sma20 || false}
+                                  onChange={() => {}}
+                                  style={{ pointerEvents: 'none' }}
+                                />
+                              }
+                            >
+                              SMA 20
+                            </Menu.Item>
 
-                        <Menu.Divider />
+                            <Menu.Item
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIndicatorToggle(line.id, 'sma50');
+                              }}
+                              leftSection={
+                                <input
+                                  type="checkbox"
+                                  checked={lineIndicators.sma50 || false}
+                                  onChange={() => {}}
+                                  style={{ pointerEvents: 'none' }}
+                                />
+                              }
+                            >
+                              SMA 50
+                            </Menu.Item>
 
-                        <Menu.Item
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleIndicatorToggle(line.id, 'ema20');
-                          }}
-                          leftSection={
-                            <input
-                              type="checkbox"
-                              checked={lineIndicators.ema20 || false}
-                              onChange={() => {}}
-                              style={{ pointerEvents: 'none' }}
-                            />
-                          }
-                        >
-                          EMA 20
-                        </Menu.Item>
+                            <Menu.Item
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIndicatorToggle(line.id, 'sma200');
+                              }}
+                              leftSection={
+                                <input
+                                  type="checkbox"
+                                  checked={lineIndicators.sma200 || false}
+                                  onChange={() => {}}
+                                  style={{ pointerEvents: 'none' }}
+                                />
+                              }
+                            >
+                              SMA 200
+                            </Menu.Item>
 
-                        <Menu.Item
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleIndicatorToggle(line.id, 'ema50');
-                          }}
-                          leftSection={
-                            <input
-                              type="checkbox"
-                              checked={lineIndicators.ema50 || false}
-                              onChange={() => {}}
-                              style={{ pointerEvents: 'none' }}
-                            />
-                          }
-                        >
-                          EMA 50
-                        </Menu.Item>
+                            <Menu.Divider />
 
-                        <Menu.Divider />
+                            <Menu.Item
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIndicatorToggle(line.id, 'ema20');
+                              }}
+                              leftSection={
+                                <input
+                                  type="checkbox"
+                                  checked={lineIndicators.ema20 || false}
+                                  onChange={() => {}}
+                                  style={{ pointerEvents: 'none' }}
+                                />
+                              }
+                            >
+                              EMA 20
+                            </Menu.Item>
 
-                        <Menu.Item
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleIndicatorToggle(line.id, 'bollingerBands');
-                          }}
-                          leftSection={
-                            <input
-                              type="checkbox"
-                              checked={lineIndicators.bollingerBands || false}
-                              onChange={() => {}}
-                              style={{ pointerEvents: 'none' }}
-                            />
-                          }
-                        >
-                          Bollinger Bands
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </div>
-                );
-              });
-              })()}
+                            <Menu.Item
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIndicatorToggle(line.id, 'ema50');
+                              }}
+                              leftSection={
+                                <input
+                                  type="checkbox"
+                                  checked={lineIndicators.ema50 || false}
+                                  onChange={() => {}}
+                                  style={{ pointerEvents: 'none' }}
+                                />
+                              }
+                            >
+                              EMA 50
+                            </Menu.Item>
+
+                            <Menu.Divider />
+
+                            <Menu.Item
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIndicatorToggle(line.id, 'bollingerBands');
+                              }}
+                              leftSection={
+                                <input
+                                  type="checkbox"
+                                  checked={lineIndicators.bollingerBands || false}
+                                  onChange={() => {}}
+                                  style={{ pointerEvents: 'none' }}
+                                />
+                              }
+                            >
+                              Bollinger Bands
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { D3PieChart } from './components/D3PieChart';
-import { PieChartDataPoint, ChartType } from './components/D3PieChart/types';
+import { ChartType, PieChartDataPoint } from './components/D3PieChart/types';
 
 const mockData: PieChartDataPoint[] = [
   {
@@ -64,8 +64,22 @@ export function D3PieChartDemo() {
   };
 
   return (
-    <div style={{ padding: '20px', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div
+      style={{
+        padding: '20px',
+        height: 'calc(100vh - 80px)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
           <h1 style={{ margin: 0, fontSize: '28px', color: '#1e3a5f', fontWeight: 'bold' }}>
             D3 Pie/Donut Chart Demo

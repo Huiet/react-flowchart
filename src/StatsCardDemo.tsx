@@ -1,5 +1,5 @@
-import { Container, Title, Text, SimpleGrid, Stack, Paper, Code } from '@mantine/core';
-import { IconUsers, IconCrown, IconTrophy, IconChecks, IconInfoCircle } from '@tabler/icons-react';
+import { IconChecks, IconCrown, IconInfoCircle, IconTrophy, IconUsers } from '@tabler/icons-react';
+import { Code, Container, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { StatsCard } from './components/StatsCard';
 
 export function StatsCardDemo() {
@@ -108,7 +108,11 @@ export function StatsCardDemo() {
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
             <StatsCard label="Page Views" value="124,567" />
             <StatsCard label="Bounce Rate" value="42.3%" trend={{ value: 3.2, type: 'negative' }} />
-            <StatsCard label="Conversion Rate" value="6.8%" trend={{ value: 1.5, type: 'positive' }} />
+            <StatsCard
+              label="Conversion Rate"
+              value="6.8%"
+              trend={{ value: 1.5, type: 'positive' }}
+            />
           </SimpleGrid>
         </section>
 
@@ -126,21 +130,33 @@ export function StatsCardDemo() {
               value="$89,432"
               trend={{ value: 12.5, type: 'positive' }}
               icon={<IconInfoCircle size={18} />}
-              footer={<Text size="xs" c="dimmed">Last updated: 2 hours ago</Text>}
+              footer={
+                <Text size="xs" c="dimmed">
+                  Last updated: 2 hours ago
+                </Text>
+              }
             />
             <StatsCard
               label="New Customers"
               value="234"
               trend={{ value: 8.9, type: 'positive' }}
               icon={<IconInfoCircle size={18} />}
-              footer={<Text size="xs" c="dimmed">This month</Text>}
+              footer={
+                <Text size="xs" c="dimmed">
+                  This month
+                </Text>
+              }
             />
             <StatsCard
               label="Avg. Order Value"
               value="$127.45"
               trend={{ value: 2.3, type: 'negative' }}
               icon={<IconInfoCircle size={18} />}
-              footer={<Text size="xs" c="dimmed">Compared to last week</Text>}
+              footer={
+                <Text size="xs" c="dimmed">
+                  Compared to last week
+                </Text>
+              }
             />
           </SimpleGrid>
         </section>
@@ -159,18 +175,20 @@ export function StatsCardDemo() {
               value="1,247"
               trend={{ value: 4.2, type: 'positive' }}
               icon={
-                <div style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: '50%',
-                  backgroundColor: '#12b886',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '10px',
-                  fontWeight: 'bold'
-                }}>
+                <div
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    backgroundColor: '#12b886',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                  }}
+                >
                   ✓
                 </div>
               }
@@ -179,14 +197,16 @@ export function StatsCardDemo() {
               label="Messages"
               value="89"
               icon={
-                <div style={{
-                  padding: '4px 8px',
-                  borderRadius: 4,
-                  backgroundColor: '#ff6b6b',
-                  color: 'white',
-                  fontSize: '10px',
-                  fontWeight: 'bold'
-                }}>
+                <div
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    backgroundColor: '#ff6b6b',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                  }}
+                >
                   NEW
                 </div>
               }
@@ -208,25 +228,31 @@ export function StatsCardDemo() {
           <Paper withBorder p="md">
             <Stack gap="xs">
               <div>
-                <Text fw={600} size="sm" mb={4}>Atoms (smallest building blocks):</Text>
+                <Text fw={600} size="sm" mb={4}>
+                  Atoms (smallest building blocks):
+                </Text>
                 <Code block>
                   {`- CardLabel     → Label text\n- CardValue     → Primary value display\n- TrendIndicator → Icon + percentage with color logic`}
                 </Code>
               </div>
               <div>
-                <Text fw={600} size="sm" mb={4}>Molecules (combinations of atoms):</Text>
+                <Text fw={600} size="sm" mb={4}>
+                  Molecules (combinations of atoms):
+                </Text>
                 <Code block>
                   {`- CardHeader → Label + optional icon slot\n- CardMetric → Value + optional trend\n- CardFooter → Optional footer content`}
                 </Code>
               </div>
               <div>
-                <Text fw={600} size="sm" mb={4}>Organism (main component):</Text>
-                <Code block>
-                  {`- StatsCard → Composes all components above`}
-                </Code>
+                <Text fw={600} size="sm" mb={4}>
+                  Organism (main component):
+                </Text>
+                <Code block>{`- StatsCard → Composes all components above`}</Code>
               </div>
               <div>
-                <Text fw={600} size="sm" mt="md" mb={4}>Usage example:</Text>
+                <Text fw={600} size="sm" mt="md" mb={4}>
+                  Usage example:
+                </Text>
                 <Code block>
                   {`<StatsCard\n  label="Total Users"\n  value="12,847"\n  trend={{ value: 8.2, type: 'positive' }}\n  icon={<IconInfoCircle size={18} />}\n  footer={<Text size="xs">Last hour</Text>}\n/>`}
                 </Code>

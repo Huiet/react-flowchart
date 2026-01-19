@@ -6,5 +6,5 @@ export type {
   OutcomeNode,
   FlowNodeRef,
   FlowChartData,
-  ColumnPositions
+  ColumnPositions,
 } from './types';

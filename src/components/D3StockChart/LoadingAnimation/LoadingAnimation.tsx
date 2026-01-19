@@ -54,8 +54,12 @@ export const LoadingAnimation = () => {
     const line2Color = line2EndY < line1EndY ? '#22c55e' : '#ef4444'; // green if higher, red if lower
 
     // Convert points to SVG path
-    const line1Path = line1Points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-    const line2Path = line2Points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const line1Path = line1Points
+      .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+      .join(' ');
+    const line2Path = line2Points
+      .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+      .join(' ');
 
     return {
       line1: line1Path,
@@ -69,9 +73,36 @@ export const LoadingAnimation = () => {
     <div className={styles.loadingOverlay}>
       <svg className={styles.loadingSvg} width="300" height="170" viewBox="0 0 300 170">
         {/* Background grid lines */}
-        <line className={styles.gridLine} x1="0" y1="42.5" x2="300" y2="42.5" stroke="#e5e7eb" strokeWidth="1" opacity="0.3" />
-        <line className={styles.gridLine} x1="0" y1="85" x2="300" y2="85" stroke="#e5e7eb" strokeWidth="1" opacity="0.3" />
-        <line className={styles.gridLine} x1="0" y1="127.5" x2="300" y2="127.5" stroke="#e5e7eb" strokeWidth="1" opacity="0.3" />
+        <line
+          className={styles.gridLine}
+          x1="0"
+          y1="42.5"
+          x2="300"
+          y2="42.5"
+          stroke="#e5e7eb"
+          strokeWidth="1"
+          opacity="0.3"
+        />
+        <line
+          className={styles.gridLine}
+          x1="0"
+          y1="85"
+          x2="300"
+          y2="85"
+          stroke="#e5e7eb"
+          strokeWidth="1"
+          opacity="0.3"
+        />
+        <line
+          className={styles.gridLine}
+          x1="0"
+          y1="127.5"
+          x2="300"
+          y2="127.5"
+          stroke="#e5e7eb"
+          strokeWidth="1"
+          opacity="0.3"
+        />
 
         {/* Animated stock chart lines with random movements */}
         <path

@@ -47,27 +47,27 @@ const MyChart = () => {
 
 ### D3StockChartProps
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `lines` | `StockLine[]` | Required | Array of line data to display |
-| `width` | `number` | `800` | Chart width in pixels |
-| `height` | `number` | `500` | Chart height in pixels |
-| `margins` | `ChartMargins` | `{top: 20, right: 120, bottom: 70, left: 60}` | Chart margins |
-| `showMinMaxAnnotations` | `boolean` | `true` | (Deprecated - no longer used) |
-| `customAnnotations` | `CustomAnnotation[]` | `[]` | Custom annotation points |
-| `referenceLines` | `ReferenceLine[]` | `[]` | Horizontal/vertical reference lines |
-| `onLineToggle` | `(lineId: string, visible: boolean) => void` | `undefined` | Callback when line visibility changes |
-| `defaultDateRange` | `DateRange` | `'ALL'` | Initial date range ('1W', '1M', '3M', 'YTD', '1Y', '5Y', 'ALL') |
+| Prop                    | Type                                         | Default                                       | Description                                                     |
+| ----------------------- | -------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------- |
+| `lines`                 | `StockLine[]`                                | Required                                      | Array of line data to display                                   |
+| `width`                 | `number`                                     | `800`                                         | Chart width in pixels                                           |
+| `height`                | `number`                                     | `500`                                         | Chart height in pixels                                          |
+| `margins`               | `ChartMargins`                               | `{top: 20, right: 120, bottom: 70, left: 60}` | Chart margins                                                   |
+| `showMinMaxAnnotations` | `boolean`                                    | `true`                                        | (Deprecated - no longer used)                                   |
+| `customAnnotations`     | `CustomAnnotation[]`                         | `[]`                                          | Custom annotation points                                        |
+| `referenceLines`        | `ReferenceLine[]`                            | `[]`                                          | Horizontal/vertical reference lines                             |
+| `onLineToggle`          | `(lineId: string, visible: boolean) => void` | `undefined`                                   | Callback when line visibility changes                           |
+| `defaultDateRange`      | `DateRange`                                  | `'ALL'`                                       | Initial date range ('1W', '1M', '3M', 'YTD', '1Y', '5Y', 'ALL') |
 
 ### StockLine
 
 ```typescript
 interface StockLine {
-  id: string;           // Unique identifier
-  name: string;         // Display name in legend
+  id: string; // Unique identifier
+  name: string; // Display name in legend
   data: StockDataPoint[]; // Array of {date, value} points
-  color: string;        // Line color (hex, rgb, etc.)
-  visible: boolean;     // Initial visibility
+  color: string; // Line color (hex, rgb, etc.)
+  visible: boolean; // Initial visibility
 }
 ```
 
@@ -75,12 +75,12 @@ interface StockLine {
 
 ```typescript
 interface CustomAnnotation {
-  id: string;           // Unique identifier
-  date: Date;           // X-axis position
-  value: number;        // Y-axis position
-  label: string;        // Text label
-  color: string;        // Dot color
-  dotSize?: number;     // Dot radius (default: 6)
+  id: string; // Unique identifier
+  date: Date; // X-axis position
+  value: number; // Y-axis position
+  label: string; // Text label
+  color: string; // Dot color
+  dotSize?: number; // Dot radius (default: 6)
 }
 ```
 
@@ -88,12 +88,12 @@ interface CustomAnnotation {
 
 ```typescript
 interface ReferenceLine {
-  id: string;                    // Unique identifier
+  id: string; // Unique identifier
   type: 'horizontal' | 'vertical'; // Line orientation
-  value: number | Date;          // Position (number for horizontal, Date for vertical)
-  label: string;                 // Text label
-  color?: string;                // Line color (default: '#666')
-  strokeDashArray?: string;      // Dash pattern (default: '5,5')
+  value: number | Date; // Position (number for horizontal, Date for vertical)
+  label: string; // Text label
+  color?: string; // Line color (default: '#666')
+  strokeDashArray?: string; // Dash pattern (default: '5,5')
 }
 ```
 
@@ -101,7 +101,7 @@ interface ReferenceLine {
 
 ```tsx
 import { D3StockChart } from './components/D3StockChart';
-import type { StockLine, CustomAnnotation, ReferenceLine } from './components/D3StockChart';
+import type { CustomAnnotation, ReferenceLine, StockLine } from './components/D3StockChart';
 
 const AdvancedChart = () => {
   const lines: StockLine[] = [
@@ -170,6 +170,7 @@ const AdvancedChart = () => {
 ## Interactions
 
 ### Tooltip & Crosshair
+
 - **Hover**: Move your mouse over the chart to see a tooltip with values for all visible lines
 - **Crosshair**: Horizontal and vertical guide lines appear to help pinpoint the exact position
 - **Dynamic Updates**: Tooltip automatically finds the nearest data point for each line
@@ -177,6 +178,7 @@ const AdvancedChart = () => {
 - **Persistent Display**: Crosshair stays visible when mouse stops moving
 
 ### Date Range Selector
+
 - **Quick Selection**: Click buttons to instantly switch between time periods
 - **Smart Availability**: Buttons are automatically disabled if there isn't enough data for that range
 - **Available Ranges**:
@@ -192,6 +194,7 @@ const AdvancedChart = () => {
 - **Tooltip Feedback**: Hover over disabled buttons to see why they're unavailable
 
 ### Legend
+
 - Click on any line name in the legend to toggle its visibility
 - Disabled lines appear faded in the legend
 - Chart automatically adjusts scales when lines are hidden

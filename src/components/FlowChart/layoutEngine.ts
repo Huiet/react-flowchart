@@ -1,4 +1,11 @@
-import type { ColumnPositions, Connection, FlowNode, FlowNodeRef, FlowChartData, PositionedNode } from './types';
+import type {
+  ColumnPositions,
+  Connection,
+  FlowChartData,
+  FlowNode,
+  FlowNodeRef,
+  PositionedNode,
+} from './types';
 
 interface LayoutConfig {
   nodeSpacing: number;
@@ -340,11 +347,7 @@ export function calculateLayoutFromRefs(
     }
   }
 
-  function positionNode(
-    node: FlowNodeRef,
-    x: number,
-    y: number
-  ): PositionedNode {
+  function positionNode(node: FlowNodeRef, x: number, y: number): PositionedNode {
     // Check if already positioned
     if (nodeMap.has(node.id)) {
       return nodeMap.get(node.id)!;

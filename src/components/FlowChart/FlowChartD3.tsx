@@ -185,11 +185,7 @@ export const FlowChartD3: React.FC<FlowChartD3Props> = ({
 
       // Node background
       const fill =
-        node.type === 'period'
-          ? '#1e3a5f'
-          : node.type === 'decision'
-          ? '#fff'
-          : '#e6f2ff';
+        node.type === 'period' ? '#1e3a5f' : node.type === 'decision' ? '#fff' : '#e6f2ff';
       const stroke = node.type === 'decision' ? '#333' : fill;
 
       g.append('rect')
@@ -207,7 +203,8 @@ export const FlowChartD3: React.FC<FlowChartD3Props> = ({
       const lines = text.split('\n');
       const textColor = node.type === 'period' ? '#fff' : '#000';
 
-      const textGroup = g.append('text')
+      const textGroup = g
+        .append('text')
         .attr('x', node.x + node.width / 2)
         .attr('y', node.y + node.height / 2)
         .attr('text-anchor', 'middle')

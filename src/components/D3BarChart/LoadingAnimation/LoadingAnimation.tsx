@@ -21,7 +21,16 @@ export const LoadingAnimation = () => {
   // Generate random bar heights and colors
   const barData = useMemo(() => {
     const numBars = 8;
-    const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#f43f5e', '#6366f1'];
+    const colors = [
+      '#3b82f6',
+      '#8b5cf6',
+      '#ec4899',
+      '#f59e0b',
+      '#10b981',
+      '#06b6d4',
+      '#f43f5e',
+      '#6366f1',
+    ];
 
     return Array.from({ length: numBars }, (_, i) => {
       // Generate random height between 30% and 95%

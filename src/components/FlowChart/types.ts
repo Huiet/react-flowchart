@@ -75,7 +75,7 @@ export interface Connection {
 }
 
 export interface ColumnPositions {
-  left: number;    // X position for Period nodes (base/anchor nodes)
-  middle: number;  // X position for Decision nodes (intermediary nodes)
-  right: number;   // X position for terminal Outcome nodes
+  left: number; // X position for Period nodes (base/anchor nodes)
+  middle: number; // X position for Decision nodes (intermediary nodes)
+  right: number; // X position for terminal Outcome nodes
 }

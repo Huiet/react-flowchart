@@ -107,51 +107,43 @@ export const ApplicationTrackingDemo = () => {
             color: 'white',
           }}
         >
-          <h2 style={{ marginTop: 0, fontSize: '24px', fontWeight: 600 }}>
-            Features
-          </h2>
+          <h2 style={{ marginTop: 0, fontSize: '24px', fontWeight: 600 }}>Features</h2>
           <ul style={{ lineHeight: '1.8', fontSize: '15px' }}>
             <li>
-              <strong>Fully Responsive:</strong> Circles scale down proportionally as the
-              viewport shrinks
+              <strong>Fully Responsive:</strong> Circles scale down proportionally as the viewport
+              shrinks
             </li>
             <li>
-              <strong>Automatic Wrapping:</strong> Metrics wrap to multiple lines when
-              the viewport becomes too narrow
+              <strong>Automatic Wrapping:</strong> Metrics wrap to multiple lines when the viewport
+              becomes too narrow
             </li>
             <li>
-              <strong>Status-based Colors:</strong> Gray for initial, blue shades for
-              active stages, green for completed
+              <strong>Status-based Colors:</strong> Gray for initial, blue shades for active stages,
+              green for completed
             </li>
             <li>
-              <strong>Interactive Hover:</strong> Circles scale up slightly on hover for
-              better visual feedback
+              <strong>Interactive Hover:</strong> Circles scale up slightly on hover for better
+              visual feedback
             </li>
             <li>
-              <strong>Smart Arrows:</strong> Connecting arrows only show when metrics are
-              in a single row
+              <strong>Smart Arrows:</strong> Connecting arrows only show when metrics are in a
+              single row
             </li>
             <li>
-              <strong>Loading State:</strong> Built-in loading overlay for data fetching
-              scenarios
+              <strong>Loading State:</strong> Built-in loading overlay for data fetching scenarios
             </li>
             <li>
-              <strong>Clean Typography:</strong> Percentage labels displayed below each
-              metric for clarity
+              <strong>Clean Typography:</strong> Percentage labels displayed below each metric for
+              clarity
             </li>
           </ul>
 
-          <h3 style={{ marginTop: '30px', fontSize: '20px', fontWeight: 600 }}>
-            Try This
-          </h3>
+          <h3 style={{ marginTop: '30px', fontSize: '20px', fontWeight: 600 }}>Try This</h3>
           <ul style={{ lineHeight: '1.8', fontSize: '15px' }}>
             <li>Resize your browser window to see the circles scale and wrap</li>
             <li>Hover over any circle to see the scale effect</li>
             <li>Click "Toggle Loading" to see the loading state</li>
-            <li>
-              On narrow screens, notice how the arrows disappear and metrics stack
-              vertically
-            </li>
+            <li>On narrow screens, notice how the arrows disappear and metrics stack vertically</li>
           </ul>
         </div>
       </div>

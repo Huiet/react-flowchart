@@ -7,16 +7,16 @@ export interface NodeConnection {
   label?: string;
   color?: ConnectionColor; // Also used as the active color for the arrow
   fromSide?: 'top' | 'right' | 'bottom' | 'left'; // Optional: explicitly set exit side
-  toSide?: 'top' | 'right' | 'bottom' | 'left';   // Optional: explicitly set entry side
+  toSide?: 'top' | 'right' | 'bottom' | 'left'; // Optional: explicitly set entry side
 }
 
 // Unified node structure - all nodes have the same properties
 export interface FlowNode {
   id: string;
-  variant: NodeVariant;  // Dictates the colors: primary, neutral, or secondary
+  variant: NodeVariant; // Dictates the colors: primary, neutral, or secondary
   label: string;
-  column: number;        // Required column position (1, 2, 3, etc.)
-  isActive?: boolean;    // Whether this node is on the active/taken path
+  column: number; // Required column position (1, 2, 3, etc.)
+  isActive?: boolean; // Whether this node is on the active/taken path
   connections?: NodeConnection[]; // Array of outgoing connections
 }
 
@@ -60,7 +60,7 @@ export interface LayoutConfig {
 
 // Column positions
 export interface ColumnPositions {
-  [column: number]: number;  // Map column number to x-position
+  [column: number]: number; // Map column number to x-position
 }
 
 // Layout result

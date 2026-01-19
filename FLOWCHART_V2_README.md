@@ -64,12 +64,12 @@ src/components/FlowChartV2/
 
 ### File Responsibilities
 
-| File | Purpose | Key Exports |
-|------|---------|-------------|
-| `types.ts` | Type definitions for all data structures | `FlowNode`, `FlowChartData`, `Connection`, `PositionedNode` |
-| `layoutEngine.ts` | Calculates x/y positions for nodes and routing | `calculateLayout()` |
-| `FlowChartV2.tsx` | SVG rendering, arrow drawing, collision detection | `FlowChartV2` component |
-| `Node.tsx` | Renders individual node rectangles | `Node` component |
+| File              | Purpose                                           | Key Exports                                                 |
+| ----------------- | ------------------------------------------------- | ----------------------------------------------------------- |
+| `types.ts`        | Type definitions for all data structures          | `FlowNode`, `FlowChartData`, `Connection`, `PositionedNode` |
+| `layoutEngine.ts` | Calculates x/y positions for nodes and routing    | `calculateLayout()`                                         |
+| `FlowChartV2.tsx` | SVG rendering, arrow drawing, collision detection | `FlowChartV2` component                                     |
+| `Node.tsx`        | Renders individual node rectangles                | `Node` component                                            |
 
 ---
 
@@ -97,13 +97,14 @@ Nodes are organized into vertical columns for clean left-to-right flow:
 
 ```typescript
 const COLUMN_X_POSITIONS = {
-  1: 50,      // Left column (default for primary)
-  2: 300,     // Middle column (default for neutral)
-  3: 550,     // Right column (default for secondary)
+  1: 50, // Left column (default for primary)
+  2: 300, // Middle column (default for neutral)
+  3: 550, // Right column (default for secondary)
 };
 ```
 
 **Column Assignment Logic:**
+
 1. If node has explicit `column` property → use that column
 2. Otherwise, use default based on variant (primary=1, neutral=2, secondary=3)
 3. Custom columns (4, 5, etc.) are supported and auto-calculated if not defined
@@ -116,10 +117,11 @@ Each node has a `connections` array that defines outgoing arrows:
 connections: [
   { targetId: 'node-2', label: 'Yes', color: 'green' },
   { targetId: 'node-3', label: 'No', color: 'red' },
-]
+];
 ```
 
 **Connection Properties:**
+
 - `targetId` (required): ID of destination node
 - `label` (optional): Text shown on arrow (e.g., "Yes", "No", "Retry")
 - `color` (optional): Arrow color - 'green', 'red', 'blue', 'orange', or 'default'
@@ -134,16 +136,17 @@ This is what users define - the logical structure of the flowchart:
 
 ```typescript
 interface FlowNode {
-  id: string;                      // Unique identifier
-  variant: NodeVariant;            // Visual style
-  label: string;                   // Display text (supports \n for newlines)
-  column?: number;                 // Optional column override
-  isActive?: boolean;              // Highlight this node on active path
-  connections: NodeConnection[];   // Outgoing arrows
+  id: string; // Unique identifier
+  variant: NodeVariant; // Visual style
+  label: string; // Display text (supports \n for newlines)
+  column?: number; // Optional column override
+  isActive?: boolean; // Highlight this node on active path
+  connections: NodeConnection[]; // Outgoing arrows
 }
 ```
 
 **Example:**
+
 ```typescript
 {
   id: 'decision-1',
@@ -164,11 +167,11 @@ After layout calculation, nodes become positioned nodes with x/y coordinates:
 
 ```typescript
 interface PositionedNode {
-  node: FlowNode;       // Original node data
-  x: number;            // Left edge position
-  y: number;            // Top edge position
-  width: number;        // Node width (always 180px * scale)
-  height: number;       // Node height (always 70px * scale)
+  node: FlowNode; // Original node data
+  x: number; // Left edge position
+  y: number; // Top edge position
+  width: number; // Node width (always 180px * scale)
+  height: number; // Node height (always 70px * scale)
 }
 ```
 
@@ -178,13 +181,13 @@ Connections are transformed into full routing information:
 
 ```typescript
 interface Connection {
-  from: PositionedNode;                              // Source node
-  to: PositionedNode;                                // Destination node
-  label?: string;                                    // Arrow label
-  color?: ConnectionColor;                           // Arrow color
-  fromSide: 'top' | 'right' | 'bottom' | 'left';    // Exit side
-  toSide: 'top' | 'right' | 'bottom' | 'left';      // Entry side
-  isActive?: boolean;                                // Active path indicator
+  from: PositionedNode; // Source node
+  to: PositionedNode; // Destination node
+  label?: string; // Arrow label
+  color?: ConnectionColor; // Arrow color
+  fromSide: 'top' | 'right' | 'bottom' | 'left'; // Exit side
+  toSide: 'top' | 'right' | 'bottom' | 'left'; // Entry side
+  isActive?: boolean; // Active path indicator
 }
 ```
 
@@ -246,7 +249,7 @@ function layoutNode(nodeId, x, y, parentNode?, connection?) {
       to: positioned,
       fromSide: calculateExitSide(),
       toSide: calculateEntrySide(),
-      isActive: parentNode.isActive && positioned.isActive
+      isActive: parentNode.isActive && positioned.isActive,
     });
   }
 
@@ -270,12 +273,10 @@ function hasCollision(x, y, width, height): boolean {
   for (const existingNode of nodes) {
     // Check if rectangles overlap
     const noOverlapX =
-      x + width + buffer <= existingNode.x ||
-      existingNode.x + existingNode.width + buffer <= x;
+      x + width + buffer <= existingNode.x || existingNode.x + existingNode.width + buffer <= x;
 
     const noOverlapY =
-      y + height + buffer <= existingNode.y ||
-      existingNode.y + existingNode.height + buffer <= y;
+      y + height + buffer <= existingNode.y || existingNode.y + existingNode.height + buffer <= y;
 
     if (!noOverlapX && !noOverlapY) {
       return true; // Collision detected
@@ -287,6 +288,7 @@ function hasCollision(x, y, width, height): boolean {
 ```
 
 **Collision Resolution:**
+
 ```typescript
 function findAvailablePosition(x, y, width, height) {
   let currentY = y;
@@ -312,14 +314,14 @@ The layout engine determines which sides arrows should connect to:
 if (from.variant === 'primary' && to.variant === 'neutral') {
   fromSide = 'right';
   toSide = 'left';
-  targetY = fromY + fromHeight/2 - toHeight/2; // Align midpoints
+  targetY = fromY + fromHeight / 2 - toHeight / 2; // Align midpoints
 }
 
 // Neutral → Secondary: Horizontal (right → left)
 else if (from.variant === 'neutral' && to.variant === 'secondary') {
   fromSide = 'right';
   toSide = 'left';
-  targetY = fromY + fromHeight/2 - toHeight/2;
+  targetY = fromY + fromHeight / 2 - toHeight / 2;
 }
 
 // Neutral → Neutral: Vertical (bottom → top)
@@ -412,12 +414,12 @@ function getStaggeredConnectionPoint(
     case 'right':
       return {
         x: node.x + node.width,
-        y: node.y + node.height / 2 + offset  // Offset vertically
+        y: node.y + node.height / 2 + offset, // Offset vertically
       };
     case 'bottom':
       return {
-        x: node.x + node.width / 2 + offset,  // Offset horizontally
-        y: node.y + node.height
+        x: node.x + node.width / 2 + offset, // Offset horizontally
+        y: node.y + node.height,
       };
     // ...
   }
@@ -425,6 +427,7 @@ function getStaggeredConnectionPoint(
 ```
 
 **Visual Example:**
+
 ```
 Without staggering:        With staggering:
 ┌─────┐                    ┌─────┐
@@ -460,6 +463,7 @@ switch (fromSide) {
 ```
 
 **Example:**
+
 ```
 Bad (turns immediately):     Good (minimum travel):
 ┌────┐                       ┌────┐
@@ -487,12 +491,13 @@ if (is180Reversal) {
             L ${start.x} ${firstPoint.y}     // Down
             L ${end.x} ${firstPoint.y}       // Across
             L ${end.x} ${lastPoint.y}        // Up (approach)
-            L ${end.x} ${end.y}`;            // Final
+            L ${end.x} ${end.y}`; // Final
   }
 }
 ```
 
 **Example:**
+
 ```
 Bad (180° reversal):     Good (perpendicular routing):
 ┌────┐                   ┌────┐
@@ -510,31 +515,34 @@ Bad (180° reversal):     Good (perpendicular routing):
 ### Path Construction Patterns
 
 **1. Horizontal Exit → Vertical Entry:**
+
 ```typescript
 // Exit right, enter top
 path = `M ${start.x} ${start.y}      // Start
         L ${end.x} ${start.y}        // Go right to target X
         L ${end.x} ${lastPoint.y}    // Go down to approach point
-        L ${end.x} ${end.y}`;        // Final approach
+        L ${end.x} ${end.y}`; // Final approach
 ```
 
 **2. Vertical Exit → Horizontal Entry:**
+
 ```typescript
 // Exit bottom, enter left
 path = `M ${start.x} ${start.y}      // Start
         L ${start.x} ${end.y}        // Go down to target Y
         L ${lastPoint.x} ${end.y}    // Go right to approach point
-        L ${end.x} ${end.y}`;        // Final approach
+        L ${end.x} ${end.y}`; // Final approach
 ```
 
 **3. Same Direction (e.g., both vertical):**
+
 ```typescript
 // Exit bottom, enter bottom (parallel)
 const midY = (start.y + end.y) / 2;
 path = `M ${start.x} ${start.y}      // Start
         L ${start.x} ${midY}         // Go down to midpoint
         L ${end.x} ${midY}           // Go across at midpoint
-        L ${end.x} ${end.y}`;        // Go down to end
+        L ${end.x} ${end.y}`; // Go down to end
 ```
 
 ---
@@ -546,11 +554,12 @@ The most complex part of the system: ensuring arrows never pass through nodes.
 ### Segment Intersection Detection
 
 **Horizontal Segment Check:**
+
 ```typescript
 function horizontalSegmentIntersectsNode(
-  y: number,              // Line's Y coordinate
-  x1: number,             // Line start X
-  x2: number,             // Line end X
+  y: number, // Line's Y coordinate
+  x1: number, // Line start X
+  x2: number, // Line end X
   node: PositionedNode
 ): boolean {
   const buffer = 10;
@@ -559,19 +568,20 @@ function horizontalSegmentIntersectsNode(
 
   // Check Y overlap
   if (y < node.y - buffer || y > node.y + node.height + buffer) {
-    return false;  // Line Y is above or below node
+    return false; // Line Y is above or below node
   }
 
   // Check X overlap
   if (maxX < node.x - buffer || minX > node.x + node.width + buffer) {
-    return false;  // Line X range doesn't overlap node
+    return false; // Line X range doesn't overlap node
   }
 
-  return true;  // Collision!
+  return true; // Collision!
 }
 ```
 
 **Visual Explanation:**
+
 ```
 Line Y within node's Y range:
          y ────────────────>
@@ -588,11 +598,12 @@ Line Y outside node's Y range:
 ```
 
 **Vertical Segment Check:**
+
 ```typescript
 function verticalSegmentIntersectsNode(
-  x: number,              // Line's X coordinate
-  y1: number,             // Line start Y
-  y2: number,             // Line end Y
+  x: number, // Line's X coordinate
+  y1: number, // Line start Y
+  y2: number, // Line end Y
   node: PositionedNode
 ): boolean {
   const buffer = 10;
@@ -601,15 +612,15 @@ function verticalSegmentIntersectsNode(
 
   // Check X overlap
   if (x < node.x - buffer || x > node.x + node.width + buffer) {
-    return false;  // Line X is left or right of node
+    return false; // Line X is left or right of node
   }
 
   // Check Y overlap
   if (maxY < node.y - buffer || minY > node.y + node.height + buffer) {
-    return false;  // Line Y range doesn't overlap node
+    return false; // Line Y range doesn't overlap node
   }
 
-  return true;  // Collision!
+  return true; // Collision!
 }
 ```
 
@@ -620,33 +631,33 @@ When a collision is detected, arrows route through "gutters" - safe spaces besid
 ```typescript
 // Example: Bottom → Top with node in between
 if (fromSide === 'bottom' && toSide === 'top') {
-  const otherNodes = nodes.filter(
-    n => n.id !== from.id && n.id !== to.id
-  );
+  const otherNodes = nodes.filter((n) => n.id !== from.id && n.id !== to.id);
 
   // Check if horizontal route would collide
   const horizontalY = firstPoint.y;
-  const needsGutterRoute = otherNodes.some(node =>
+  const needsGutterRoute = otherNodes.some((node) =>
     horizontalSegmentIntersectsNode(horizontalY, start.x, end.x, node)
   );
 
   if (needsGutterRoute) {
     // Route through gutter
-    const gutterX = start.x < end.x
-      ? from.x + from.width + 30   // Right side gutter
-      : from.x - 30;                // Left side gutter
+    const gutterX =
+      start.x < end.x
+        ? from.x + from.width + 30 // Right side gutter
+        : from.x - 30; // Left side gutter
 
     path = `M ${start.x} ${start.y}       // Start
             L ${start.x} ${firstPoint.y}  // Down
             L ${gutterX} ${firstPoint.y}  // To gutter
             L ${gutterX} ${lastPoint.y}   // Vertical in gutter
             L ${end.x} ${lastPoint.y}     // Across to target
-            L ${end.x} ${end.y}`;         // Final approach
+            L ${end.x} ${end.y}`; // Final approach
   }
 }
 ```
 
 **Visual Example:**
+
 ```
 Without collision avoidance:    With gutter routing:
 ┌────┐                          ┌────┐
@@ -673,13 +684,14 @@ The collision check is integrated into all path calculation branches:
 ```typescript
 // 1. Filter out source and destination (can pass through own nodes)
 const otherNodes = layout.nodes.filter(
-  n => n.node.id !== from.node.id && n.node.id !== to.node.id
+  (n) => n.node.id !== from.node.id && n.node.id !== to.node.id
 );
 
 // 2. Check if proposed path collides
-let needsGutterRoute = otherNodes.some(node =>
-  horizontalSegmentIntersectsNode(proposedY, start.x, end.x, node) ||
-  verticalSegmentIntersectsNode(proposedX, start.y, end.y, node)
+let needsGutterRoute = otherNodes.some(
+  (node) =>
+    horizontalSegmentIntersectsNode(proposedY, start.x, end.x, node) ||
+    verticalSegmentIntersectsNode(proposedX, start.y, end.y, node)
 );
 
 // 3. Use gutter routing if collision detected
@@ -741,7 +753,7 @@ switch (fromSide) {
 Colors are determined by the connection's `color` property:
 
 ```typescript
-let arrowColor = '#333333';      // Default gray
+let arrowColor = '#333333'; // Default gray
 let arrowMarker = 'arrowhead-default';
 
 if (isActive) {
@@ -879,17 +891,19 @@ const opacity = node.isActive === false ? 0.4 : 1;
 ### Adding a New Connection Color
 
 **Step 1: Update types.ts**
+
 ```typescript
 export type ConnectionColor =
   | 'green'
   | 'red'
   | 'blue'
   | 'orange'
-  | 'purple'    // NEW
+  | 'purple' // NEW
   | 'default';
 ```
 
 **Step 2: Add arrowhead marker in FlowChartV2.tsx**
+
 ```typescript
 <marker id="arrowhead-purple" {/* ... */}>
   <polygon fill="#9C27B0" {/* ... */} />
@@ -897,6 +911,7 @@ export type ConnectionColor =
 ```
 
 **Step 3: Add color mapping**
+
 ```typescript
 case 'purple':
   arrowColor = '#9C27B0';
@@ -905,6 +920,7 @@ case 'purple':
 ```
 
 **Step 4: Add label circle color**
+
 ```typescript
 case 'purple':
   circleColor = '#9C27B0';
@@ -914,15 +930,13 @@ case 'purple':
 ### Adding a New Node Variant
 
 **Step 1: Update types.ts**
+
 ```typescript
-export type NodeVariant =
-  | 'primary'
-  | 'neutral'
-  | 'secondary'
-  | 'warning';   // NEW
+export type NodeVariant = 'primary' | 'neutral' | 'secondary' | 'warning'; // NEW
 ```
 
 **Step 2: Add dimensions in layoutEngine.ts**
+
 ```typescript
 const defaultConfig: LayoutConfig = {
   // ...
@@ -935,7 +949,7 @@ function getNodeDimensions(node: FlowNode) {
     case 'warning':
       return {
         width: cfg.warningWidth * cfg.scale,
-        height: cfg.warningHeight * cfg.scale
+        height: cfg.warningHeight * cfg.scale,
       };
     // ...
   }
@@ -943,6 +957,7 @@ function getNodeDimensions(node: FlowNode) {
 ```
 
 **Step 3: Add default column**
+
 ```typescript
 function getNodeColumn(node: FlowNode): number {
   if (node.column !== undefined) {
@@ -950,7 +965,7 @@ function getNodeColumn(node: FlowNode): number {
   } else {
     switch (node.variant) {
       case 'warning':
-        columnNumber = 4;  // New column
+        columnNumber = 4; // New column
         break;
       // ...
     }
@@ -960,14 +975,15 @@ function getNodeColumn(node: FlowNode): number {
 ```
 
 **Step 4: Add styling in Node.tsx**
+
 ```typescript
 function getNodeStyle(variant: NodeVariant) {
   switch (variant) {
     case 'warning':
       return {
-        fill: '#fff3e0',        // Light orange background
-        stroke: '#ff9800',      // Orange border
-        textFill: '#e65100',    // Dark orange text
+        fill: '#fff3e0', // Light orange background
+        stroke: '#ff9800', // Orange border
+        textFill: '#e65100', // Dark orange text
       };
     // ...
   }
@@ -1005,12 +1021,12 @@ node.connections.forEach((conn, connIndex) => {
 ```typescript
 // Calculate dynamic spacing
 const nodeCount = chartData.nodes.length;
-const dynamicSpacing = nodeCount > 20 ? 40 : 50;  // Tighter for large charts
+const dynamicSpacing = nodeCount > 20 ? 40 : 50; // Tighter for large charts
 
 const cfg = {
   ...defaultConfig,
   nodeSpacing: dynamicSpacing,
-  ...config
+  ...config,
 };
 ```
 
@@ -1024,13 +1040,9 @@ function findBestGutter(from, to, nodes) {
   const leftGutterX = from.x - 30;
 
   // Count nodes near each gutter
-  const nodesNearRight = nodes.filter(n =>
-    Math.abs(n.x - rightGutterX) < 50
-  ).length;
+  const nodesNearRight = nodes.filter((n) => Math.abs(n.x - rightGutterX) < 50).length;
 
-  const nodesNearLeft = nodes.filter(n =>
-    Math.abs(n.x - leftGutterX) < 50
-  ).length;
+  const nodesNearLeft = nodes.filter((n) => Math.abs(n.x - leftGutterX) < 50).length;
 
   // Choose less crowded side
   return nodesNearLeft < nodesNearRight ? leftGutterX : rightGutterX;
@@ -1108,8 +1120,9 @@ export function Node({ node, shape = 'rectangle', ...props }: NodeProps) {
 **Problem:** Collision detection not catching all cases
 
 **Solution:** Increase buffer size or add more granular segment checks
+
 ```typescript
-const buffer = 15;  // Increase from 10 to 15
+const buffer = 15; // Increase from 10 to 15
 ```
 
 ### 2. Labels Floating in Wrong Position
@@ -1117,6 +1130,7 @@ const buffer = 15;  // Increase from 10 to 15
 **Problem:** Label positioned on segment that gets rerouted
 
 **Solution:** Recalculate label position after final path is determined
+
 ```typescript
 // Calculate label position from actual path segments
 const segments = parsePath(pathD);
@@ -1135,6 +1149,7 @@ const labelPos = getMidpoint(midSegment);
 **Problem:** O(n²) collision checking slows down with many nodes
 
 **Solution:** Implement spatial partitioning
+
 ```typescript
 // Divide canvas into grid
 const grid = createGrid(layout.width, layout.height, cellSize: 200);
@@ -1151,6 +1166,7 @@ function hasCollision(x, y, width, height) {
 **Problem:** Node A → Node B → Node A creates infinite loop
 
 **Solution:** Already handled by `visited` Set in layout engine
+
 ```typescript
 if (visited.has(nodeId)) {
   // Create connection but don't recurse
@@ -1172,7 +1188,7 @@ const node: FlowNode = {
   id: 'test-1',
   variant: 'primary',
   label: 'Test',
-  connections: [{ targetId: 'test-2' }]
+  connections: [{ targetId: 'test-2' }],
 };
 
 expect(node.id).toBe('test-1');
@@ -1186,15 +1202,15 @@ const data: FlowChartData = {
   rootId: 'a',
   nodes: [
     { id: 'a', variant: 'primary', label: 'A', connections: [{ targetId: 'b' }] },
-    { id: 'b', variant: 'neutral', label: 'B', connections: [] }
-  ]
+    { id: 'b', variant: 'neutral', label: 'B', connections: [] },
+  ],
 };
 
 const layout = calculateLayout(data);
 
 expect(layout.nodes).toHaveLength(2);
 expect(layout.connections).toHaveLength(1);
-expect(layout.nodes[0].x).toBe(50);  // Column 1
+expect(layout.nodes[0].x).toBe(50); // Column 1
 expect(layout.nodes[1].x).toBe(300); // Column 2
 ```
 
@@ -1235,10 +1251,7 @@ test('renders financial flowchart correctly', async () => {
 import { useMemo } from 'react';
 
 function FlowChartV2({ data, scale }: Props) {
-  const layout = useMemo(
-    () => calculateLayout(data, { scale }),
-    [data, scale]
-  );
+  const layout = useMemo(() => calculateLayout(data, { scale }), [data, scale]);
 
   // ...
 }
@@ -1275,14 +1288,15 @@ if (!isActive) {
 ### 4. Reduce Re-renders
 
 ```typescript
-const Node = React.memo(({ node, x, y, width, height }: NodeProps) => {
-  // Component only re-renders if props change
-  // ...
-}, (prev, next) => {
-  return prev.node.id === next.node.id &&
-         prev.x === next.x &&
-         prev.y === next.y;
-});
+const Node = React.memo(
+  ({ node, x, y, width, height }: NodeProps) => {
+    // Component only re-renders if props change
+    // ...
+  },
+  (prev, next) => {
+    return prev.node.id === next.node.id && prev.x === next.x && prev.y === next.y;
+  }
+);
 ```
 
 ---
@@ -1317,7 +1331,7 @@ console.log('Arrow path:', {
   toSide,
   pathD,
   needsGutterRoute,
-  collidingNodes: otherNodes.filter(/* ... */)
+  collidingNodes: otherNodes.filter(/* ... */),
 });
 ```
 
@@ -1371,6 +1385,7 @@ const strokeDasharray = needsGutterRoute ? "5,5" : "none";
 ## Changelog
 
 ### Version 2.0 (Current)
+
 - Connections array instead of next/nextYes/nextNo
 - Color-coded arrows with custom colors
 - Collision-aware gutter routing
@@ -1379,6 +1394,7 @@ const strokeDasharray = needsGutterRoute ? "5,5" : "none";
 - Staggered multi-arrow support
 
 ### Version 1.0
+
 - Basic node rendering
 - Simple arrow routing
 - next/nextYes/nextNo navigation
