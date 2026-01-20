@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { createColorScale } from './colorScale';
+import { createConcaveHull } from './concaveHull';
 import { getStateFipsFromZip } from './stateUtils';
 import { ZipMapProps } from './types';
 import { fetchStateZCTA, getObjectName } from './zctaLoader';
@@ -203,19 +204,10 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
     const areas: Array<{ prefix: string; geometry: any; totalValue: number }> = [];
     groups.forEach((group, prefix) => {
       if (group.totalValue === 0) return;
-      const coordinates: any[] = [];
-      group.features.forEach((f) => {
-        if (f.geometry.type === 'Polygon') {
-          coordinates.push(f.geometry.coordinates);
-        } else if (f.geometry.type === 'MultiPolygon') {
-          coordinates.push(...f.geometry.coordinates);
-        }
-      });
-      areas.push({
-        prefix,
-        geometry: { type: 'MultiPolygon', coordinates },
-        totalValue: group.totalValue,
-      });
+      const hull = createConcaveHull(group.features);
+      if (hull) {
+        areas.push({ prefix, geometry: hull, totalValue: group.totalValue });
+      }
     });
     return areas;
   }, [allZctaFeatures, dataMap]);
@@ -519,7 +511,9 @@ export function ZipMap({ data, width = 960, height = 600 }: ZipMapProps) {
         }, new Map<string, { features: any[]; hasData: boolean }>());
 
         const emptyThreeDigit = [...threeDigitMap.entries()]
-          .filter((entry): entry is [string, { features: any[]; hasData: boolean }] => !entry[1].hasData)
+          .filter(
+            (entry): entry is [string, { features: any[]; hasData: boolean }] => !entry[1].hasData
+          )
           .flatMap((entry) => entry[1].features);
 
         const emptyPathData = emptyThreeDigit

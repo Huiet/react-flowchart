@@ -1,4 +1,5 @@
 import * as topojson from 'topojson-client';
+import { createConcaveHull } from '../ZipMap/concaveHull';
 import { fetchStateZCTA, getObjectName } from '../ZipMap/zctaLoader';
 import { createColorScale, TessellatedGeometry, tessellateGeometry } from './tessellator';
 import { ThreeDigitGeometry, ZipDataPoint, ZipGeometry } from './types';
@@ -157,72 +158,26 @@ export async function loadAndProcessGeometries(data: ZipDataPoint[]): Promise<Ge
     });
   });
 
-  // Tessellate full-coverage 3-digit geometries using topojson.merge to dissolve internal boundaries
+  // Tessellate full-coverage 3-digit geometries using concave hulls
   const threeDigitFullBuffers = new Map<string, TessellatedGeometry>();
   const threeDigitFull = new Map<string, ThreeDigitGeometry>();
-
-  // Group by state to use topojson.merge properly
-  const topoByState = new Map<string, any>();
-  await Promise.all(
-    Array.from(zipsByState.keys()).map(async (fips) => {
-      const topo = await fetchStateZCTA(fips);
-      if (topo) topoByState.set(fips, topo);
-    })
-  );
 
   threeDigitFullGroups.forEach((group, prefix) => {
     if (group.totalValue === 0) return;
 
-    const topo = topoByState.get(group.stateFips);
-    if (topo) {
-      const objName = getObjectName(group.stateFips);
-      const obj = topo.objects[objName];
-      if (obj) {
-        // Filter to only geometries in this 3-digit group
-        const filteredObj = {
-          type: obj.type,
-          geometries: obj.geometries.filter((g: any) => {
-            const zipCode = g.properties?.ZCTA5CE10;
-            return zipCode && zipCode.startsWith(prefix);
-          }),
-        };
-
-        if (filteredObj.geometries.length > 0) {
-          // Use topojson.merge to dissolve internal boundaries
-          const merged = topojson.merge(topo, filteredObj.geometries);
-          threeDigitFull.set(prefix, {
-            prefix,
-            geometry: merged,
-            totalValue: group.totalValue,
-            zipCodes: group.features.map((f: any) => f.properties.ZCTA5CE10),
-          });
-          const color = threeDigitColorScale(group.totalValue);
-          const tessellated = tessellateGeometry(merged, color, prefix);
-          if (tessellated) threeDigitFullBuffers.set(prefix, tessellated);
-          return;
-        }
-      }
+    // Generate concave hull from all features in this 3-digit group
+    const hull = createConcaveHull(group.features);
+    if (hull) {
+      threeDigitFull.set(prefix, {
+        prefix,
+        geometry: hull,
+        totalValue: group.totalValue,
+        zipCodes: group.features.map((f: any) => f.properties.ZCTA5CE10),
+      });
+      const color = threeDigitColorScale(group.totalValue);
+      const tessellated = tessellateGeometry(hull, color, prefix);
+      if (tessellated) threeDigitFullBuffers.set(prefix, tessellated);
     }
-
-    // Fallback to MultiPolygon if merge fails
-    const coordinates: any[] = [];
-    group.features.forEach((feature: any) => {
-      if (feature.geometry.type === 'Polygon') {
-        coordinates.push(feature.geometry.coordinates);
-      } else if (feature.geometry.type === 'MultiPolygon') {
-        coordinates.push(...feature.geometry.coordinates);
-      }
-    });
-    const geometry = { type: 'MultiPolygon' as const, coordinates };
-    threeDigitFull.set(prefix, {
-      prefix,
-      geometry,
-      totalValue: group.totalValue,
-      zipCodes: group.features.map((f: any) => f.properties.ZCTA5CE10),
-    });
-    const color = threeDigitColorScale(group.totalValue);
-    const tessellated = tessellateGeometry(geometry, color, prefix);
-    if (tessellated) threeDigitFullBuffers.set(prefix, tessellated);
   });
   console.log(`Tessellated ${threeDigitFullBuffers.size} full-coverage 3-digit geometries`);
 
